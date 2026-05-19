@@ -83,3 +83,7 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn().mockResolvedValue(undefined),
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
+
+jest.mock("react-native-webview", () => ({
+  WebView: () => null,
+}));
