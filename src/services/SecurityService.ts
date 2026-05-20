@@ -236,10 +236,28 @@ export const SignalKeysService = {
   },
 
   /**
-   * GET /auth/signal/health
-   * Check key health (how many prekeys remain, rotation needed, etc.).
+   * GET /auth/signal/keys/:userId/devices/:deviceId/status
+   * Check key health for the current device (how many prekeys remain, rotation needed, etc.).
    */
-  async getHealth(): Promise<SignalHealthStatus> {
-    return apiFetch<SignalHealthStatus>("/signal/health");
+  async getDeviceHealth(
+    userId: string,
+    deviceId: string,
+  ): Promise<SignalHealthStatus> {
+    const data = await apiFetch<any>(
+      `/signal/keys/${encodeURIComponent(userId)}/devices/${encodeURIComponent(deviceId)}/status`,
+    );
+    return {
+      prekeys_remaining: data.availablePreKeys,
+      signed_prekey_age_days: 0, // Not provided by this endpoint but not critical for replenish check
+      needs_replenishment: data.isLow || !data.hasActiveSignedPreKey,
+    };
+  },
+
+  /**
+   * GET /auth/signal/health
+   * GLOBAL health check (admin only typically).
+   */
+  async getGlobalHealth(): Promise<any> {
+    return apiFetch<any>("/signal/health");
   },
 };

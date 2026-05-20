@@ -542,20 +542,57 @@ export const ChatScreen: React.FC = () => {
         markAsRead(conversationId, message.id);
         if (isEncryptedIncoming) {
           void (async () => {
-            const decrypted = await E2EEService.decryptTextMessage({
-              conversationId,
-              content: message.content as string,
-            });
-            if (decrypted === null) return;
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === message.id ? { ...m, content: decrypted } : m,
-              ),
-            );
-            useConversationsStore.getState().applyMessageUpdated({
-              ...(message as any),
-              content: decrypted,
-            } as any);
+            try {
+              const decrypted = await E2EEService.decryptTextMessage({
+                conversationId,
+                content: message.content as string,
+              });
+              if (decrypted === null) {
+                // If decryption fails, the content in displayMessage is already the raw JSON string
+                return;
+              }
+
+              let finalContent = decrypted;
+              let extraMeta = {};
+              if (message.message_type === "media") {
+                try {
+                  const parsed = JSON.parse(decrypted);
+                  if (parsed.media_key && parsed.media_nonce) {
+                    finalContent = parsed.caption || "";
+                    extraMeta = {
+                      media_key: parsed.media_key,
+                      media_nonce: parsed.media_nonce,
+                      e2ee: true,
+                    };
+                  }
+                } catch {
+                  /* Not JSON */
+                }
+              }
+
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === message.id
+                    ? {
+                        ...m,
+                        content: finalContent,
+                        metadata: { ...(m.metadata || {}), ...extraMeta },
+                      }
+                    : m,
+                ),
+              );
+              useConversationsStore.getState().applyMessageUpdated({
+                ...(message as any),
+                content: finalContent,
+                metadata: { ...(message.metadata || {}), ...extraMeta },
+              } as any);
+            } catch (err) {
+              logger.warn(
+                "ChatScreen",
+                "Failed to decrypt incoming message",
+                err,
+              );
+            }
           })();
         }
         // Auto-scroll to the new message only when the user was already
@@ -713,7 +750,14 @@ export const ChatScreen: React.FC = () => {
       if (updatedConversation.id === conversationId) {
         setConversation((prev) => {
           if (!prev) return updatedConversation;
-          return { ...prev, ...updatedConversation };
+          // WHISPR-1456 : Preserve enriched display_name and avatar_url
+          // from the existing state if the update lacks them.
+          return {
+            ...prev,
+            ...updatedConversation,
+            display_name: updatedConversation.display_name || prev.display_name,
+            avatar_url: updatedConversation.avatar_url || prev.avatar_url,
+          };
         });
       }
     },
@@ -897,10 +941,22 @@ export const ChatScreen: React.FC = () => {
           const updated = await messagingAPI.updateConversation(
             conversationId,
             {
-              metadata: { e2ee: { enabled, v: 1 } },
+              // WHISPR-1456: 'enabled' makes E2EE mandatory (will fail if recipient not ready).
+              // 'disabled' would force cleartext.
+              // If both are missing/false, it's 'opportunistic' (E2EE if possible, else cleartext).
+              metadata: { e2ee: { enabled, v: 1, disabled: !enabled } },
             },
           );
-          setConversation(updated);
+
+          // WHISPR-1456 : Preserve enriched display_name and avatar_url after toggle
+          // The update API returns the raw conversation which might lack enrichment.
+          const enriched = {
+            ...updated,
+            display_name: conversation.display_name,
+            avatar_url: conversation.avatar_url,
+          };
+
+          setConversation(enriched);
         } catch (error: any) {
           Alert.alert(
             getLocalizedText("notif.error"),
@@ -1490,30 +1546,64 @@ export const ChatScreen: React.FC = () => {
           let outgoingContent = content;
           let signature: string | undefined;
           let sender_public_key: string | undefined;
-          if (e2eeEnabledRef.current) {
+
+          // Blind the server: always use E2EE for direct chats if possible,
+          // or if explicitly enabled via metadata (for groups).
+          const shouldEncrypt =
+            conversation?.metadata?.e2ee?.enabled === true ||
+            (conversation?.type === "direct" &&
+              !conversation?.metadata?.e2ee?.disabled);
+
+          if (shouldEncrypt) {
             const memberIds =
               conversation?.member_user_ids ||
               conversation?.members?.map((m: { user_id: string }) => m.user_id);
-            const otherUserId = memberIds?.find((id: string) => id !== userId);
-            if (conversation?.type !== "direct" || !otherUserId) {
-              throw new Error("E2EE_UNSUPPORTED_CONVERSATION");
+            const otherUserIds =
+              memberIds?.filter((id: string) => id !== userId) || [];
+
+            if (otherUserIds.length > 0) {
+              try {
+                const enc = await E2EEService.encryptMessageForConversation({
+                  conversationId,
+                  plaintext: content,
+                  clientRandom: tempMessage.client_random as number,
+                  recipientUserIds: otherUserIds,
+                });
+                outgoingContent = enc.content;
+                signature = enc.signature;
+                sender_public_key = enc.sender_public_key;
+              } catch (encErr: any) {
+                logger.warn(
+                  "ChatScreen",
+                  "E2EE encryption failed, falling back to cleartext if not mandatory",
+                  encErr,
+                );
+                // If metadata explicitly REQUIRES E2EE, we must fail
+                if (conversation?.metadata?.e2ee?.enabled === true) {
+                  let userMsg = "Impossible de chiffrer le message.";
+                  if (encErr?.message === "RECIPIENT_NO_DEVICES") {
+                    userMsg =
+                      "Le destinataire n'a pas encore configuré le chiffrement E2E.";
+                  } else if (encErr?.message === "NO_IDENTITY_KEY") {
+                    userMsg =
+                      "Vos clés de chiffrement ne sont pas encore prêtes. Réessayez dans un instant.";
+                  }
+                  Alert.alert("Erreur E2EE", userMsg);
+                  throw encErr;
+                }
+                // Otherwise (auto-e2ee for 1v1), we fallback to cleartext
+                // if the recipient is not E2EE-ready yet.
+                outgoingContent = content;
+                signature = undefined;
+                sender_public_key = undefined;
+              }
             }
-            const enc = await E2EEService.encryptDirectTextMessage({
-              conversationId,
-              plaintext: content,
-              clientRandom: tempMessage.client_random as number,
-              recipientUserId: otherUserId,
-            });
-            outgoingContent = enc.content;
-            signature = enc.signature;
-            sender_public_key = enc.sender_public_key;
           }
 
           const sent = await messagingAPI.sendMessage(conversationId, {
             content: outgoingContent,
             message_type: "text",
             client_random: tempMessage.client_random as number,
-
             metadata: {},
             reply_to_id: replyToId,
             signature,
@@ -1749,9 +1839,29 @@ export const ChatScreen: React.FC = () => {
           uploadProgress: 0,
         });
 
-        // 1. Upload file to media-service
+        // E2EE for media: blind the server
+        const shouldEncrypt = e2eeEnabled || conversation?.type === "direct";
+        let finalUploadUri = uploadUri;
+        let e2eeMediaMeta: { key: string; nonce: string } | undefined;
+
+        if (shouldEncrypt) {
+          try {
+            const encMedia = await E2EEService.encryptMediaFile(uploadUri);
+            finalUploadUri = encMedia.encryptedUri;
+            e2eeMediaMeta = { key: encMedia.key, nonce: encMedia.nonce };
+          } catch (encErr) {
+            logger.warn(
+              "ChatScreen",
+              "E2EE media encryption failed, falling back to cleartext unless mandatory",
+              encErr,
+            );
+            if (e2eeEnabled) throw encErr;
+          }
+        }
+
+        // 1. Upload file to media-service (encrypted or plain)
         const uploadResult = await MediaService.uploadMedia(
-          { uri: uploadUri, name: filename, type: mimeType },
+          { uri: finalUploadUri, name: filename, type: mimeType },
           (percent) => {
             patchTempUploadMeta({
               uploadPhase: "uploading",
@@ -1911,13 +2021,55 @@ export const ChatScreen: React.FC = () => {
         });
 
         // 3. Send message via messaging-service with remote media URLs
+        let finalContent = messageContent;
+        let signature: string | undefined;
+        let sender_public_key: string | undefined;
+
+        if (e2eeMediaMeta) {
+          const memberIdsForEnc =
+            conversation?.member_user_ids ||
+            conversation?.members?.map((m: { user_id: string }) => m.user_id);
+          const otherUserIds =
+            memberIdsForEnc?.filter((id: string) => id !== userId) || [];
+
+          if (otherUserIds.length > 0) {
+            try {
+              const mediaPayload = JSON.stringify({
+                caption: messageContent,
+                media_key: e2eeMediaMeta.key,
+                media_nonce: e2eeMediaMeta.nonce,
+              });
+              const enc = await E2EEService.encryptMessageForConversation({
+                conversationId,
+                plaintext: mediaPayload,
+                clientRandom: tempMessage.client_random as number,
+                recipientUserIds: otherUserIds,
+              });
+              finalContent = enc.content;
+              signature = enc.signature;
+              sender_public_key = enc.sender_public_key;
+            } catch (encErr) {
+              logger.warn(
+                "ChatScreen",
+                "E2EE media message encryption failed",
+                encErr,
+              );
+              if (e2eeEnabled) throw encErr;
+            }
+          }
+        }
+
         const sentMessage = await messagingAPI.sendMessage(conversationId, {
-          content: messageContent,
+          content: finalContent,
           message_type: "media",
           client_random: tempMessage.client_random as number,
-
-          metadata: mediaMetadata,
+          metadata: {
+            ...mediaMetadata,
+            e2ee: !!e2eeMediaMeta,
+          },
           reply_to_id: replyToId,
+          signature,
+          sender_public_key,
         });
 
         // 4. Attach media record to the message (non-blocking — message already has metadata)

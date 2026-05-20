@@ -6,6 +6,8 @@ import {
   encodeUTF8,
 } from "tweetnacl-util";
 import { getRandomBytes } from "expo-crypto";
+import { Platform } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
 import { TokenService } from "./TokenService";
 import { SignalKeysService } from "./SecurityService";
 
@@ -157,11 +159,11 @@ export const E2EEService = {
     return isEnvelopeV1(parsed);
   },
 
-  async encryptDirectTextMessage(params: {
+  async encryptMessageForConversation(params: {
     conversationId: string;
     plaintext: string;
     clientRandom: number;
-    recipientUserId: string;
+    recipientUserIds: string[];
   }): Promise<{
     content: string;
     signature: string;
@@ -172,35 +174,93 @@ export const E2EEService = {
       { userId, deviceId },
     ] = await Promise.all([loadIdentityKeypair(), loadSessionIds()]);
 
-    const devices = await SignalKeysService.listDevices(params.recipientUserId);
-    const recipientDeviceIds = devices.deviceIds ?? [];
-    if (recipientDeviceIds.length === 0) {
-      throw new Error("RECIPIENT_NO_DEVICES");
-    }
-
-    const recipients: Array<{
-      user_id: string;
-      device_id: string;
-      identity_key: string;
-    }> = await Promise.all(
-      recipientDeviceIds.map(async (d) => {
-        const bundle = await SignalKeysService.getKeyBundle(
-          params.recipientUserId,
-          d,
-        );
-        return {
-          user_id: params.recipientUserId,
-          device_id: d,
-          identity_key: bundle.identity_key,
-        };
+    // Gather all devices for all recipients
+    const allRecipientDevices = await Promise.all(
+      params.recipientUserIds.map(async (uid) => {
+        try {
+          const devices = await SignalKeysService.listDevices(uid);
+          const deviceIds = devices.deviceIds ?? [];
+          const bundles = await Promise.all(
+            deviceIds.map(async (d) => {
+              try {
+                const bundle = await SignalKeysService.getKeyBundle(uid, d);
+                return {
+                  user_id: uid,
+                  device_id: d,
+                  identity_key: bundle.identity_key,
+                };
+              } catch (err) {
+                console.warn(
+                  `[E2EEService] Could not fetch bundle for user ${uid} device ${d}:`,
+                  err,
+                );
+                return null;
+              }
+            }),
+          );
+          return bundles.filter((b): b is any => b !== null);
+        } catch (encErr) {
+          console.warn(
+            `[E2EEService] Could not fetch devices for user ${uid}:`,
+            encErr,
+          );
+          return [];
+        }
       }),
     );
 
+    const recipients = allRecipientDevices.flat();
+
+    // Always include our other devices so we can read our own messages
+    // (the current device is added below)
+    let myOtherRecipients: any[] = [];
+    try {
+      const myDevices = await SignalKeysService.listDevices(userId);
+      const myOtherDeviceIds = (myDevices.deviceIds ?? []).filter(
+        (d) => d !== deviceId,
+      );
+
+      const myOtherBundles = await Promise.all(
+        myOtherDeviceIds.map(async (d) => {
+          try {
+            const bundle = await SignalKeysService.getKeyBundle(userId, d);
+            return {
+              user_id: userId,
+              device_id: d,
+              identity_key: bundle.identity_key,
+            };
+          } catch (err) {
+            console.warn(
+              `[E2EEService] Could not fetch bundle for own device ${d}:`,
+              err,
+            );
+            return null;
+          }
+        }),
+      );
+      myOtherRecipients = myOtherBundles.filter((b): b is any => b !== null);
+    } catch (err) {
+      console.warn("[E2EEService] Could not fetch keys for own devices:", err);
+    }
+
+    recipients.push(...myOtherRecipients);
+
+    // Include the current device/identity so the sender part of the envelope is complete
     recipients.push({
       user_id: userId,
       device_id: deviceId,
       identity_key: toBase64(senderPublic),
     });
+
+    // CRITICAL: If we have NO recipients (other than ourselves), and E2EE is mandatory, we MUST fail
+    // because we cannot encrypt for anyone else.
+    const otherRecipientsCount = recipients.filter(
+      (r) => r.user_id !== userId || r.device_id !== deviceId,
+    ).length;
+
+    if (otherRecipientsCount === 0 && params.recipientUserIds.length > 0) {
+      throw new Error("RECIPIENT_NO_DEVICES");
+    }
 
     const messageKey = nacl.randomBytes(32);
     const msgNonce = nacl.randomBytes(24);
@@ -248,6 +308,7 @@ export const E2EEService = {
     const signingKeyPair = deriveEd25519SigningKeypairFromSeed(
       senderSecret.slice(0, 32),
     );
+
     const signedData = concatBytes(
       decodeUTF8(content),
       convBytes,
@@ -260,6 +321,24 @@ export const E2EEService = {
       signature: toBase64(signature),
       sender_public_key: toBase64(signingKeyPair.publicKey),
     };
+  },
+
+  async encryptDirectTextMessage(params: {
+    conversationId: string;
+    plaintext: string;
+    clientRandom: number;
+    recipientUserId: string;
+  }): Promise<{
+    content: string;
+    signature: string;
+    sender_public_key: string;
+  }> {
+    return this.encryptMessageForConversation({
+      conversationId: params.conversationId,
+      plaintext: params.plaintext,
+      clientRandom: params.clientRandom,
+      recipientUserIds: [params.recipientUserId],
+    });
   },
 
   async decryptTextMessage(params: {
@@ -292,5 +371,94 @@ export const E2EEService = {
     if (!plain) return null;
 
     return encodeUTF8(plain);
+  },
+
+  async encryptMediaFile(uri: string): Promise<{
+    encryptedUri: string;
+    key: string;
+    nonce: string;
+  }> {
+    if (Platform.OS === "web") {
+      // For web, we'd use Blobs and the Web Crypto API, but for now we follow the mobile path
+      // using fetch to get the blob and then FileReader or arrayBuffer
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+
+      const key = nacl.randomBytes(32);
+      const nonce = nacl.randomBytes(24);
+      const box = nacl.secretbox(bytes, nonce, key);
+
+      const encryptedBlob = new Blob([box as any], {
+        type: "application/octet-stream",
+      });
+      const encryptedUri = URL.createObjectURL(encryptedBlob);
+
+      return {
+        encryptedUri,
+        key: toBase64(key),
+        nonce: toBase64(nonce),
+      };
+    }
+
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const bytes = fromBase64(base64);
+
+    const key = nacl.randomBytes(32);
+    const nonce = nacl.randomBytes(24);
+    const box = nacl.secretbox(bytes, nonce, key);
+
+    const encryptedBase64 = toBase64(box);
+    const encryptedUri = `${FileSystem.cacheDirectory || ""}enc-${Date.now()}`;
+    await FileSystem.writeAsStringAsync(encryptedUri, encryptedBase64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    return {
+      encryptedUri,
+      key: toBase64(key),
+      nonce: toBase64(nonce),
+    };
+  },
+
+  async decryptMediaFile(
+    uri: string,
+    keyB64: string,
+    nonceB64: string,
+  ): Promise<string> {
+    const key = fromBase64(keyB64);
+    const nonce = fromBase64(nonceB64);
+
+    if (Platform.OS === "web") {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+
+      const plain = nacl.secretbox.open(bytes, nonce, key);
+      if (!plain) throw new Error("DECRYPT_MEDIA_FAILED");
+
+      const decryptedBlob = new Blob([plain as any]);
+      return URL.createObjectURL(decryptedBlob);
+    }
+
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const bytes = fromBase64(base64);
+
+    const plain = nacl.secretbox.open(bytes, nonce, key);
+    if (!plain) throw new Error("DECRYPT_MEDIA_FAILED");
+
+    const decryptedBase64 = toBase64(plain);
+    const decryptedUri = `${FileSystem.cacheDirectory || ""}dec-${Date.now()}`;
+    await FileSystem.writeAsStringAsync(decryptedUri, decryptedBase64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    return decryptedUri;
   },
 };

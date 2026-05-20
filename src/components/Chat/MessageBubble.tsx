@@ -410,6 +410,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isForwarded =
     !!message.forwarded_from_id || message.metadata?.forwarded === true;
   const isFailed = message.status === "failed";
+  const e2eeMedia =
+    (message.metadata as any)?.e2ee &&
+    (message.metadata as any)?.media_key &&
+    (message.metadata as any)?.media_nonce
+      ? {
+          key: (message.metadata as any).media_key as string,
+          nonce: (message.metadata as any).media_nonce as string,
+        }
+      : undefined;
   const mediaUploadOverlay = isSent
     ? getMediaUploadOverlayState(
         message.status,
@@ -461,6 +470,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   mediaId={firstAttachment.media_id}
                   duration={firstAttachment.metadata.duration}
                   isSent={true}
+                  e2ee={e2eeMedia}
                 />
               ) : (
                 <MediaMessage
@@ -478,6 +488,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     firstAttachment.media_id,
                     "thumbnail",
                   )}
+                  e2ee={e2eeMedia}
                 />
               )
             ) : null}
@@ -561,6 +572,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       mediaId={firstAttachment.media_id}
                       duration={firstAttachment.metadata.duration}
                       isSent={true}
+                      e2ee={e2eeMedia}
                     />
                   ) : (
                     <MediaMessage
@@ -578,6 +590,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         firstAttachment.media_id,
                         "thumbnail",
                       )}
+                      e2ee={e2eeMedia}
                     />
                   ),
                 )
@@ -660,6 +673,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   mediaId={firstAttachment.media_id}
                   duration={firstAttachment.metadata.duration}
                   isSent={false}
+                  e2ee={e2eeMedia}
                 />
               ) : (
                 <MediaMessage
@@ -679,6 +693,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     firstAttachment.media_id,
                     "thumbnail",
                   )}
+                  e2ee={e2eeMedia}
                 />
               )}
             </>
