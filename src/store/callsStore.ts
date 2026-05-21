@@ -39,9 +39,12 @@ export interface IncomingCallInfo {
   avatarUrl?: string;
 }
 
+export type CallEndReason = "declined" | "missed" | "network_error";
+
 interface CallsState {
   active: ActiveCall | null;
   incoming: IncomingCallInfo | null;
+  callEndReason: CallEndReason | null;
   initiate: (
     conversationId: string,
     type: CallType,
@@ -53,12 +56,14 @@ interface CallsState {
   declineIncoming: () => Promise<void>;
   end: () => Promise<void>;
   setIncoming: (incoming: IncomingCallInfo | null) => void;
+  setCallEndReason: (reason: CallEndReason | null) => void;
   reset: () => void;
 }
 
 export const useCallsStore = create<CallsState>((set, get) => ({
   active: null,
   incoming: null,
+  callEndReason: null,
 
   initiate: async (
     conversationId,
@@ -162,6 +167,8 @@ export const useCallsStore = create<CallsState>((set, get) => ({
 
   setIncoming: (incoming) => set({ incoming }),
 
+  setCallEndReason: (reason) => set({ callEndReason: reason }),
+
   // WHISPR-1198: appelé par AuthContext.signOut pour empêcher l'état d'appel
   // (token LiveKit, callId, ringer fantôme) de fuir d'un compte vers le
   // suivant sur le même device. Best-effort sur la déconnexion LiveKit : la
@@ -175,6 +182,6 @@ export const useCallsStore = create<CallsState>((set, get) => ({
         // ignore — best-effort cleanup pendant le signOut
       }
     }
-    set({ active: null, incoming: null });
+    set({ active: null, incoming: null, callEndReason: null });
   },
 }));

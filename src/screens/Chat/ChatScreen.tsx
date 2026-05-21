@@ -2237,7 +2237,11 @@ export const ChatScreen: React.FC = () => {
         }
         navigation.navigate("InCall");
       } catch (err) {
-        console.error("Failed to initiate call", err);
+        setCallsToast({
+          visible: true,
+          message: "Impossible de démarrer l'appel. Vérifiez votre connexion.",
+          type: "error",
+        });
       }
     },
     [

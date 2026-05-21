@@ -221,7 +221,7 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
       // WHISPR-1203 : reset() disconnect la Room LiveKit + clear active +
       // clear incoming. setIncoming(null) seul laissait l'autre côté
       // bloqué sur InCallScreen avec micro/caméra encore actifs. On
-      // navigue aussi hors de InCall vers ConversationsList si on y est.
+      // navigue aussi hors de InCall / IncomingCall vers ConversationsList.
       onCallEnded: () => {
         const callId =
           useCallsStore.getState().active?.callId ??
@@ -230,12 +230,23 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
           void systemCallProvider.endCall(callId, 2);
         }
         useCallsStore.getState().reset();
-        if (
-          navigationRef.isReady() &&
-          navigationRef.getCurrentRoute()?.name === "InCall"
-        ) {
-          navigate("ConversationsList");
+        if (navigationRef.isReady()) {
+          const route = navigationRef.getCurrentRoute()?.name;
+          if (route === "InCall" || route === "IncomingCall") {
+            navigate("ConversationsList");
+          }
         }
+      },
+      // call_declined: callee refused — show "Appel refusé" toast to caller
+      // then let InCallScreen handle navigation after the toast.
+      onCallDeclined: () => {
+        useCallsStore.getState().reset();
+        useCallsStore.getState().setCallEndReason("declined");
+      },
+      // call_missed: no answer timeout — show "Pas de réponse" toast to caller.
+      onCallMissed: () => {
+        useCallsStore.getState().reset();
+        useCallsStore.getState().setCallEndReason("missed");
       },
     }),
     [],
@@ -260,6 +271,8 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
     userChannel.off("conversation_archived", userHandlers.onConvArchived);
     userChannel.off("incoming_call", userHandlers.onIncomingCall);
     userChannel.off("call_ended", userHandlers.onCallEnded);
+    userChannel.off("call_declined", userHandlers.onCallDeclined);
+    userChannel.off("call_missed", userHandlers.onCallMissed);
     userChannel.off("inbox:new", userHandlers.onInboxNew);
 
     userChannel.on("new_message", userHandlers.onMsg);
@@ -271,6 +284,8 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
     userChannel.on("conversation_archived", userHandlers.onConvArchived);
     userChannel.on("incoming_call", userHandlers.onIncomingCall);
     userChannel.on("call_ended", userHandlers.onCallEnded);
+    userChannel.on("call_declined", userHandlers.onCallDeclined);
+    userChannel.on("call_missed", userHandlers.onCallMissed);
     userChannel.on("inbox:new", userHandlers.onInboxNew);
 
     return () => {
@@ -283,6 +298,8 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
       userChannel.off("conversation_archived", userHandlers.onConvArchived);
       userChannel.off("incoming_call", userHandlers.onIncomingCall);
       userChannel.off("call_ended", userHandlers.onCallEnded);
+      userChannel.off("call_declined", userHandlers.onCallDeclined);
+      userChannel.off("call_missed", userHandlers.onCallMissed);
       userChannel.off("inbox:new", userHandlers.onInboxNew);
     };
   }, [options.userId, options.token, userHandlers]);
