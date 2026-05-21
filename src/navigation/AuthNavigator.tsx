@@ -55,6 +55,8 @@ import { useModerationStore } from "../store/moderationStore";
 import { useConversationsStore } from "../store/conversationsStore";
 import { profileSetupFlag } from "../services/profileSetupFlag";
 import { SplashScreen } from "../screens/SplashScreen/SplashScreen";
+import { OnboardingScreen } from "../screens/Auth/OnboardingScreen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { contactsAPI } from "../services/contacts/api";
 import { TokenService } from "../services/TokenService";
 import { UserService } from "../services/UserService";
@@ -76,6 +78,7 @@ import { cacheService } from "../services/messaging/cache";
 const SPLASH_MIN_MS = 2000;
 
 export type AuthStackParamList = {
+  Onboarding: undefined;
   Welcome: undefined;
   PhoneInput: { mode: AuthPurpose };
   Otp: {
@@ -155,12 +158,15 @@ export type AuthStackParamList = {
 
 const Stack = createStackNavigator<AuthStackParamList>();
 
+const ONBOARDING_KEY = "@whispr:onboarding_done";
+
 export const AuthNavigator: React.FC = () => {
   const { isLoading, isAuthenticated, userId } = useAuth();
   const [splashMinElapsed, setSplashMinElapsed] = useState(false);
   const [profileSetupPending, setProfileSetupPending] = useState<
     boolean | null
   >(null);
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const fetchMyRole = useModerationStore((s) => s.fetchMyRole);
   // Source de vérité unique pour la disponibilité des appels (Expo Go,
   // module natif WebRTC manquant, web). Mémorisé : la dispo ne change pas
@@ -178,6 +184,19 @@ export const AuthNavigator: React.FC = () => {
   useEffect(() => {
     const t = setTimeout(() => setSplashMinElapsed(true), SPLASH_MIN_MS);
     return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    // TODO: remove before ship — forces onboarding on every launch in dev
+    if (__DEV__) {
+      AsyncStorage.removeItem(ONBOARDING_KEY)
+        .then(() => setOnboardingDone(false))
+        .catch(() => setOnboardingDone(false));
+      return;
+    }
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => setOnboardingDone(v === "1"))
+      .catch(() => setOnboardingDone(false));
   }, []);
 
   useEffect(() => {
@@ -294,14 +313,19 @@ export const AuthNavigator: React.FC = () => {
   }, [hasCallsSupport, isAuthenticated, userId]);
 
   const showSplash =
-    isLoading || !splashMinElapsed || profileSetupPending === null;
+    isLoading ||
+    !splashMinElapsed ||
+    profileSetupPending === null ||
+    onboardingDone === null;
 
   if (showSplash) {
     return <SplashScreen />;
   }
 
   const initialRouteName = !isAuthenticated
-    ? "Welcome"
+    ? onboardingDone
+      ? "Welcome"
+      : "Onboarding"
     : profileSetupPending
       ? "ProfileSetup"
       : "ConversationsList";
@@ -331,6 +355,11 @@ export const AuthNavigator: React.FC = () => {
         }),
       }}
     >
+      <Stack.Screen
+        name="Onboarding"
+        component={OnboardingScreen}
+        options={{ gestureEnabled: false }}
+      />
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="PhoneInput" component={PhoneInputScreen} />
       <Stack.Screen name="Otp" component={OtpScreen} />
