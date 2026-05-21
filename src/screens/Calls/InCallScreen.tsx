@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { RoomEvent, type Participant } from "livekit-client";
+import { RoomEvent, DisconnectReason, type Participant } from "livekit-client";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallsStore } from "../../store/callsStore";
+import type { CallEndReason } from "../../store/callsStore";
+import Toast from "../../components/Toast/Toast";
+import type { ToastType } from "../../components/Toast/Toast";
 import { callsLiveKit } from "../../services/calls/liveKitProvider";
 import { systemCallProvider } from "../../services/calls/systemCallProvider";
 import { CallParticipantTile } from "../../components/Calls/CallParticipantTile";
@@ -22,9 +25,20 @@ import { TokenService } from "../../services/TokenService";
  * Syncs participants from the LiveKit Room whenever connections or track
  * subscriptions change.
  */
+const CALL_END_REASON_CONFIG: Record<
+  CallEndReason,
+  { message: string; type: ToastType }
+> = {
+  declined: { message: "Appel refusé", type: "warning" },
+  missed: { message: "Pas de réponse", type: "warning" },
+  network_error: { message: "Connexion perdue", type: "error" },
+};
+
 export const InCallScreen: React.FC = () => {
   const active = useCallsStore((s) => s.active);
   const end = useCallsStore((s) => s.end);
+  const callEndReason = useCallsStore((s) => s.callEndReason);
+  const setCallEndReason = useCallsStore((s) => s.setCallEndReason);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -34,10 +48,36 @@ export const InCallScreen: React.FC = () => {
   const [now, setNow] = useState(Date.now());
   const [selfDisplayName, setSelfDisplayName] = useState<string>("");
   const [selfAvatarUrl, setSelfAvatarUrl] = useState<string | undefined>();
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    message: string;
+    type: ToastType;
+  }>({ visible: false, message: "", type: "error" });
+
+  useEffect(() => {
+    if (!callEndReason) return;
+    const { message, type } = CALL_END_REASON_CONFIG[callEndReason];
+    setToast({ visible: true, message, type });
+    setCallEndReason(null);
+    const timer = setTimeout(() => {
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        (navigation as any).navigate("ConversationsList");
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [callEndReason]);
 
   useEffect(() => {
     const room = active?.room;
     if (!room) return;
+
+    const onDisconnected = (reason?: DisconnectReason) => {
+      if (reason === DisconnectReason.CLIENT_INITIATED) return;
+      useCallsStore.getState().reset();
+      useCallsStore.getState().setCallEndReason("network_error");
+    };
 
     const sync = () => {
       const remote = Array.from(room.remoteParticipants.values());
@@ -55,6 +95,7 @@ export const InCallScreen: React.FC = () => {
     room.on(RoomEvent.TrackMuted, sync);
     room.on(RoomEvent.TrackUnmuted, sync);
     room.on(RoomEvent.LocalTrackPublished, sync);
+    room.on(RoomEvent.Disconnected, onDisconnected);
 
     return () => {
       room.off(RoomEvent.ParticipantConnected, sync);
@@ -64,6 +105,7 @@ export const InCallScreen: React.FC = () => {
       room.off(RoomEvent.TrackMuted, sync);
       room.off(RoomEvent.TrackUnmuted, sync);
       room.off(RoomEvent.LocalTrackPublished, sync);
+      room.off(RoomEvent.Disconnected, onDisconnected);
     };
   }, [active, connectedAt]);
 
@@ -271,6 +313,13 @@ export const InCallScreen: React.FC = () => {
           onFlip={onFlip}
           onEnd={onEnd}
           bottomInset={insets.bottom}
+        />
+        <Toast
+          visible={toast.visible}
+          message={toast.message}
+          type={toast.type}
+          duration={2800}
+          onHide={() => setToast((t) => ({ ...t, visible: false }))}
         />
       </View>
     </LinearGradient>

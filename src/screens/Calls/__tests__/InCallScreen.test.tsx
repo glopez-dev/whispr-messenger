@@ -9,12 +9,24 @@ jest.mock("@react-navigation/native", () => ({
 }));
 
 const mockEnd = jest.fn().mockResolvedValue(undefined);
+const mockSetCallEndReason = jest.fn();
 let mockActive: any = null;
+let mockCallEndReason: any = null;
 
 jest.mock("../../../store/callsStore", () => {
   const fn: any = (selector: any) =>
-    selector({ active: mockActive, end: mockEnd });
-  fn.getState = () => ({ active: mockActive, end: mockEnd });
+    selector({
+      active: mockActive,
+      end: mockEnd,
+      callEndReason: mockCallEndReason,
+      setCallEndReason: mockSetCallEndReason,
+    });
+  fn.getState = () => ({
+    active: mockActive,
+    end: mockEnd,
+    callEndReason: mockCallEndReason,
+    setCallEndReason: mockSetCallEndReason,
+  });
   return { useCallsStore: fn };
 });
 
@@ -35,6 +47,10 @@ jest.mock("livekit-client", () => ({
     TrackMuted: "trackMuted",
     TrackUnmuted: "trackUnmuted",
     LocalTrackPublished: "localTrackPublished",
+    Disconnected: "disconnected",
+  },
+  DisconnectReason: {
+    CLIENT_INITIATED: 1,
   },
 }));
 
@@ -46,12 +62,18 @@ jest.mock("../../../components/Calls/CallControls", () => ({
   CallControls: () => null,
 }));
 
+jest.mock("../../../components/Toast/Toast", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 import { InCallScreen } from "../InCallScreen";
 
 describe("InCallScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockActive = null;
+    mockCallEndReason = null;
   });
 
   it("matches snapshot when no active call", () => {
@@ -81,9 +103,9 @@ describe("InCallScreen", () => {
     };
     mockActive = { callId: "c1", status: "connected", room };
     const { unmount } = render(<InCallScreen />);
-    expect(room.on).toHaveBeenCalledTimes(7);
+    expect(room.on).toHaveBeenCalledTimes(8);
     unmount();
-    expect(room.off).toHaveBeenCalledTimes(7);
+    expect(room.off).toHaveBeenCalledTimes(8);
   });
 
   it("ends the active call on unmount when user navigates away mid-call", () => {
