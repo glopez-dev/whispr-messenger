@@ -25,6 +25,7 @@ import {
   useResolvedMediaUrl,
   uriNeedsAuthResolution,
 } from "../../hooks/useResolvedMediaUrl";
+import { useE2EEMedia } from "../../hooks/useE2EEMedia";
 import { isHttpUrl } from "../../utils/urlFilters";
 import { logger } from "../../utils/logger";
 
@@ -57,6 +58,10 @@ interface MediaMessageProps {
   filename?: string;
   size?: number;
   thumbnailUri?: string;
+  e2ee?: {
+    key: string;
+    nonce: string;
+  };
 }
 
 export const MediaMessage: React.FC<MediaMessageProps> = ({
@@ -65,6 +70,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
   filename,
   size,
   thumbnailUri,
+  e2ee,
 }) => {
   ensureExpoAvVideoLoaded();
   const { getThemeColors } = useTheme();
@@ -89,6 +95,13 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
     thumbnailUri || uri,
   );
 
+  const { decryptedUri: mainUri } = useE2EEMedia(resolvedMainUri, e2ee);
+  const { decryptedUri: thumbUri } = useE2EEMedia(resolvedThumbUri, e2ee);
+
+  // Use decrypted URIs if available, fallback to resolved URIs
+  const finalMainUri = mainUri || resolvedMainUri;
+  const finalThumbUri = thumbUri || resolvedThumbUri;
+
   // WHISPR-1039: on lit le ratio via l'évènement onLoad natif plutôt que
   // Image.getSize pour fonctionner uniformément iOS/Android/web et éviter
   // les soucis de mock côté tests.
@@ -110,7 +123,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
   // indéfiniment. On sonde donc les dimensions via un `Image()` DOM en
   // parallèle, et on ne pose la valeur que si `onLoad` ne l'a pas déjà
   // fait — pas de régression iOS/Android.
-  const imagePreviewUri = resolvedThumbUri || resolvedMainUri;
+  const imagePreviewUri = finalThumbUri || finalMainUri;
   useEffect(() => {
     if (Platform.OS !== "web") return undefined;
     if (type !== "image" || !imagePreviewUri) return undefined;
@@ -161,7 +174,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
           // Load video first
           try {
             const loadResult = await playerVideoRef.current.loadAsync({
-              uri: resolvedMainUri,
+              uri: finalMainUri,
             });
             logger.debug(
               "MediaMessage",
@@ -237,7 +250,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
             </View>
           ) : (
             <Image
-              source={{ uri: resolvedThumbUri || resolvedMainUri }}
+              source={{ uri: finalThumbUri || finalMainUri }}
               style={[
                 styles.image,
                 imageAspectRatio !== null
@@ -269,7 +282,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
                 <Ionicons name="close" size={28} color={colors.text.light} />
               </TouchableOpacity>
               <Image
-                source={{ uri: resolvedMainUri }}
+                source={{ uri: finalMainUri }}
                 style={styles.fullImage}
                 resizeMode="contain"
               />
@@ -326,7 +339,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
         "MediaMessage",
         "expo-av not available, opening with Linking",
       );
-      const target = resolvedMainUri || uri;
+      const target = finalMainUri || uri;
       if (!isHttpUrl(target)) {
         Alert.alert("Erreur", "Impossible d'ouvrir la vidéo.");
         return;
@@ -373,16 +386,16 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
         style={styles.videoContainer}
       >
         {/* Video preview - use thumbnail image first if available, else Video component or placeholder */}
-        {resolvedThumbUri ? (
+        {finalThumbUri ? (
           <Image
-            source={{ uri: resolvedThumbUri }}
+            source={{ uri: finalThumbUri }}
             style={styles.videoThumbnail}
             resizeMode="cover"
           />
-        ) : Video && resolvedMainUri && !thumbnailError ? (
+        ) : Video && finalMainUri && !thumbnailError ? (
           <Video
             ref={thumbnailVideoRef}
-            source={{ uri: resolvedMainUri }}
+            source={{ uri: finalMainUri }}
             style={styles.videoThumbnail}
             resizeMode={ResizeMode?.COVER || "cover"}
             shouldPlay={false}
@@ -483,7 +496,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
           </TouchableOpacity>
 
           <View style={styles.videoPlayerContainer}>
-            {Video ? (
+            {Video && finalMainUri ? (
               <>
                 {videoStatus && videoStatus.isLoaded ? null : (
                   <ActivityIndicator
@@ -494,7 +507,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
                 )}
                 <Video
                   ref={playerVideoRef}
-                  source={{ uri: resolvedMainUri }}
+                  source={{ uri: finalMainUri }}
                   style={styles.videoPlayer}
                   useNativeControls={true}
                   resizeMode={ResizeMode?.CONTAIN || "contain"}
