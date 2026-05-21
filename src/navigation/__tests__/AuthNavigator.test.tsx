@@ -104,6 +104,16 @@ jest.mock("../../services/calls/callNotificationBridge", () => ({
 jest.mock("../../hooks/useCallsAvailable", () => ({
   isCallsAvailable: () => false,
 }));
+
+const mockAsyncStorageRemoveItem = jest.fn().mockResolvedValue(undefined);
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn().mockResolvedValue(null),
+    setItem: jest.fn().mockResolvedValue(undefined),
+    removeItem: (...args: unknown[]) => mockAsyncStorageRemoveItem(...args),
+  },
+}));
 jest.mock("../../hooks/useResolvedMediaUrl", () => ({
   prefetchResolvedMediaUris: jest.fn(),
 }));
@@ -180,11 +190,11 @@ describe("AuthNavigator routing", () => {
     });
     await flush();
 
-    // After splash min elapses + isAuthenticated=false → Welcome route
+    // After splash min elapses + isAuthenticated=false → Onboarding route
     await waitFor(() => expect(queryByText("splash")).toBeNull());
   });
 
-  it("uses Welcome as initial route for an unauthenticated session", async () => {
+  it("uses Onboarding as initial route for a first-time unauthenticated user", async () => {
     mockUseAuth.mockReturnValue({
       isLoading: false,
       isAuthenticated: false,
@@ -198,7 +208,7 @@ describe("AuthNavigator routing", () => {
     await flush();
 
     const nav = findStackNavigator(UNSAFE_root);
-    expect(nav?.props.initialRouteName).toBe("Welcome");
+    expect(nav?.props.initialRouteName).toBe("Onboarding");
   });
 
   it("uses ConversationsList as initial route for an authenticated session whose profile is complete", async () => {
