@@ -34,6 +34,9 @@ const DESKTOP_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
 
 function setUA(ua: string) {
+  if (!global.navigator) {
+    (global as any).navigator = {};
+  }
   Object.defineProperty(global.navigator, "userAgent", {
     value: ua,
     configurable: true,

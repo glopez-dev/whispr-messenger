@@ -118,7 +118,7 @@ async function loadIdentityKeypair(): Promise<{
   if (!b64) {
     throw new Error("NO_IDENTITY_KEY");
   }
-  const secretKey = decodeBase64(b64);
+  const secretKey = fromBase64(b64);
   const kp = nacl.box.keyPair.fromSecretKey(secretKey);
   cachedIdentitySecretKey = kp.secretKey;
   cachedIdentityPublicKey = kp.publicKey;
@@ -138,8 +138,18 @@ function toBase64(bytes: Uint8Array): string {
   return encodeBase64(bytes);
 }
 
+function normalizeBase64(input: string): string {
+  const trimmed = input.trim().replace(/\s+/g, "");
+  const base64 = trimmed.replace(/-/g, "+").replace(/_/g, "/");
+  const padLen = (4 - (base64.length % 4)) % 4;
+  return base64 + "=".repeat(padLen);
+}
+
 function fromBase64(b64: string): Uint8Array {
-  return decodeBase64(b64);
+  if (typeof b64 !== "string") {
+    throw new TypeError("INVALID_BASE64");
+  }
+  return decodeBase64(normalizeBase64(b64));
 }
 
 function deriveEd25519SigningKeypairFromSeed(

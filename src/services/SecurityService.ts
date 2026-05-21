@@ -177,13 +177,71 @@ export interface SignalHealthStatus {
   needs_replenishment: boolean;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRateLimitError(err: unknown): boolean {
+  const e = err as { status?: number; message?: string };
+  if (e?.status === 429) return true;
+  if (typeof e?.message === "string" && /throttlerexception/i.test(e.message))
+    return true;
+  return false;
+}
+
+async function withRetry<T>(
+  run: () => Promise<T>,
+  maxAttempts = 3,
+): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await run();
+    } catch (err) {
+      attempt += 1;
+      if (!isRateLimitError(err) || attempt >= maxAttempts) throw err;
+      const backoff = 250 * Math.pow(2, attempt - 1);
+      await sleep(backoff);
+    }
+  }
+}
+
+type CacheEntry<T> = {
+  expiresAt: number;
+  value?: T;
+  inFlight?: Promise<T>;
+};
+
+const devicesCache = new Map<
+  string,
+  CacheEntry<{ userId: string; deviceIds: string[] }>
+>();
+const bundleCache = new Map<string, CacheEntry<SignalKeyBundle>>();
+
 export const SignalKeysService = {
   async listDevices(
     userId: string,
   ): Promise<{ userId: string; deviceIds: string[] }> {
-    return apiFetch<{ userId: string; deviceIds: string[] }>(
-      `/signal/keys/${encodeURIComponent(userId)}/devices`,
+    const cacheKey = userId;
+    const cached = devicesCache.get(cacheKey);
+    const now = Date.now();
+    if (cached?.value && cached.expiresAt > now) return cached.value;
+    if (cached?.inFlight) return cached.inFlight;
+
+    const inFlight = withRetry(() =>
+      apiFetch<{ userId: string; deviceIds: string[] }>(
+        `/signal/keys/${encodeURIComponent(userId)}/devices`,
+      ),
     );
+    devicesCache.set(cacheKey, { expiresAt: now + 15_000, inFlight });
+    try {
+      const value = await inFlight;
+      devicesCache.set(cacheKey, { expiresAt: now + 15_000, value });
+      return value;
+    } catch (err) {
+      devicesCache.delete(cacheKey);
+      throw err;
+    }
   },
   /**
    * GET /auth/signal/keys/:userId/devices/:deviceId
@@ -193,9 +251,58 @@ export const SignalKeysService = {
     userId: string,
     deviceId: string,
   ): Promise<SignalKeyBundle> {
-    return apiFetch<SignalKeyBundle>(
-      `/signal/keys/${encodeURIComponent(userId)}/devices/${encodeURIComponent(deviceId)}`,
-    );
+    const cacheKey = `${userId}:${deviceId}`;
+    const cached = bundleCache.get(cacheKey);
+    const now = Date.now();
+    if (cached?.value && cached.expiresAt > now) return cached.value;
+    if (cached?.inFlight) return cached.inFlight;
+
+    const inFlight = withRetry(async () => {
+      const raw = await apiFetch<any>(
+        `/signal/keys/${encodeURIComponent(userId)}/devices/${encodeURIComponent(deviceId)}`,
+      );
+
+      const identity_key =
+        raw?.identity_key ?? raw?.identityKey ?? raw?.identityKey?.publicKey;
+
+      const signed_prekey =
+        raw?.signed_prekey ??
+        (raw?.signedPreKey
+          ? {
+              key_id: raw.signedPreKey.keyId,
+              public_key: raw.signedPreKey.publicKey,
+              signature: raw.signedPreKey.signature,
+            }
+          : null);
+
+      const one_time_prekeys =
+        raw?.one_time_prekeys ??
+        (raw?.preKey
+          ? [{ key_id: raw.preKey.keyId, public_key: raw.preKey.publicKey }]
+          : []);
+
+      if (typeof identity_key !== "string" || identity_key.length === 0) {
+        throw new Error("INVALID_SIGNAL_BUNDLE");
+      }
+      if (!signed_prekey) {
+        throw new Error("INVALID_SIGNAL_BUNDLE");
+      }
+      return {
+        identity_key,
+        signed_prekey,
+        one_time_prekeys,
+      };
+    });
+
+    bundleCache.set(cacheKey, { expiresAt: now + 30_000, inFlight });
+    try {
+      const value = await inFlight;
+      bundleCache.set(cacheKey, { expiresAt: now + 30_000, value });
+      return value;
+    } catch (err) {
+      bundleCache.delete(cacheKey);
+      throw err;
+    }
   },
 
   /**
@@ -243,8 +350,10 @@ export const SignalKeysService = {
     userId: string,
     deviceId: string,
   ): Promise<SignalHealthStatus> {
-    const data = await apiFetch<any>(
-      `/signal/keys/${encodeURIComponent(userId)}/devices/${encodeURIComponent(deviceId)}/status`,
+    const data = await withRetry(() =>
+      apiFetch<any>(
+        `/signal/keys/${encodeURIComponent(userId)}/devices/${encodeURIComponent(deviceId)}/status`,
+      ),
     );
     return {
       prekeys_remaining: data.availablePreKeys,

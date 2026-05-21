@@ -91,6 +91,7 @@ describe("replenishPreKeysIfNeeded", () => {
       needs_replenishment: true,
     });
     await replenishPreKeysIfNeeded();
+    expect(mockGetDeviceHealth).toHaveBeenCalledTimes(1);
     expect(mockGenerate).toHaveBeenCalledTimes(1);
     expect(mockUploadSigned).toHaveBeenCalledWith({
       key_id: 1,
@@ -111,11 +112,10 @@ describe("replenishPreKeysIfNeeded", () => {
 
   it("throttle les calls rapproches (foreground spam)", async () => {
     mockGetDeviceHealth.mockResolvedValue({
-      prekeys_remaining: 50,
+      prekeys_remaining: 80,
       signed_prekey_age_days: 1,
       needs_replenishment: false,
     });
-    await replenishPreKeysIfNeeded();
     await replenishPreKeysIfNeeded();
     await replenishPreKeysIfNeeded();
     expect(mockGetDeviceHealth).toHaveBeenCalledTimes(1);
