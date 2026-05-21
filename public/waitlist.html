@@ -357,6 +357,12 @@
     .btn-vi:hover { border-color: rgba(103,116,189,.45); background: rgba(103,116,189,.09); color: var(--text); }
 
     .form-note { font-size: 11px; color: var(--text-3); text-align: center; letter-spacing: .1px; }
+    .form-error {
+      display: none; margin-top: 10px; padding: 10px 12px;
+      border-radius: 10px; font-size: 12.5px; font-weight: 500; text-align: center;
+      background: rgba(255,82,82,.08); border: 1px solid rgba(255,82,82,.22); color: #ff6e6e;
+    }
+    .form-error.show { display: block; }
 
     .toast {
       display: none; margin-top: 14px; padding: 14px 16px;
@@ -836,8 +842,10 @@
       <div class="field">
         <input type="email" placeholder="votre@email.com" required autocomplete="email" />
       </div>
+      <input type="text" name="honeypot" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true" />
       <button type="submit" class="cta-btn btn-coral magnetic">Réserver ma place gratuite →</button>
       <p class="form-note">Aucun spam. Désinscription à tout moment.</p>
+      <div class="form-error" id="error-a" role="alert"></div>
     </form>
     <div class="toast" id="toast-a">✓ Vous êtes sur la liste !</div>
     <div class="referral-box" id="ref-a">
@@ -861,8 +869,10 @@
       <div class="field">
         <input type="email" placeholder="votre@email.com" required autocomplete="email" />
       </div>
+      <input type="text" name="honeypot" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true" />
       <button type="submit" class="cta-btn btn-vi magnetic">S'abonner →</button>
       <p class="form-note">Résumé hebdomadaire. Annulation à tout moment.</p>
+      <div class="form-error" id="error-b" role="alert"></div>
     </form>
     <div class="toast" id="toast-b">✓ Inscrit ! Premier numéro bientôt.</div>
   </div>
@@ -1144,22 +1154,42 @@ async function handleForm(e, toastId, refBoxId) {
   e.preventDefault();
   const form = e.target;
   const email = form.querySelector('input[type="email"]').value;
+  const honeypot = form.querySelector('input[name="honeypot"]')?.value || '';
   const btn = form.querySelector('button[type="submit"]');
+  const errBox = form.querySelector('.form-error');
   const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '...';
+  if (errBox) { errBox.classList.remove('show'); errBox.textContent = ''; }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
   try {
-    const res = await fetch('/api/newsletter/subscribe', {
+    const res = await fetch('/user/v1/newsletter/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email, honeypot }),
+      signal: ctrl.signal
     });
-    if (!res.ok) throw new Error('api_error');
-  } catch (_) {
+    if (!res.ok) {
+      const msg = res.status === 429
+        ? 'Trop de tentatives, reessaie dans une minute.'
+        : res.status >= 500
+        ? 'Service indisponible, reessaie dans quelques instants.'
+        : 'Email invalide, verifie ton adresse.';
+      throw new Error(msg);
+    }
+  } catch (err) {
+    clearTimeout(timer);
+    const msg = err.name === 'AbortError'
+      ? 'Connexion trop lente, reessaie.'
+      : (err.message && err.message !== 'api_error') ? err.message : 'Erreur reseau, reessaie dans quelques instants.';
+    if (errBox) { errBox.textContent = msg; errBox.classList.add('show'); }
     btn.disabled = false;
     btn.textContent = originalText;
+    console.warn('[waitlist] submit failed:', err.name || 'error');
     return;
   }
+  clearTimeout(timer);
   const toast = document.getElementById(toastId);
   form.style.opacity = '0'; form.style.transition = 'opacity .3s';
   setTimeout(() => {
