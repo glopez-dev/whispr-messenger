@@ -2,15 +2,17 @@
 // needs_replenishment du backend (sinon forward secrecy se degrade
 // silencieusement).
 
-const mockGetHealth = jest.fn();
+const mockGetDeviceHealth = jest.fn();
 const mockUploadSigned = jest.fn();
 const mockUploadPrekeys = jest.fn();
 const mockGenerate = jest.fn();
 const mockGetToken = jest.fn();
+const mockDecodeAccessToken = jest.fn();
+const mockGetIdentityPrivateKey = jest.fn();
 
 jest.mock("../SecurityService", () => ({
   SignalKeysService: {
-    getHealth: (...args: unknown[]) => mockGetHealth(...args),
+    getDeviceHealth: (...args: unknown[]) => mockGetDeviceHealth(...args),
     uploadSignedPrekey: (...args: unknown[]) => mockUploadSigned(...args),
     uploadPrekeys: (...args: unknown[]) => mockUploadPrekeys(...args),
   },
@@ -25,6 +27,9 @@ jest.mock("../SignalKeyService", () => ({
 jest.mock("../TokenService", () => ({
   TokenService: {
     getAccessToken: (...args: unknown[]) => mockGetToken(...args),
+    decodeAccessToken: (...args: unknown[]) => mockDecodeAccessToken(...args),
+    getIdentityPrivateKey: (...args: unknown[]) =>
+      mockGetIdentityPrivateKey(...args),
   },
 }));
 
@@ -49,34 +54,38 @@ const FAKE_BUNDLE = {
 describe("replenishPreKeysIfNeeded", () => {
   beforeEach(() => {
     __testing.reset();
-    mockGetHealth.mockReset();
+    mockGetDeviceHealth.mockReset();
     mockUploadSigned.mockReset().mockResolvedValue(undefined);
     mockUploadPrekeys.mockReset().mockResolvedValue(undefined);
     mockGenerate.mockReset().mockResolvedValue(FAKE_BUNDLE);
     mockGetToken.mockReset().mockResolvedValue("fake-token");
+    mockDecodeAccessToken
+      .mockReset()
+      .mockReturnValue({ sub: "user-1", deviceId: "dev-1" });
+    mockGetIdentityPrivateKey.mockReset().mockResolvedValue("existing-key");
   });
 
   it("ne fait rien si pas de session auth", async () => {
     mockGetToken.mockResolvedValueOnce(null);
     await replenishPreKeysIfNeeded();
-    expect(mockGetHealth).not.toHaveBeenCalled();
+    expect(mockGetDeviceHealth).not.toHaveBeenCalled();
   });
 
   it("ne replenish pas si le serveur dit needs_replenishment=false", async () => {
-    mockGetHealth.mockResolvedValueOnce({
+    mockGetDeviceHealth.mockResolvedValueOnce({
       prekeys_remaining: 50,
       signed_prekey_age_days: 1,
       needs_replenishment: false,
     });
     await replenishPreKeysIfNeeded();
-    expect(mockGetHealth).toHaveBeenCalledTimes(1);
+    expect(mockGetDeviceHealth).toHaveBeenCalledTimes(1);
     expect(mockGenerate).not.toHaveBeenCalled();
     expect(mockUploadSigned).not.toHaveBeenCalled();
     expect(mockUploadPrekeys).not.toHaveBeenCalled();
   });
 
   it("upload un nouveau bundle quand needs_replenishment=true", async () => {
-    mockGetHealth.mockResolvedValueOnce({
+    mockGetDeviceHealth.mockResolvedValueOnce({
       prekeys_remaining: 3,
       signed_prekey_age_days: 12,
       needs_replenishment: true,
@@ -94,14 +103,14 @@ describe("replenishPreKeysIfNeeded", () => {
     ]);
   });
 
-  it("ne crash pas si getHealth throw", async () => {
-    mockGetHealth.mockRejectedValueOnce(new Error("network"));
+  it("ne crash pas si getDeviceHealth throw", async () => {
+    mockGetDeviceHealth.mockRejectedValueOnce(new Error("network"));
     await expect(replenishPreKeysIfNeeded()).resolves.not.toThrow();
     expect(mockGenerate).not.toHaveBeenCalled();
   });
 
   it("throttle les calls rapproches (foreground spam)", async () => {
-    mockGetHealth.mockResolvedValue({
+    mockGetDeviceHealth.mockResolvedValue({
       prekeys_remaining: 50,
       signed_prekey_age_days: 1,
       needs_replenishment: false,
@@ -109,6 +118,6 @@ describe("replenishPreKeysIfNeeded", () => {
     await replenishPreKeysIfNeeded();
     await replenishPreKeysIfNeeded();
     await replenishPreKeysIfNeeded();
-    expect(mockGetHealth).toHaveBeenCalledTimes(1);
+    expect(mockGetDeviceHealth).toHaveBeenCalledTimes(1);
   });
 });
