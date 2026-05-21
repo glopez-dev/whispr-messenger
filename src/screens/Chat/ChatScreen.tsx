@@ -77,6 +77,42 @@ import { MessageSearch } from "../../components/Chat/MessageSearch";
 import { PinnedMessagesBar } from "../../components/Chat/PinnedMessagesBar";
 import { EmptyChatState } from "../../components/Chat/EmptyChatState";
 import { ChatHeader } from "./ChatHeader";
+import {
+  AttachStep,
+  SpotlightTourProvider,
+  type TourStep,
+} from "react-native-spotlight-tour";
+import { TourTooltip } from "../../components/Tour/TourTooltip";
+import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+
+const CHAT_STEPS_COUNT = 2;
+
+const CHAT_TOUR_STEPS: TourStep[] = [
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Appels chiffrés"
+        description="Lance un appel audio ou vidéo sécurisé directement depuis cette conversation."
+        total={CHAT_STEPS_COUNT}
+      />
+    ),
+  },
+  {
+    placement: "top",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Messages E2E"
+        description="Écris ton message ici. Chaque mot est chiffré de bout en bout avant d'être envoyé."
+        total={CHAT_STEPS_COUNT}
+      />
+    ),
+  },
+];
 import { getConversationDisplayName } from "../../utils";
 import { generateClientRandom } from "../../utils/crypto";
 import { usePresenceStore } from "../../store/presenceStore";
@@ -2969,538 +3005,568 @@ export const ChatScreen: React.FC = () => {
   }, [conversation, conversationMembers, userId]);
 
   return (
-    <View
-      style={[
-        styles.screenRoot,
-        hasCustomBackground && styles.screenRootWithCustomBackground,
-        Platform.OS === "web" && { minHeight: 0, height: "100%" },
-      ]}
+    <SpotlightTourProvider
+      steps={CHAT_TOUR_STEPS}
+      overlayColor="#0B1124"
+      overlayOpacity={0.82}
+      placement="bottom"
+      offset={10}
     >
-      {hasCustomBackground && customBackgroundUri ? (
-        <ImageBackground
-          key={`${customBackgroundUri}:${customBackgroundVersion}`}
-          source={{ uri: customBackgroundUri }}
-          resizeMode="cover"
-          style={styles.customBackground}
-        />
-      ) : null}
-      {!hasCustomBackground ? (
-        <LinearGradient
-          colors={colors.background.gradient.app}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientBackground}
-        />
-      ) : null}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.backgroundScrim,
-          hasCustomBackground
-            ? styles.backgroundScrimWithCustomImage
-            : styles.backgroundScrimDefault,
-        ]}
-      />
-      <SafeAreaView
-        style={[
-          styles.container,
-          Platform.OS === "web" && { minHeight: 0, height: "100%" },
-        ]}
-        // bottom inset is consumed by MessageInput itself (applySafeAreaBottom)
-        // so the BlurView/overlay extends fully to the screen edge instead of
-        // leaving an empty band between the composer and the home indicator.
-        edges={["top"]}
-      >
-        <OfflineBanner connectionState={connectionState} />
-        <ChatHeader
-          conversationName={
-            conversation
-              ? getConversationDisplayName(conversation)
-              : "Conversation"
-          }
-          avatarUrl={headerAvatarUrl}
-          conversationType={conversation?.type || "direct"}
-          groupAvatars={
-            conversation?.type === "group"
-              ? conversationMembers
-                  .filter((m) => m.id && m.id !== userId)
-                  .slice(0, 2)
-                  .map((m) => ({
-                    uri: m.avatar_url,
-                    name: m.display_name || m.username || "Utilisateur",
-                  }))
-              : undefined
-          }
-          isOnline={isOtherOnline}
-          lastSeenAt={otherLastSeenAt}
-          onlineMemberCount={onlineMemberCount}
-          typingNames={typingUsers
-            .map((id) => typingUsersNames[id])
-            .filter(Boolean)}
-          onTitlePress={handleInfoPress}
-          onAudioCallPress={() => handleInitiateCall("audio")}
-          onVideoCallPress={() => handleInitiateCall("video")}
-          callsAvailable={callsAvailability.available}
-        />
-        {isOtherUserContact === false && (
-          <View style={styles.notContactBanner}>
-            <Ionicons
-              name="information-circle-outline"
-              size={16}
-              color={colors.text.light}
-              style={{ marginRight: 6 }}
-            />
-            <Text style={styles.notContactBannerText} numberOfLines={1}>
-              Cette personne n'est pas dans vos contacts
-            </Text>
-            <TouchableOpacity
-              onPress={handleAddContactFromChat}
-              disabled={addingContact}
-              style={styles.notContactBannerButton}
-            >
-              {addingContact ? (
-                // wrapper pour annoncer l'etat busy au screen reader
-                <View
-                  accessibilityState={{ busy: true }}
-                  accessibilityLiveRegion="polite"
-                >
-                  <ActivityIndicator size="small" color={colors.text.light} />
-                </View>
-              ) : (
-                <Text style={styles.notContactBannerButtonText}>Ajouter</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-        {showPinnedBar && pinnedMessages.length > 0 && (
-          <PinnedMessagesBar
-            pinnedMessages={pinnedMessages}
-            onMessagePress={handlePinnedMessagePress}
-            onClose={() => setShowPinnedBar(false)}
-          />
-        )}
-        {(() => {
-          // Contenu partagé web / natif — extrait pour que le wrapper soit
-          // branché conditionnellement sans dupliquer le JSX.
-          const messageList = (
-            <FlatList
-              ref={flatListRef}
-              data={messagesWithSeparators}
-              renderItem={renderItem}
-              keyExtractor={keyExtractor}
-              inverted
-              contentContainerStyle={styles.listContent}
-              removeClippedSubviews={true}
-              maxToRenderPerBatch={10}
-              updateCellsBatchingPeriod={50}
-              initialNumToRender={15}
-              windowSize={10}
-              onEndReached={loadMoreMessages}
-              onEndReachedThreshold={0.3}
-              maintainVisibleContentPosition={{
-                minIndexForVisible: 0,
-              }}
-              viewabilityConfig={viewabilityConfig}
-              onViewableItemsChanged={handleViewableItemsChanged}
-              keyboardShouldPersistTaps="handled"
-              // Dismiss the keyboard as the user drags the message list. iOS
-              // gets the interactive variant (clavier qui descend avec le doigt) ;
-              // Android n'a pas d'équivalent natif, on reste sur "on-drag".
-              keyboardDismissMode={
-                Platform.OS === "ios" ? "interactive" : "on-drag"
-              }
-              // Web : on absolute-positionne la FlatList à l'intérieur du
-              // wrapper `webListViewport` (qui est `position: relative`). Ça
-              // donne à la VirtualizedList une boîte de taille définie sans
-              // dépendre du flex layout, indispensable pour que Chrome accepte
-              // de scroller sur la molette quand `inverted` est actif.
-              style={
-                Platform.OS === "web" ? styles.webFlatListAbsolute : undefined
-              }
-              ListEmptyComponent={
-                !loading ? (
-                  <View style={{ transform: [{ scaleY: -1 }], flex: 1 }}>
-                    <EmptyChatState />
-                  </View>
-                ) : null
-              }
-              ListFooterComponent={
-                loadingMore ? (
-                  <View
-                    style={styles.loadingMore}
-                    accessibilityState={{ busy: true }}
-                    accessibilityLiveRegion="polite"
-                  >
-                    <ActivityIndicator
-                      size="small"
-                      color={themeColors.primary}
-                    />
-                  </View>
-                ) : null
-              }
-            />
-          );
-          // Sur web, on emballe la FlatList dans un viewport à overflow borné :
-          // ainsi Chrome garde le wheel sur la ScrollView interne (scrollable)
-          // sans qu'un overflow:hidden sur un ancêtre bloque l'event en amont.
-          // Tap on an empty area of the message list dismisses the keyboard.
-          // onStartShouldSetResponder only fires when no child grabs the touch
-          // first (message bubbles, action handlers, etc.), so this won't
-          // hijack interactions on actual content.
-          const dismissKeyboardResponderProps = {
-            onStartShouldSetResponder: () => true,
-            onResponderRelease: () => Keyboard.dismiss(),
-          };
-          const wrappedList =
-            Platform.OS === "web" ? (
-              <View
-                style={styles.webListViewport}
-                {...dismissKeyboardResponderProps}
-              >
-                {messageList}
-              </View>
-            ) : (
-              <GestureDetector gesture={swipeGesture}>
-                <View style={{ flex: 1 }} {...dismissKeyboardResponderProps}>
-                  {messageList}
-                </View>
-              </GestureDetector>
-            );
-          const chatBody = (
-            <>
-              <MessageSwipeProvider translateX={swipeTranslateX}>
-                {wrappedList}
-              </MessageSwipeProvider>
-
-              {typingUsers.length > 0 && (
-                <View style={styles.typingContainer}>
-                  <TypingIndicator
-                    userNames={typingUsers.map(
-                      (id) => typingUsersNames[id] || "Quelqu'un",
-                    )}
-                  />
-                </View>
-              )}
-              <MessageInput
-                onSend={handleSendMessage}
-                onSendMedia={handleSendMedia}
-                onScheduleSend={handleScheduleSend}
-                onTyping={(typing) => sendTyping(conversationId, typing)}
-                replyingTo={replyingTo}
-                onCancelReply={() => setReplyingTo(null)}
-                editingMessage={editingMessage}
-                onCancelEdit={() => setEditingMessage(null)}
-                conversationType={conversation?.type || "direct"}
-                members={conversationMembers}
-                applySafeAreaBottom
-              />
-            </>
-          );
-
-          // Web : KeyboardAvoidingView (behavior="height") recalcule la hauteur
-          // en fonction du clavier virtuel inexistant en navigateur, ce qui
-          // finit par réduire le container à 0 px → MessageInput invisible et
-          // chat non scrollable. On remplace par un simple View flex:1.
-          // Natif (iOS/Android) : comportement inchangé, KeyboardAvoidingView
-          // reste nécessaire pour le clavier physique.
-          if (Platform.OS === "web") {
-            // Web layout : on garde `overflow:hidden` sur un wrapper dédié
-            // autour de la FlatList (et plus sur le conteneur externe), pour
-            // borner le viewport de scroll sans capturer l'event wheel en
-            // amont. Mettre overflow:hidden sur le wrapper extérieur faisait
-            // que Chrome routait la molette vers cet élément non-scrollable,
-            // bloquant totalement le scroll sur l'inverted FlatList.
-            return (
-              <View
-                style={[
-                  styles.keyboardView,
-                  {
-                    minHeight: 0,
-                    flexDirection: "column",
-                  },
-                ]}
-              >
-                {chatBody}
-              </View>
-            );
-          }
-          return (
-            <KeyboardAvoidingView
-              style={styles.keyboardView}
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
-              keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-            >
-              {chatBody}
-            </KeyboardAvoidingView>
-          );
-        })()}
-        <MessageActionsMenu
-          visible={showActionsMenu}
-          message={selectedMessage}
-          isSent={selectedMessage?.sender_id === userId}
-          isPinned={pinnedMessages.some(
-            (m) => (m.messageId ?? m.message?.id) === selectedMessage?.id,
-          )}
-          onClose={() => {
-            setShowActionsMenu(false);
-            setSelectedMessage(null);
-          }}
-          onReply={handleStartReply}
-          onEdit={handleEditMessage}
-          onDelete={handleDeleteMessage}
-          onReact={handleStartReaction}
-          onPin={handlePinMessage}
-          onForward={handleForwardMessage}
-          onReport={handleOpenReportSheet}
-        />
-        <ReportMessageSheet
-          visible={showReportSheet}
-          message={reportSheetMessage}
-          conversationId={conversationId}
-          conversationTitle={
-            conversation
-              ? getConversationDisplayName(conversation)
-              : "Conversation"
-          }
-          onClose={() => {
-            setShowReportSheet(false);
-            setReportSheetMessage(null);
-          }}
-        />
-        <ForwardMessageModal
-          visible={showForwardModal}
-          conversations={allConversations}
-          currentConversationId={conversationId}
-          sending={forwardSending}
-          onClose={() => {
-            setShowForwardModal(false);
-            setForwardingMessage(null);
-          }}
-          onSelect={handleForwardSelect}
-        />
-        {showReactionPicker && (
-          <ReactionPicker
-            visible={showReactionPicker}
-            onClose={() => {
-              setShowReactionPicker(false);
-              setReactionPickerMessageId(null);
-            }}
-            onReactionSelect={handleReactionSelectFromPicker}
-          />
-        )}
-        <ReactionReactorsModal
-          visible={reactionReactorsModal !== null}
-          emoji={reactionReactorsModal?.emoji ?? ""}
-          reactors={reactionModalList}
-          resolveName={resolveReactorDisplayName}
-          onClose={() => setReactionReactorsModal(null)}
-        />
-        {appealModal ? (
-          <BlockedImageAppealModal
-            visible={appealModal.visible}
-            onClose={() =>
-              setAppealModal((prev) =>
-                prev ? { ...prev, visible: false } : prev,
-              )
-            }
-            imageUri={appealModal.imageUri}
-            blockReason={appealModal.blockReason}
-            scores={appealModal.scores}
-            messageTempId={appealModal.messageTempId}
-            conversationId={conversationId}
-            recipientId={
-              conversation?.type === "direct"
-                ? (
-                    conversation.member_user_ids ||
-                    conversation.members?.map(
-                      (m: { user_id: string }) => m.user_id,
-                    )
-                  )?.find((id: string) => id !== userId)
-                : undefined
-            }
-          />
-        ) : null}
-        <MessageSearch
-          visible={showSearch}
-          onClose={() => {
-            setShowSearch(false);
-            setSearchQuery("");
-            setSearchResults([]);
-          }}
-          onSearch={handleSearch}
-          resultsCount={searchResults.length}
-          currentIndex={currentSearchIndex}
-          onNext={handleSearchNext}
-          onPrevious={handleSearchPrevious}
-        />
-        <ScheduleDateTimePicker
-          visible={showSchedulePicker}
-          onClose={() => {
-            setShowSchedulePicker(false);
-            setScheduleMessageText("");
-          }}
-          onConfirm={handleScheduleConfirm}
-        />
-        <Modal
-          visible={showInfoModal && conversation?.type !== "group"}
-          transparent
-          animationType="slide"
-          statusBarTranslucent
-          onRequestClose={() => {
-            setShowInfoModal(false);
-          }}
+      {() => (
+        <View
+          style={[
+            styles.screenRoot,
+            hasCustomBackground && styles.screenRootWithCustomBackground,
+            Platform.OS === "web" && { minHeight: 0, height: "100%" },
+          ]}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <LinearGradient
-                colors={colors.background.gradient.app}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.modalGradient}
-              >
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>
-                    Informations de la conversation
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setShowInfoModal(false);
-                    }}
-                    style={styles.closeButton}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={colors.text.light}
-                    />
-                  </TouchableOpacity>
-                </View>
-                <ScrollView
-                  style={styles.modalBody}
-                  showsVerticalScrollIndicator={false}
+          <TourAutoStart />
+          {hasCustomBackground && customBackgroundUri ? (
+            <ImageBackground
+              key={`${customBackgroundUri}:${customBackgroundVersion}`}
+              source={{ uri: customBackgroundUri }}
+              resizeMode="cover"
+              style={styles.customBackground}
+            />
+          ) : null}
+          {!hasCustomBackground ? (
+            <LinearGradient
+              colors={colors.background.gradient.app}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.gradientBackground}
+            />
+          ) : null}
+          <View
+            pointerEvents="none"
+            style={[
+              styles.backgroundScrim,
+              hasCustomBackground
+                ? styles.backgroundScrimWithCustomImage
+                : styles.backgroundScrimDefault,
+            ]}
+          />
+          <SafeAreaView
+            style={[
+              styles.container,
+              Platform.OS === "web" && { minHeight: 0, height: "100%" },
+            ]}
+            // bottom inset is consumed by MessageInput itself (applySafeAreaBottom)
+            // so the BlurView/overlay extends fully to the screen edge instead of
+            // leaving an empty band between the composer and the home indicator.
+            edges={["top"]}
+          >
+            <OfflineBanner connectionState={connectionState} />
+            <AttachStep index={0}>
+              <ChatHeader
+                conversationName={
+                  conversation
+                    ? getConversationDisplayName(conversation)
+                    : "Conversation"
+                }
+                avatarUrl={headerAvatarUrl}
+                conversationType={conversation?.type || "direct"}
+                groupAvatars={
+                  conversation?.type === "group"
+                    ? conversationMembers
+                        .filter((m) => m.id && m.id !== userId)
+                        .slice(0, 2)
+                        .map((m) => ({
+                          uri: m.avatar_url,
+                          name: m.display_name || m.username || "Utilisateur",
+                        }))
+                    : undefined
+                }
+                isOnline={isOtherOnline}
+                lastSeenAt={otherLastSeenAt}
+                onlineMemberCount={onlineMemberCount}
+                typingNames={typingUsers
+                  .map((id) => typingUsersNames[id])
+                  .filter(Boolean)}
+                onTitlePress={handleInfoPress}
+                onAudioCallPress={() => handleInitiateCall("audio")}
+                onVideoCallPress={() => handleInitiateCall("video")}
+                callsAvailable={callsAvailability.available}
+              />
+            </AttachStep>
+            {isOtherUserContact === false && (
+              <View style={styles.notContactBanner}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={16}
+                  color={colors.text.light}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.notContactBannerText} numberOfLines={1}>
+                  Cette personne n'est pas dans vos contacts
+                </Text>
+                <TouchableOpacity
+                  onPress={handleAddContactFromChat}
+                  disabled={addingContact}
+                  style={styles.notContactBannerButton}
                 >
-                  <View style={styles.infoSectionMain}>
-                    <Avatar
-                      size={80}
-                      uri={conversation?.avatar_url}
-                      name={
-                        conversation
-                          ? getConversationDisplayName(conversation)
-                          : "Contact"
-                      }
-                      showOnlineBadge={conversation?.type === "direct"}
-                      isOnline={false}
-                    />
-                    <Text style={styles.infoName}>
-                      {conversation
-                        ? getConversationDisplayName(conversation)
-                        : "Contact"}
+                  {addingContact ? (
+                    // wrapper pour annoncer l'etat busy au screen reader
+                    <View
+                      accessibilityState={{ busy: true }}
+                      accessibilityLiveRegion="polite"
+                    >
+                      <ActivityIndicator
+                        size="small"
+                        color={colors.text.light}
+                      />
+                    </View>
+                  ) : (
+                    <Text style={styles.notContactBannerButtonText}>
+                      Ajouter
                     </Text>
-                    {conversation?.type === "direct" && (
-                      <Text style={styles.infoStatus}>Hors ligne</Text>
-                    )}
-                  </View>
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoLabel}>TYPE</Text>
-                    <Text style={styles.infoValue}>
-                      {conversation?.type === "group"
-                        ? "Groupe"
-                        : "Conversation directe"}
-                    </Text>
-                  </View>
-                  {conversation?.type === "direct" ? (
-                    <View style={styles.infoSection}>
-                      <Text style={styles.infoLabel}>CONFIDENTIALITÉ</Text>
-                      <View style={styles.infoToggleRow}>
-                        <Text style={styles.infoValue}>Chiffrement E2E</Text>
-                        <Switch
-                          value={e2eeEnabled}
-                          onValueChange={handleToggleE2EE}
-                          disabled={e2eeToggleBusy}
-                          trackColor={{
-                            false: "rgba(255, 255, 255, 0.15)",
-                            true: colors.primary.main,
-                          }}
-                          thumbColor={colors.text.light}
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+            {showPinnedBar && pinnedMessages.length > 0 && (
+              <PinnedMessagesBar
+                pinnedMessages={pinnedMessages}
+                onMessagePress={handlePinnedMessagePress}
+                onClose={() => setShowPinnedBar(false)}
+              />
+            )}
+            {(() => {
+              // Contenu partagé web / natif — extrait pour que le wrapper soit
+              // branché conditionnellement sans dupliquer le JSX.
+              const messageList = (
+                <FlatList
+                  ref={flatListRef}
+                  data={messagesWithSeparators}
+                  renderItem={renderItem}
+                  keyExtractor={keyExtractor}
+                  inverted
+                  contentContainerStyle={styles.listContent}
+                  removeClippedSubviews={true}
+                  maxToRenderPerBatch={10}
+                  updateCellsBatchingPeriod={50}
+                  initialNumToRender={15}
+                  windowSize={10}
+                  onEndReached={loadMoreMessages}
+                  onEndReachedThreshold={0.3}
+                  maintainVisibleContentPosition={{
+                    minIndexForVisible: 0,
+                  }}
+                  viewabilityConfig={viewabilityConfig}
+                  onViewableItemsChanged={handleViewableItemsChanged}
+                  keyboardShouldPersistTaps="handled"
+                  // Dismiss the keyboard as the user drags the message list. iOS
+                  // gets the interactive variant (clavier qui descend avec le doigt) ;
+                  // Android n'a pas d'équivalent natif, on reste sur "on-drag".
+                  keyboardDismissMode={
+                    Platform.OS === "ios" ? "interactive" : "on-drag"
+                  }
+                  // Web : on absolute-positionne la FlatList à l'intérieur du
+                  // wrapper `webListViewport` (qui est `position: relative`). Ça
+                  // donne à la VirtualizedList une boîte de taille définie sans
+                  // dépendre du flex layout, indispensable pour que Chrome accepte
+                  // de scroller sur la molette quand `inverted` est actif.
+                  style={
+                    Platform.OS === "web"
+                      ? styles.webFlatListAbsolute
+                      : undefined
+                  }
+                  ListEmptyComponent={
+                    !loading ? (
+                      <View style={{ transform: [{ scaleY: -1 }], flex: 1 }}>
+                        <EmptyChatState />
+                      </View>
+                    ) : null
+                  }
+                  ListFooterComponent={
+                    loadingMore ? (
+                      <View
+                        style={styles.loadingMore}
+                        accessibilityState={{ busy: true }}
+                        accessibilityLiveRegion="polite"
+                      >
+                        <ActivityIndicator
+                          size="small"
+                          color={themeColors.primary}
                         />
                       </View>
+                    ) : null
+                  }
+                />
+              );
+              // Sur web, on emballe la FlatList dans un viewport à overflow borné :
+              // ainsi Chrome garde le wheel sur la ScrollView interne (scrollable)
+              // sans qu'un overflow:hidden sur un ancêtre bloque l'event en amont.
+              // Tap on an empty area of the message list dismisses the keyboard.
+              // onStartShouldSetResponder only fires when no child grabs the touch
+              // first (message bubbles, action handlers, etc.), so this won't
+              // hijack interactions on actual content.
+              const dismissKeyboardResponderProps = {
+                onStartShouldSetResponder: () => true,
+                onResponderRelease: () => Keyboard.dismiss(),
+              };
+              const wrappedList =
+                Platform.OS === "web" ? (
+                  <View
+                    style={styles.webListViewport}
+                    {...dismissKeyboardResponderProps}
+                  >
+                    {messageList}
+                  </View>
+                ) : (
+                  <GestureDetector gesture={swipeGesture}>
+                    <View
+                      style={{ flex: 1 }}
+                      {...dismissKeyboardResponderProps}
+                    >
+                      {messageList}
                     </View>
-                  ) : null}
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoLabel}>MESSAGES</Text>
-                    <Text style={styles.infoValue}>
-                      {messages.length} message{messages.length > 1 ? "s" : ""}
-                    </Text>
+                  </GestureDetector>
+                );
+              const chatBody = (
+                <>
+                  <MessageSwipeProvider translateX={swipeTranslateX}>
+                    {wrappedList}
+                  </MessageSwipeProvider>
+
+                  {typingUsers.length > 0 && (
+                    <View style={styles.typingContainer}>
+                      <TypingIndicator
+                        userNames={typingUsers.map(
+                          (id) => typingUsersNames[id] || "Quelqu'un",
+                        )}
+                      />
+                    </View>
+                  )}
+                  <AttachStep index={1}>
+                    <MessageInput
+                      onSend={handleSendMessage}
+                      onSendMedia={handleSendMedia}
+                      onScheduleSend={handleScheduleSend}
+                      onTyping={(typing) => sendTyping(conversationId, typing)}
+                      replyingTo={replyingTo}
+                      onCancelReply={() => setReplyingTo(null)}
+                      editingMessage={editingMessage}
+                      onCancelEdit={() => setEditingMessage(null)}
+                      conversationType={conversation?.type || "direct"}
+                      members={conversationMembers}
+                      applySafeAreaBottom
+                    />
+                  </AttachStep>
+                </>
+              );
+
+              // Web : KeyboardAvoidingView (behavior="height") recalcule la hauteur
+              // en fonction du clavier virtuel inexistant en navigateur, ce qui
+              // finit par réduire le container à 0 px → MessageInput invisible et
+              // chat non scrollable. On remplace par un simple View flex:1.
+              // Natif (iOS/Android) : comportement inchangé, KeyboardAvoidingView
+              // reste nécessaire pour le clavier physique.
+              if (Platform.OS === "web") {
+                // Web layout : on garde `overflow:hidden` sur un wrapper dédié
+                // autour de la FlatList (et plus sur le conteneur externe), pour
+                // borner le viewport de scroll sans capturer l'event wheel en
+                // amont. Mettre overflow:hidden sur le wrapper extérieur faisait
+                // que Chrome routait la molette vers cet élément non-scrollable,
+                // bloquant totalement le scroll sur l'inverted FlatList.
+                return (
+                  <View
+                    style={[
+                      styles.keyboardView,
+                      {
+                        minHeight: 0,
+                        flexDirection: "column",
+                      },
+                    ]}
+                  >
+                    {chatBody}
                   </View>
-                  <View style={styles.infoSectionActions}>
-                    <Text style={styles.infoLabel}>ACTIONS</Text>
-                    <TouchableOpacity
-                      style={styles.infoActionRow}
-                      onPress={() => {
-                        setShowInfoModal(false);
-                        setShowSearch(true);
-                      }}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      accessibilityLabel="Rechercher dans la conversation"
-                    >
-                      <Ionicons
-                        name="search"
-                        size={20}
-                        color={colors.text.light}
-                        style={styles.infoActionIcon}
-                      />
-                      <Text style={styles.infoActionLabel}>
-                        Rechercher des messages
+                );
+              }
+              return (
+                <KeyboardAvoidingView
+                  style={styles.keyboardView}
+                  behavior={Platform.OS === "ios" ? "padding" : "height"}
+                  keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+                >
+                  {chatBody}
+                </KeyboardAvoidingView>
+              );
+            })()}
+            <MessageActionsMenu
+              visible={showActionsMenu}
+              message={selectedMessage}
+              isSent={selectedMessage?.sender_id === userId}
+              isPinned={pinnedMessages.some(
+                (m) => (m.messageId ?? m.message?.id) === selectedMessage?.id,
+              )}
+              onClose={() => {
+                setShowActionsMenu(false);
+                setSelectedMessage(null);
+              }}
+              onReply={handleStartReply}
+              onEdit={handleEditMessage}
+              onDelete={handleDeleteMessage}
+              onReact={handleStartReaction}
+              onPin={handlePinMessage}
+              onForward={handleForwardMessage}
+              onReport={handleOpenReportSheet}
+            />
+            <ReportMessageSheet
+              visible={showReportSheet}
+              message={reportSheetMessage}
+              conversationId={conversationId}
+              conversationTitle={
+                conversation
+                  ? getConversationDisplayName(conversation)
+                  : "Conversation"
+              }
+              onClose={() => {
+                setShowReportSheet(false);
+                setReportSheetMessage(null);
+              }}
+            />
+            <ForwardMessageModal
+              visible={showForwardModal}
+              conversations={allConversations}
+              currentConversationId={conversationId}
+              sending={forwardSending}
+              onClose={() => {
+                setShowForwardModal(false);
+                setForwardingMessage(null);
+              }}
+              onSelect={handleForwardSelect}
+            />
+            {showReactionPicker && (
+              <ReactionPicker
+                visible={showReactionPicker}
+                onClose={() => {
+                  setShowReactionPicker(false);
+                  setReactionPickerMessageId(null);
+                }}
+                onReactionSelect={handleReactionSelectFromPicker}
+              />
+            )}
+            <ReactionReactorsModal
+              visible={reactionReactorsModal !== null}
+              emoji={reactionReactorsModal?.emoji ?? ""}
+              reactors={reactionModalList}
+              resolveName={resolveReactorDisplayName}
+              onClose={() => setReactionReactorsModal(null)}
+            />
+            {appealModal ? (
+              <BlockedImageAppealModal
+                visible={appealModal.visible}
+                onClose={() =>
+                  setAppealModal((prev) =>
+                    prev ? { ...prev, visible: false } : prev,
+                  )
+                }
+                imageUri={appealModal.imageUri}
+                blockReason={appealModal.blockReason}
+                scores={appealModal.scores}
+                messageTempId={appealModal.messageTempId}
+                conversationId={conversationId}
+                recipientId={
+                  conversation?.type === "direct"
+                    ? (
+                        conversation.member_user_ids ||
+                        conversation.members?.map(
+                          (m: { user_id: string }) => m.user_id,
+                        )
+                      )?.find((id: string) => id !== userId)
+                    : undefined
+                }
+              />
+            ) : null}
+            <MessageSearch
+              visible={showSearch}
+              onClose={() => {
+                setShowSearch(false);
+                setSearchQuery("");
+                setSearchResults([]);
+              }}
+              onSearch={handleSearch}
+              resultsCount={searchResults.length}
+              currentIndex={currentSearchIndex}
+              onNext={handleSearchNext}
+              onPrevious={handleSearchPrevious}
+            />
+            <ScheduleDateTimePicker
+              visible={showSchedulePicker}
+              onClose={() => {
+                setShowSchedulePicker(false);
+                setScheduleMessageText("");
+              }}
+              onConfirm={handleScheduleConfirm}
+            />
+            <Modal
+              visible={showInfoModal && conversation?.type !== "group"}
+              transparent
+              animationType="slide"
+              statusBarTranslucent
+              onRequestClose={() => {
+                setShowInfoModal(false);
+              }}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <LinearGradient
+                    colors={colors.background.gradient.app}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.modalGradient}
+                  >
+                    <View style={styles.modalHeader}>
+                      <Text style={styles.modalTitle}>
+                        Informations de la conversation
                       </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={withOpacity(colors.text.light, 0.4)}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.infoActionRow}
-                      onPress={() => {
-                        setShowInfoModal(false);
-                        handleScheduledPress();
-                      }}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      accessibilityLabel="Messages programmés"
+                      <TouchableOpacity
+                        onPress={() => {
+                          Haptics.impactAsync(
+                            Haptics.ImpactFeedbackStyle.Light,
+                          );
+                          setShowInfoModal(false);
+                        }}
+                        style={styles.closeButton}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name="close"
+                          size={24}
+                          color={colors.text.light}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <ScrollView
+                      style={styles.modalBody}
+                      showsVerticalScrollIndicator={false}
                     >
-                      <Ionicons
-                        name="timer-outline"
-                        size={20}
-                        color={colors.text.light}
-                        style={styles.infoActionIcon}
-                      />
-                      <Text style={styles.infoActionLabel}>
-                        Messages programmés
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={withOpacity(colors.text.light, 0.4)}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </ScrollView>
-              </LinearGradient>
-            </View>
-          </View>
-        </Modal>
-        <Toast
-          visible={callsToast.visible}
-          message={callsToast.message}
-          type={callsToast.type}
-          duration={4000}
-          onHide={() => setCallsToast((t) => ({ ...t, visible: false }))}
-        />
-      </SafeAreaView>
-    </View>
+                      <View style={styles.infoSectionMain}>
+                        <Avatar
+                          size={80}
+                          uri={conversation?.avatar_url}
+                          name={
+                            conversation
+                              ? getConversationDisplayName(conversation)
+                              : "Contact"
+                          }
+                          showOnlineBadge={conversation?.type === "direct"}
+                          isOnline={false}
+                        />
+                        <Text style={styles.infoName}>
+                          {conversation
+                            ? getConversationDisplayName(conversation)
+                            : "Contact"}
+                        </Text>
+                        {conversation?.type === "direct" && (
+                          <Text style={styles.infoStatus}>Hors ligne</Text>
+                        )}
+                      </View>
+                      <View style={styles.infoSection}>
+                        <Text style={styles.infoLabel}>TYPE</Text>
+                        <Text style={styles.infoValue}>
+                          {conversation?.type === "group"
+                            ? "Groupe"
+                            : "Conversation directe"}
+                        </Text>
+                      </View>
+                      {conversation?.type === "direct" ? (
+                        <View style={styles.infoSection}>
+                          <Text style={styles.infoLabel}>CONFIDENTIALITÉ</Text>
+                          <View style={styles.infoToggleRow}>
+                            <Text style={styles.infoValue}>
+                              Chiffrement E2E
+                            </Text>
+                            <Switch
+                              value={e2eeEnabled}
+                              onValueChange={handleToggleE2EE}
+                              disabled={e2eeToggleBusy}
+                              trackColor={{
+                                false: "rgba(255, 255, 255, 0.15)",
+                                true: colors.primary.main,
+                              }}
+                              thumbColor={colors.text.light}
+                            />
+                          </View>
+                        </View>
+                      ) : null}
+                      <View style={styles.infoSection}>
+                        <Text style={styles.infoLabel}>MESSAGES</Text>
+                        <Text style={styles.infoValue}>
+                          {messages.length} message
+                          {messages.length > 1 ? "s" : ""}
+                        </Text>
+                      </View>
+                      <View style={styles.infoSectionActions}>
+                        <Text style={styles.infoLabel}>ACTIONS</Text>
+                        <TouchableOpacity
+                          style={styles.infoActionRow}
+                          onPress={() => {
+                            setShowInfoModal(false);
+                            setShowSearch(true);
+                          }}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel="Rechercher dans la conversation"
+                        >
+                          <Ionicons
+                            name="search"
+                            size={20}
+                            color={colors.text.light}
+                            style={styles.infoActionIcon}
+                          />
+                          <Text style={styles.infoActionLabel}>
+                            Rechercher des messages
+                          </Text>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={20}
+                            color={withOpacity(colors.text.light, 0.4)}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.infoActionRow}
+                          onPress={() => {
+                            setShowInfoModal(false);
+                            handleScheduledPress();
+                          }}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel="Messages programmés"
+                        >
+                          <Ionicons
+                            name="timer-outline"
+                            size={20}
+                            color={colors.text.light}
+                            style={styles.infoActionIcon}
+                          />
+                          <Text style={styles.infoActionLabel}>
+                            Messages programmés
+                          </Text>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={20}
+                            color={withOpacity(colors.text.light, 0.4)}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </ScrollView>
+                  </LinearGradient>
+                </View>
+              </View>
+            </Modal>
+            <Toast
+              visible={callsToast.visible}
+              message={callsToast.message}
+              type={callsToast.type}
+              duration={4000}
+              onHide={() => setCallsToast((t) => ({ ...t, visible: false }))}
+            />
+          </SafeAreaView>
+        </View>
+      )}
+    </SpotlightTourProvider>
   );
 };
 

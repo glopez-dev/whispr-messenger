@@ -33,6 +33,20 @@ jest.mock("../../../services/TokenService", () => ({
 }));
 
 jest.mock("../../../components/Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@react-navigation/native", () => ({
+  useFocusEffect: jest.fn(),
+}));
+jest.mock("react-native-spotlight-tour", () => ({
+  SpotlightTourProvider: ({ children }: any) =>
+    typeof children === "function" ? children({}) : children,
+  AttachStep: ({ children }: any) => children,
+}));
+jest.mock("../../../components/Tour/TourAutoStart", () => ({
+  TourAutoStart: () => null,
+}));
+jest.mock("../../../context/TourContext", () => ({
+  useTour: () => ({ isTourActive: false, skipTour: jest.fn() }),
+}));
 
 import { CallHistoryScreen } from "../CallHistoryScreen";
 

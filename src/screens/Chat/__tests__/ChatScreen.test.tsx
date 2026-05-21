@@ -9,6 +9,18 @@ const mockGoBack = jest.fn();
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
   useRoute: () => ({ params: { conversationId: "conv1" } }),
+  useFocusEffect: jest.fn(),
+}));
+jest.mock("react-native-spotlight-tour", () => ({
+  SpotlightTourProvider: ({ children }: any) =>
+    typeof children === "function" ? children({}) : children,
+  AttachStep: ({ children }: any) => children,
+}));
+jest.mock("../../../components/Tour/TourAutoStart", () => ({
+  TourAutoStart: () => null,
+}));
+jest.mock("../../../context/TourContext", () => ({
+  useTour: () => ({ isTourActive: false, skipTour: jest.fn() }),
 }));
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,

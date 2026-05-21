@@ -337,6 +337,18 @@ jest.mock("@react-navigation/native", () => {
   };
 });
 
+jest.mock("react-native-spotlight-tour", () => ({
+  SpotlightTourProvider: ({ children }: any) =>
+    typeof children === "function" ? children({}) : children,
+  AttachStep: ({ children }: any) => children,
+}));
+jest.mock("../../components/Tour/TourAutoStart", () => ({
+  TourAutoStart: () => null,
+}));
+jest.mock("../../context/TourContext", () => ({
+  useTour: () => ({ isTourActive: false, skipTour: jest.fn() }),
+}));
+
 import React from "react";
 import { render } from "@testing-library/react-native";
 
