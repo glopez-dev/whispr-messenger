@@ -950,7 +950,7 @@
   <div class="social-grid">
 
     <!-- MEDIUM -->
-    <a href="https://medium.com/@whispr" target="_blank" rel="noopener noreferrer"
+    <a href="https://medium.com/@whisprr" target="_blank" rel="noopener noreferrer"
        class="social-card medium-card tilt">
       <div class="card-top">
         <div class="s-icon m">
@@ -1009,7 +1009,7 @@
     <ul class="footer-links">
       <li><a href="legal/privacy.html">Politique de confidentialité</a></li>
       <li><a href="legal/terms.html">Conditions d'utilisation</a></li>
-      <li><a href="mailto:hello@whispr.app">Contact</a></li>
+      <li><a href="mailto:groupwhispr@gmail.com">Contact</a></li>
     </ul>
   </div>
 </footer>
@@ -1140,10 +1140,26 @@ function copyRef(inputId, btnId) {
 }
 
 /* ── FORM SUBMIT ── */
-function handleForm(e, toastId, refBoxId) {
+async function handleForm(e, toastId, refBoxId) {
   e.preventDefault();
   const form = e.target;
   const email = form.querySelector('input[type="email"]').value;
+  const btn = form.querySelector('button[type="submit"]');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    const res = await fetch('/api/newsletter/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!res.ok) throw new Error('api_error');
+  } catch (_) {
+    btn.disabled = false;
+    btn.textContent = originalText;
+    return;
+  }
   const toast = document.getElementById(toastId);
   form.style.opacity = '0'; form.style.transition = 'opacity .3s';
   setTimeout(() => {
