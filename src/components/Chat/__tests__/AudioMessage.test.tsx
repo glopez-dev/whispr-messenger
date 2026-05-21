@@ -12,6 +12,15 @@ jest.mock("../../../services/TokenService", () => ({
   TokenService: { getAccessToken: (...a: any[]) => mockGetAccessToken(...a) },
 }));
 
+// pass-through : on n'a pas de e2ee dans ces tests, le hook retourne l'URI tel quel
+jest.mock("../../../hooks/useE2EEMedia", () => ({
+  useE2EEMedia: (uri: string | undefined) => ({
+    decryptedUri: uri,
+    loading: false,
+    error: null,
+  }),
+}));
+
 const mockDownloadAudioToCacheFile = jest.fn();
 jest.mock("../../../services/MediaService", () => ({
   MediaService: {
