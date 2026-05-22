@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    marginTop: spacing.lg,
+    marginTop: spacing.xxl,
     paddingVertical: spacing.sm,
   },
   premiumText: {

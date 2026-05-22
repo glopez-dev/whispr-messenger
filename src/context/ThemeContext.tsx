@@ -1457,6 +1457,11 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
       return;
     }
 
+    const token = await TokenService.getAccessToken().catch(() => null);
+    if (!token) {
+      return;
+    }
+
     pendingRemoteVisualSyncRef.current = null;
 
     try {
