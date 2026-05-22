@@ -132,14 +132,16 @@ export const WelcomeScreen: React.FC = () => {
             onPress={() => Linking.openURL(WAITLIST_URL)}
             activeOpacity={0.7}
             accessibilityRole="link"
-            accessibilityLabel="Découvrir nos offres Premium"
+            accessibilityLabel={getLocalizedText("auth.premiumCta")}
           >
             <Ionicons
               name="diamond-outline"
               size={14}
               color={colors.primary.main}
             />
-            <Text style={styles.premiumText}>Découvrir nos offres Premium</Text>
+            <Text style={styles.premiumText}>
+              {getLocalizedText("auth.premiumCta")}
+            </Text>
             <Ionicons
               name="arrow-forward"
               size={13}
