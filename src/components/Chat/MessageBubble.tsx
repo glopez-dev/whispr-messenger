@@ -44,6 +44,7 @@ import { useMessageSwipe } from "../../context/MessageSwipeContext";
 import { FormattedText } from "../../utils/textFormatter";
 import { isReachableUrl, formatHourMinute } from "../../utils";
 import { getApiBaseUrl } from "../../services/apiBase";
+import { E2EEService } from "../../services/E2EEService";
 import {
   extractFirstUrl,
   getLinkPreview,
@@ -292,11 +293,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     message.content &&
     ["Photo", "Vidéo", "Fichier", "Message vocal"].includes(message.content);
 
+  // Belt-and-suspenders: si jamais une enveloppe E2EE brute remonte jusqu'ici
+  // (decryption ratee, message texte chiffre route via media, etc.), on
+  // remplace par un fallback lisible plutot que de leak la JSON dans la UI.
+  const rawContent = message.content || "";
+  const safeContent =
+    typeof rawContent === "string" && E2EEService.isEncryptedPayload(rawContent)
+      ? "[Message chiffré]"
+      : rawContent;
+
   const displayContent = isTombstoned
     ? "[Message supprimé]"
     : hasMedia && isDefaultMediaText
       ? "" // Don't show default text for media without caption
-      : message.content || "";
+      : safeContent;
 
   const firstLinkInMessage = useMemo(
     () => extractFirstUrl(message.content),
