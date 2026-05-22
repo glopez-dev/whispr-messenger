@@ -891,6 +891,7 @@ export const ChatScreen: React.FC = () => {
             let signature: string | undefined;
             let sender_public_key: string | undefined;
             if (
+              e2eeEnabledRef.current &&
               queued.message_type === "text" &&
               conversation?.type === "direct"
             ) {
