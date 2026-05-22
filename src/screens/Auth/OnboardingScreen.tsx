@@ -15,7 +15,6 @@ import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
-  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -33,9 +32,6 @@ const CORAL = "#FE7A5C";
 const NAVY = "#0B1124";
 
 type Nav = StackNavigationProp<AuthStackParamList, "Onboarding">;
-const AnimatedFlatList = Animated.createAnimatedComponent(
-  FlatList<(typeof SLIDES)[number]>,
-);
 
 const SLIDES = [
   {
@@ -346,11 +342,6 @@ export const OnboardingScreen: React.FC = () => {
   const flatRef = useRef<FlatList>(null);
   const [current, setCurrent] = useState(0);
   const [listHeight, setListHeight] = useState(0);
-  const scrollX = useSharedValue(0);
-
-  const scrollHandler = useAnimatedScrollHandler((e) => {
-    scrollX.value = e.contentOffset.x;
-  });
 
   const onViewable = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -396,16 +387,14 @@ export const OnboardingScreen: React.FC = () => {
       </View>
 
       {/* Slide scenes */}
-      <AnimatedFlatList
-        ref={flatRef as any}
+      <FlatList
+        ref={flatRef}
         data={SLIDES}
         keyExtractor={(s) => s.id}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         bounces={false}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
         onViewableItemsChanged={onViewable}
         viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
         style={styles.list}
