@@ -28,7 +28,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const load = async () => {
-      if (__DEV__) await AsyncStorage.removeItem(TOUR_DONE_KEY);
       const v = await AsyncStorage.getItem(TOUR_DONE_KEY);
       setIsTourActive(v !== "1");
     };

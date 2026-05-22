@@ -82,7 +82,7 @@ export const SettingsScreen: React.FC = () => {
   const { fetchMyRole } = useModerationStore();
   const isStaff = useIsStaff();
   const insets = useSafeAreaInsets();
-  const { replayTour } = useTour();
+  const { isTourActive, replayTour, skipTour: disableTour } = useTour();
 
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showBackgroundModal, setShowBackgroundModal] = useState(false);
@@ -1209,9 +1209,22 @@ export const SettingsScreen: React.FC = () => {
           />
           <SettingItem
             label="Tour guidé"
-            subtitle="Rejouer le tour de présentation"
+            subtitle="Afficher le tour de présentation"
             icon="compass-outline"
-            onPress={replayTour}
+            onPress={() => (isTourActive ? disableTour() : replayTour())}
+            rightComponent={
+              <Switch
+                value={isTourActive}
+                onValueChange={(value) =>
+                  value ? replayTour() : disableTour()
+                }
+                trackColor={{
+                  false: themeColors.text.tertiary,
+                  true: themeColors.primary,
+                }}
+                thumbColor="#FFFFFF"
+              />
+            }
           />
         </SettingSection>
 
