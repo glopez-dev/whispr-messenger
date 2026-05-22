@@ -412,28 +412,39 @@ export const ChatScreen: React.FC = () => {
   const initialScrollDoneRef = useRef(false);
   const isNearBottomRef = useRef(true);
   const isNearBottomStateRef = useRef(true);
+  const nearBottomByOffsetRef = useRef(true);
+  const nearBottomByViewabilityRef = useRef(true);
   const [pendingNewCount, setPendingNewCount] = useState(0);
   const pendingNewCountRef = useRef(0);
   const typingTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
-  const handleScroll = useRef((e: any) => {
-    const offsetY =
-      typeof e?.nativeEvent?.contentOffset?.y === "number"
-        ? e.nativeEvent.contentOffset.y
-        : 0;
-    const nearBottom = offsetY <= NEAR_BOTTOM_OFFSET_PX;
-    isNearBottomRef.current = nearBottom;
+  const recomputeNearBottom = useRef(() => {
+    const combined =
+      nearBottomByOffsetRef.current || nearBottomByViewabilityRef.current;
+    isNearBottomRef.current = combined;
 
-    if (nearBottom !== isNearBottomStateRef.current) {
-      isNearBottomStateRef.current = nearBottom;
-      if (nearBottom && pendingNewCountRef.current > 0) {
+    if (combined !== isNearBottomStateRef.current) {
+      isNearBottomStateRef.current = combined;
+      if (combined && pendingNewCountRef.current > 0) {
         pendingNewCountRef.current = 0;
         setPendingNewCount(0);
       }
     }
   }).current;
+  const handleScroll = useRef((e: any) => {
+    const offsetY =
+      typeof e?.nativeEvent?.contentOffset?.y === "number"
+        ? e.nativeEvent.contentOffset.y
+        : 0;
+    nearBottomByOffsetRef.current = offsetY <= NEAR_BOTTOM_OFFSET_PX;
+    recomputeNearBottom();
+  }).current;
   const scrollToBottom = useCallback(() => {
     pendingNewCountRef.current = 0;
     setPendingNewCount(0);
+    nearBottomByOffsetRef.current = true;
+    nearBottomByViewabilityRef.current = true;
+    isNearBottomRef.current = true;
+    isNearBottomStateRef.current = true;
     try {
       flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
     } catch {
@@ -449,9 +460,10 @@ export const ChatScreen: React.FC = () => {
   }).current;
   const handleViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
-      if (viewableItems.some((v) => v.index === 0)) {
-        isNearBottomRef.current = true;
-      }
+      nearBottomByViewabilityRef.current = viewableItems.some(
+        (v) => v.index === 0,
+      );
+      recomputeNearBottom();
     },
   ).current;
   const {
@@ -1567,10 +1579,9 @@ export const ChatScreen: React.FC = () => {
         useConversationsStore.getState().resetUnreadCount(conversationId);
 
         // Scroll to bottom so the newly sent text message is visible
-        // (FlatList is inverted, so offset 0 is the bottom)
         setTimeout(() => {
-          flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-        }, 100);
+          scrollToBottom();
+        }, 50);
 
         // If offline, queue the message for later delivery
         if (connectionState !== "connected") {
@@ -1807,8 +1818,8 @@ export const ChatScreen: React.FC = () => {
 
       // Scroll to bottom so the newly sent media message is visible
       setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-      }, 100);
+        scrollToBottom();
+      }, 50);
 
       // Kick off the authoritative member fetch in parallel with the upload.
       // RLS on media-service requires the recipient to be in shared_with, so
