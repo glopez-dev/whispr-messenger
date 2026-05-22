@@ -24,7 +24,7 @@ const TourContext = createContext<TourContextType>({
 export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isTourActive, setIsTourActive] = useState(false);
+  const [isTourActive, setIsTourActive] = useState(true);
 
   useEffect(() => {
     const load = async () => {
