@@ -446,9 +446,13 @@ export const ChatScreen: React.FC = () => {
     isNearBottomRef.current = true;
     isNearBottomStateRef.current = true;
     try {
-      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      flatListRef.current?.scrollToIndex({ index: 0, animated: true });
     } catch {
-      /* ignore */
+      try {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      } catch {
+        /* ignore */
+      }
     }
   }, []);
   // `viewabilityConfig` and `onViewableItemsChanged` must be stable references —
@@ -3187,9 +3191,6 @@ export const ChatScreen: React.FC = () => {
                   scrollEventThrottle={16}
                   onEndReached={loadMoreMessages}
                   onEndReachedThreshold={0.3}
-                  maintainVisibleContentPosition={{
-                    minIndexForVisible: 0,
-                  }}
                   viewabilityConfig={viewabilityConfig}
                   onViewableItemsChanged={handleViewableItemsChanged}
                   keyboardShouldPersistTaps="handled"
