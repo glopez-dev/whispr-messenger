@@ -10,7 +10,6 @@ import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useSpotlightTour } from "react-native-spotlight-tour";
 import type { RenderProps } from "react-native-spotlight-tour";
-import { useTour } from "../../context/TourContext";
 import { colors } from "../../theme/colors";
 
 const CORAL = colors.primary.main;
@@ -31,11 +30,9 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
   total,
 }) => {
   const { stop } = useSpotlightTour();
-  const { skipTour } = useTour();
 
   const handleSkip = () => {
     stop();
-    skipTour();
   };
 
   const handleNext = () => {
