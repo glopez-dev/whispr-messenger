@@ -37,6 +37,7 @@ import {
 } from "../../services/NotificationService";
 import { setReadReceiptsEnabled } from "../../services/messaging/readReceiptsPref";
 import { SettingsChoiceAlert } from "./SettingsChoiceAlert";
+import { useTour } from "../../context/TourContext";
 import { DangerConfirmModal } from "../../components/Common/DangerConfirmModal";
 import { FLOATING_TAB_BAR_RESERVED_SPACE } from "../../components/Navigation/floatingTabBarLayout";
 import {
@@ -81,6 +82,7 @@ export const SettingsScreen: React.FC = () => {
   const { fetchMyRole } = useModerationStore();
   const isStaff = useIsStaff();
   const insets = useSafeAreaInsets();
+  const { replayTour } = useTour();
 
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showBackgroundModal, setShowBackgroundModal] = useState(false);
@@ -1204,6 +1206,12 @@ export const SettingsScreen: React.FC = () => {
                   : getLocalizedText("settings.fontSize.large")
             }
             onPress={() => setShowFontSizeModal(true)}
+          />
+          <SettingItem
+            label="Tour guidé"
+            subtitle="Rejouer le tour de présentation"
+            icon="compass-outline"
+            onPress={replayTour}
           />
         </SettingSection>
 

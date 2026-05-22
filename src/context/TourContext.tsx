@@ -12,11 +12,13 @@ const TOUR_DONE_KEY = "whispr_tour_done";
 type TourContextType = {
   isTourActive: boolean;
   skipTour: () => void;
+  replayTour: () => void;
 };
 
 const TourContext = createContext<TourContextType>({
   isTourActive: false,
   skipTour: () => {},
+  replayTour: () => {},
 });
 
 export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -38,8 +40,13 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
     AsyncStorage.setItem(TOUR_DONE_KEY, "1");
   }, []);
 
+  const replayTour = useCallback(() => {
+    AsyncStorage.removeItem(TOUR_DONE_KEY);
+    setIsTourActive(true);
+  }, []);
+
   return (
-    <TourContext.Provider value={{ isTourActive, skipTour }}>
+    <TourContext.Provider value={{ isTourActive, replayTour, skipTour }}>
       {children}
     </TourContext.Provider>
   );
