@@ -3178,7 +3178,7 @@ export const ChatScreen: React.FC = () => {
                   keyExtractor={keyExtractor}
                   inverted
                   contentContainerStyle={styles.listContent}
-                  removeClippedSubviews={true}
+                  removeClippedSubviews={Platform.OS === "android"}
                   maxToRenderPerBatch={10}
                   updateCellsBatchingPeriod={50}
                   initialNumToRender={15}
