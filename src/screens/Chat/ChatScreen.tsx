@@ -55,6 +55,7 @@ import { useSharedValue, withSpring } from "react-native-reanimated";
 const MESSAGE_SWIPE_DISTANCE = 40;
 const MESSAGE_SWIPE_SPRING = { damping: 18, stiffness: 180 };
 const MESSAGES_PAGE_SIZE = 50;
+const NEAR_BOTTOM_OFFSET_PX = 120;
 import { MessageInput } from "../../components/Chat/MessageInput";
 import { TypingIndicator } from "../../components/Chat/TypingIndicator";
 import { Avatar } from "../../components/Chat/Avatar";
@@ -410,7 +411,35 @@ export const ChatScreen: React.FC = () => {
   );
   const initialScrollDoneRef = useRef(false);
   const isNearBottomRef = useRef(true);
+  const isNearBottomStateRef = useRef(true);
+  const [pendingNewCount, setPendingNewCount] = useState(0);
+  const pendingNewCountRef = useRef(0);
   const typingTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const handleScroll = useRef((e: any) => {
+    const offsetY =
+      typeof e?.nativeEvent?.contentOffset?.y === "number"
+        ? e.nativeEvent.contentOffset.y
+        : 0;
+    const nearBottom = offsetY <= NEAR_BOTTOM_OFFSET_PX;
+    isNearBottomRef.current = nearBottom;
+
+    if (nearBottom !== isNearBottomStateRef.current) {
+      isNearBottomStateRef.current = nearBottom;
+      if (nearBottom && pendingNewCountRef.current > 0) {
+        pendingNewCountRef.current = 0;
+        setPendingNewCount(0);
+      }
+    }
+  }).current;
+  const scrollToBottom = useCallback(() => {
+    pendingNewCountRef.current = 0;
+    setPendingNewCount(0);
+    try {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+    } catch {
+      /* ignore */
+    }
+  }, []);
   // `viewabilityConfig` and `onViewableItemsChanged` must be stable references —
   // FlatList throws if they change between renders. Using refs keeps the
   // underlying function identity constant while letting us read/write the
@@ -420,10 +449,9 @@ export const ChatScreen: React.FC = () => {
   }).current;
   const handleViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
-      // Inverted list: index 0 is the newest message (rendered at the bottom).
-      // If it is visible, the user is reading the latest section and we can
-      // safely auto-scroll when a new message arrives.
-      isNearBottomRef.current = viewableItems.some((v) => v.index === 0);
+      if (viewableItems.some((v) => v.index === 0)) {
+        isNearBottomRef.current = true;
+      }
     },
   ).current;
   const {
@@ -486,6 +514,11 @@ export const ChatScreen: React.FC = () => {
         ? { ...message, content: "Message chiffré" }
         : message;
       if (message.conversation_id === conversationId) {
+        if (!isNearBottomRef.current) {
+          const next = pendingNewCountRef.current + 1;
+          pendingNewCountRef.current = next;
+          setPendingNewCount(next);
+        }
         setMessages((prev) => {
           // Check if message already exists (avoid duplicates)
           if (prev.some((m) => m.id === message.id)) {
@@ -636,17 +669,7 @@ export const ChatScreen: React.FC = () => {
         // were scrolled up browsing older messages.
         if (isNearBottomRef.current) {
           setTimeout(() => {
-            try {
-              flatListRef.current?.scrollToIndex({
-                index: 0,
-                animated: true,
-              });
-            } catch {
-              flatListRef.current?.scrollToOffset({
-                offset: 0,
-                animated: true,
-              });
-            }
+            scrollToBottom();
           }, 50);
         }
       }
@@ -3149,6 +3172,8 @@ export const ChatScreen: React.FC = () => {
                   updateCellsBatchingPeriod={50}
                   initialNumToRender={15}
                   windowSize={10}
+                  onScroll={handleScroll}
+                  scrollEventThrottle={16}
                   onEndReached={loadMoreMessages}
                   onEndReachedThreshold={0.3}
                   maintainVisibleContentPosition={{
@@ -3214,14 +3239,56 @@ export const ChatScreen: React.FC = () => {
                     {...dismissKeyboardResponderProps}
                   >
                     {messageList}
+                    {pendingNewCount > 0 && (
+                      <View style={styles.newMessagesPillContainer}>
+                        <TouchableOpacity
+                          onPress={scrollToBottom}
+                          activeOpacity={0.85}
+                          style={styles.newMessagesPill}
+                        >
+                          <Ionicons
+                            name="arrow-down"
+                            size={16}
+                            color="rgba(255, 255, 255, 0.92)"
+                            style={{ marginRight: 6 }}
+                          />
+                          <Text style={styles.newMessagesPillText}>
+                            {pendingNewCount} nouveau
+                            {pendingNewCount > 1 ? "x" : ""} message
+                            {pendingNewCount > 1 ? "s" : ""}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 ) : (
                   <GestureDetector gesture={swipeGesture}>
                     <View
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, position: "relative" }}
                       {...dismissKeyboardResponderProps}
                     >
                       {messageList}
+                      {pendingNewCount > 0 && (
+                        <View style={styles.newMessagesPillContainer}>
+                          <TouchableOpacity
+                            onPress={scrollToBottom}
+                            activeOpacity={0.85}
+                            style={styles.newMessagesPill}
+                          >
+                            <Ionicons
+                              name="arrow-down"
+                              size={16}
+                              color="rgba(255, 255, 255, 0.92)"
+                              style={{ marginRight: 6 }}
+                            />
+                            <Text style={styles.newMessagesPillText}>
+                              {pendingNewCount} nouveau
+                              {pendingNewCount > 1 ? "x" : ""} message
+                              {pendingNewCount > 1 ? "s" : ""}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
                   </GestureDetector>
                 );
@@ -3660,6 +3727,28 @@ const styles = StyleSheet.create({
   typingContainer: {
     paddingHorizontal: 16,
     paddingBottom: 8,
+  },
+  newMessagesPillContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 12,
+    alignItems: "center",
+  },
+  newMessagesPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(13, 18, 40, 0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+  },
+  newMessagesPillText: {
+    color: "rgba(255, 255, 255, 0.92)",
+    fontSize: 13,
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
