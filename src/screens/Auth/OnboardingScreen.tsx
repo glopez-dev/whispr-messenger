@@ -357,7 +357,10 @@ export const OnboardingScreen: React.FC = () => {
 
   const goNext = useCallback(() => {
     if (current < SLIDES.length - 1) {
-      flatRef.current?.scrollToIndex({ index: current + 1, animated: true });
+      flatRef.current?.scrollToOffset({
+        offset: (current + 1) * W,
+        animated: true,
+      });
     } else {
       void markDone();
     }
