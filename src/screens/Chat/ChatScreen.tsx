@@ -533,8 +533,10 @@ export const ChatScreen: React.FC = () => {
       // casts below. Missing fields stay undefined and the `||` fallbacks
       // still kick in, so behaviour is unchanged.
       const message = incoming as MessageWithRelations;
+      // Ne pas filtrer sur message_type: si un payload chiffré arrive sur un
+      // type inattendu (media sans caption, futur type), on doit toujours le
+      // masquer pour eviter de leak la JSON envelope dans la UI.
       const isEncryptedIncoming =
-        message.message_type === "text" &&
         typeof message.content === "string" &&
         E2EEService.isEncryptedPayload(message.content);
       const displayMessage: MessageWithRelations = isEncryptedIncoming
@@ -554,7 +556,6 @@ export const ChatScreen: React.FC = () => {
                 ? {
                     ...displayMessage,
                     content:
-                      message.message_type === "text" &&
                       typeof message.content === "string" &&
                       E2EEService.isEncryptedPayload(message.content)
                         ? m.content
@@ -606,7 +607,6 @@ export const ChatScreen: React.FC = () => {
             newMessages[optimisticMessageIndex] = {
               ...displayMessage,
               content:
-                message.message_type === "text" &&
                 typeof message.content === "string" &&
                 E2EEService.isEncryptedPayload(message.content)
                   ? existing.content
@@ -712,7 +712,6 @@ export const ChatScreen: React.FC = () => {
     },
     onMessageUpdated: (message: Message) => {
       const isEncryptedUpdate =
-        message.message_type === "text" &&
         typeof message.content === "string" &&
         E2EEService.isEncryptedPayload(message.content);
       if (message.conversation_id === conversationId) {
@@ -1350,7 +1349,6 @@ export const ChatScreen: React.FC = () => {
             .map(async (msg) => {
               let displayContent = msg.content;
               if (
-                msg.message_type === "text" &&
                 typeof msg.content === "string" &&
                 E2EEService.isEncryptedPayload(msg.content)
               ) {
