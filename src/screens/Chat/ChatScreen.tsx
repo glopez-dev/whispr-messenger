@@ -79,12 +79,23 @@ import { PinnedMessagesBar } from "../../components/Chat/PinnedMessagesBar";
 import { EmptyChatState } from "../../components/Chat/EmptyChatState";
 import { ChatHeader } from "./ChatHeader";
 import {
-  AttachStep,
-  SpotlightTourProvider,
+  AttachStep as RNAttachStep,
+  SpotlightTourProvider as RNSpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
 import { TourTooltip } from "../../components/Tour/TourTooltip";
 import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+
+// Le SpotlightTour casse le layout web (overlay SVG qui squeeze le flex root).
+// On garde le tour produit uniquement en natif iOS/Android.
+const IS_WEB = Platform.OS === "web";
+const SpotlightTourProvider: any = IS_WEB
+  ? ({ children }: { children: any }) =>
+      typeof children === "function" ? children() : children
+  : RNSpotlightTourProvider;
+const AttachStep: any = IS_WEB
+  ? ({ children }: { children: React.ReactNode }) => <>{children}</>
+  : RNAttachStep;
 
 const CHAT_STEPS_COUNT = 2;
 
@@ -522,8 +533,10 @@ export const ChatScreen: React.FC = () => {
       // casts below. Missing fields stay undefined and the `||` fallbacks
       // still kick in, so behaviour is unchanged.
       const message = incoming as MessageWithRelations;
+      // Ne pas filtrer sur message_type: si un payload chiffré arrive sur un
+      // type inattendu (media sans caption, futur type), on doit toujours le
+      // masquer pour eviter de leak la JSON envelope dans la UI.
       const isEncryptedIncoming =
-        message.message_type === "text" &&
         typeof message.content === "string" &&
         E2EEService.isEncryptedPayload(message.content);
       const displayMessage: MessageWithRelations = isEncryptedIncoming
@@ -543,7 +556,6 @@ export const ChatScreen: React.FC = () => {
                 ? {
                     ...displayMessage,
                     content:
-                      message.message_type === "text" &&
                       typeof message.content === "string" &&
                       E2EEService.isEncryptedPayload(message.content)
                         ? m.content
@@ -595,7 +607,6 @@ export const ChatScreen: React.FC = () => {
             newMessages[optimisticMessageIndex] = {
               ...displayMessage,
               content:
-                message.message_type === "text" &&
                 typeof message.content === "string" &&
                 E2EEService.isEncryptedPayload(message.content)
                   ? existing.content
@@ -701,7 +712,6 @@ export const ChatScreen: React.FC = () => {
     },
     onMessageUpdated: (message: Message) => {
       const isEncryptedUpdate =
-        message.message_type === "text" &&
         typeof message.content === "string" &&
         E2EEService.isEncryptedPayload(message.content);
       if (message.conversation_id === conversationId) {
@@ -1339,7 +1349,6 @@ export const ChatScreen: React.FC = () => {
             .map(async (msg) => {
               let displayContent = msg.content;
               if (
-                msg.message_type === "text" &&
                 typeof msg.content === "string" &&
                 E2EEService.isEncryptedPayload(msg.content)
               ) {
