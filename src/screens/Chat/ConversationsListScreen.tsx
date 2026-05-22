@@ -23,6 +23,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
+  AttachStep,
+  SpotlightTourProvider,
+  type TourStep,
+} from "react-native-spotlight-tour";
+import { TourTooltip } from "../../components/Tour/TourTooltip";
+import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+import {
   View,
   StyleSheet,
   FlatList,
@@ -75,6 +82,47 @@ import { useInboxStore } from "../../store/inboxStore";
 type NavigationProp = StackNavigationProp<AuthStackParamList, "Chat">;
 
 const AUTO_REFRESH_INTERVAL_MS = 2500;
+
+const CONVERSATIONS_STEPS_COUNT = 3;
+
+const CONVERSATIONS_TOUR_STEPS: TourStep[] = [
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Nouvelle conversation"
+        description="Appuie ici pour démarrer un nouveau chat chiffré de bout en bout."
+        total={CONVERSATIONS_STEPS_COUNT}
+      />
+    ),
+  },
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Notifications"
+        description="Retrouve tes demandes de contact et toutes tes alertes ici."
+        total={CONVERSATIONS_STEPS_COUNT}
+      />
+    ),
+  },
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Recherche"
+        description="Filtre tes conversations par nom ou par message pour les retrouver rapidement."
+        total={CONVERSATIONS_STEPS_COUNT}
+      />
+    ),
+  },
+];
 
 export const ConversationsListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -585,287 +633,309 @@ export const ConversationsListScreen: React.FC = () => {
   };
 
   return (
-    <LinearGradient
-      colors={colors.background.gradient.app}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.gradientContainer}
+    <SpotlightTourProvider
+      steps={CONVERSATIONS_TOUR_STEPS}
+      overlayColor="#0B1124"
+      overlayOpacity={0.82}
+      placement="bottom"
+      offset={10}
     >
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <OfflineBanner connectionState={connectionState} />
-        {/* Header */}
-        <View
-          style={[
-            styles.header,
-            { borderBottomColor: "rgba(255, 255, 255, 0.1)" },
-          ]}
+      {() => (
+        <LinearGradient
+          colors={colors.background.gradient.app}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientContainer}
         >
-          <View style={styles.headerLeftGroup}>
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setEditMode(!editMode);
-                if (editMode) {
-                  setSelectedConversations(new Set());
-                }
-              }}
-              style={[styles.headerButton, styles.editButtonPill]}
+          <TourAutoStart />
+          <SafeAreaView style={styles.container} edges={["top"]}>
+            <OfflineBanner connectionState={connectionState} />
+            {/* Header */}
+            <View
+              style={[
+                styles.header,
+                { borderBottomColor: "rgba(255, 255, 255, 0.1)" },
+              ]}
             >
-              <Text style={[styles.editButton, { color: colors.text.light }]}>
-                {editMode ? "Annuler" : "Modifier"}
-              </Text>
-            </TouchableOpacity>
-            {!editMode && (
-              <TouchableOpacity
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  navigation.navigate("ArchivedConversations");
-                }}
-                style={[styles.headerButton, styles.archiveIconButton]}
-                accessibilityLabel={
-                  archivedUnreadCount > 0
-                    ? `Voir les conversations archivées (${archivedUnreadCount} non lues)`
-                    : "Voir les conversations archivées"
-                }
-              >
-                <Ionicons
-                  name="archive-outline"
-                  size={20}
-                  color={colors.text.light}
-                />
-                {archivedUnreadCount > 0 && (
-                  <View style={styles.archiveBadge}>
-                    <Text style={styles.archiveBadgeText}>
-                      {archivedUnreadCount > 99 ? "99+" : archivedUnreadCount}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-          <Text
-            style={[styles.headerTitle, { color: colors.text.light }]}
-          ></Text>
-          <View style={styles.headerRightGroup}>
-            <BellIcon
-              unreadCount={inboxUnreadCount}
-              onPress={() => setInboxPanelOpen(true)}
-            />
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setShowNewConversationModal(true);
-              }}
-              style={styles.headerButton}
-            >
-              <LinearGradient
-                colors={["#FFB07B", "#F04882"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.composeButton}
-              >
-                <Ionicons
-                  name="create-outline"
-                  size={20}
-                  color={colors.text.light}
-                />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View
-            style={[
-              styles.searchBar,
-              { backgroundColor: "rgba(255, 255, 255, 0.15)" },
-            ]}
-          >
-            <Ionicons
-              name="search-outline"
-              size={20}
-              color="rgba(255, 255, 255, 0.7)"
-              style={styles.searchIcon}
-            />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text.light }]}
-              placeholder="Rechercher des messages ou utilisateurs"
-              placeholderTextColor="rgba(255, 255, 255, 0.6)"
-              value={searchQuery}
-              onChangeText={(text) => {
-                setSearchQuery(text);
-                if (searchTimeoutRef.current) {
-                  clearTimeout(searchTimeoutRef.current);
-                }
-                if (!text.trim()) {
-                  setMessageSearchConvIds(new Set());
-                  return;
-                }
-                searchTimeoutRef.current = setTimeout(async () => {
-                  try {
-                    const results = await messagingAPI.searchMessagesGlobal(
-                      text.trim(),
-                      { limit: 50 },
-                    );
-                    if (results) {
-                      const convIds = new Set(
-                        results.map((msg) => msg.conversation_id),
-                      );
-                      setMessageSearchConvIds(convIds);
-                    } else {
-                      setMessageSearchConvIds(new Set());
+              <View style={styles.headerLeftGroup}>
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setEditMode(!editMode);
+                    if (editMode) {
+                      setSelectedConversations(new Set());
                     }
-                  } catch {
-                    setMessageSearchConvIds(new Set());
-                  }
-                }, 300);
-              }}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery("");
-                  setMessageSearchConvIds(new Set());
-                  if (searchTimeoutRef.current) {
-                    clearTimeout(searchTimeoutRef.current);
-                  }
-                }}
-                style={styles.clearButton}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={20}
-                  color="rgba(255, 255, 255, 0.7)"
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {renderContent()}
-
-        <Toast
-          visible={toast.visible}
-          message={toast.message}
-          type={toast.type}
-          onHide={() => setToast({ ...toast, visible: false })}
-        />
-      </SafeAreaView>
-
-      {editMode && (
-        <View
-          pointerEvents="box-none"
-          style={[
-            styles.editActionsFloating,
-            { bottom: FLOATING_TAB_BAR_BOTTOM_OFFSET + insets.bottom },
-          ]}
-        >
-          <View style={styles.editActionsShadow}>
-            <View style={styles.editActionsClip}>
-              <BlurView
-                intensity={Platform.OS === "ios" ? 60 : 80}
-                tint="dark"
-                style={styles.editActionsBlur}
-              >
-                <View style={styles.editActionsOverlay}>
-                  <View style={styles.editActionsRow}>
-                    <TouchableOpacity
-                      style={styles.editActionButton}
-                      onPress={handleBulkDelete}
-                      disabled={selectedConversations.size === 0}
+                  }}
+                  style={[styles.headerButton, styles.editButtonPill]}
+                >
+                  <Text
+                    style={[styles.editButton, { color: colors.text.light }]}
+                  >
+                    {editMode ? "Annuler" : "Modifier"}
+                  </Text>
+                </TouchableOpacity>
+                {!editMode && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      navigation.navigate("ArchivedConversations");
+                    }}
+                    style={[styles.headerButton, styles.archiveIconButton]}
+                    accessibilityLabel={
+                      archivedUnreadCount > 0
+                        ? `Voir les conversations archivées (${archivedUnreadCount} non lues)`
+                        : "Voir les conversations archivées"
+                    }
+                  >
+                    <Ionicons
+                      name="archive-outline"
+                      size={20}
+                      color={colors.text.light}
+                    />
+                    {archivedUnreadCount > 0 && (
+                      <View style={styles.archiveBadge}>
+                        <Text style={styles.archiveBadgeText}>
+                          {archivedUnreadCount > 99
+                            ? "99+"
+                            : archivedUnreadCount}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text
+                style={[styles.headerTitle, { color: colors.text.light }]}
+              ></Text>
+              <View style={styles.headerRightGroup}>
+                <AttachStep index={1}>
+                  <BellIcon
+                    unreadCount={inboxUnreadCount}
+                    onPress={() => setInboxPanelOpen(true)}
+                  />
+                </AttachStep>
+                <AttachStep index={0}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowNewConversationModal(true);
+                    }}
+                    style={styles.headerButton}
+                  >
+                    <LinearGradient
+                      colors={["#FFB07B", "#F04882"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.composeButton}
                     >
                       <Ionicons
-                        name="trash-outline"
-                        size={24}
-                        color={
-                          selectedConversations.size === 0
-                            ? "rgba(255, 80, 80, 0.4)"
-                            : colors.ui.error
-                        }
+                        name="create-outline"
+                        size={20}
+                        color={colors.text.light}
                       />
-                      <Text
-                        style={[
-                          styles.editActionText,
-                          selectedConversations.size === 0 &&
-                            styles.editActionTextDisabled,
-                        ]}
-                      >
-                        Supprimer
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.editActionButton}
-                      onPress={handleBulkArchive}
-                      disabled={selectedConversations.size === 0}
-                    >
-                      <Ionicons
-                        name="archive-outline"
-                        size={24}
-                        color={
-                          selectedConversations.size === 0
-                            ? "rgba(255, 255, 255, 0.4)"
-                            : colors.text.light
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.editActionText,
-                          selectedConversations.size === 0 &&
-                            styles.editActionTextDisabled,
-                        ]}
-                      >
-                        Archiver
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.editActionButton}
-                      onPress={handleSelectAll}
-                    >
-                      <Ionicons
-                        name={
-                          selectedConversations.size ===
-                          filteredAndSortedConversations.length
-                            ? "checkmark-done-outline"
-                            : "checkmark-outline"
-                        }
-                        size={24}
-                        color={colors.primary.main}
-                      />
-                      <Text style={styles.editActionText}>
-                        {selectedConversations.size ===
-                        filteredAndSortedConversations.length
-                          ? "Désélec."
-                          : "Tout sélec."}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </BlurView>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </AttachStep>
+              </View>
             </View>
-          </View>
-        </View>
+
+            {/* Search Bar */}
+            <AttachStep index={2}>
+              <View style={styles.searchContainer}>
+                <View
+                  style={[
+                    styles.searchBar,
+                    { backgroundColor: "rgba(255, 255, 255, 0.15)" },
+                  ]}
+                >
+                  <Ionicons
+                    name="search-outline"
+                    size={20}
+                    color="rgba(255, 255, 255, 0.7)"
+                    style={styles.searchIcon}
+                  />
+                  <TextInput
+                    style={[styles.searchInput, { color: colors.text.light }]}
+                    placeholder="Rechercher des messages ou utilisateurs"
+                    placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                    value={searchQuery}
+                    onChangeText={(text) => {
+                      setSearchQuery(text);
+                      if (searchTimeoutRef.current) {
+                        clearTimeout(searchTimeoutRef.current);
+                      }
+                      if (!text.trim()) {
+                        setMessageSearchConvIds(new Set());
+                        return;
+                      }
+                      searchTimeoutRef.current = setTimeout(async () => {
+                        try {
+                          const results =
+                            await messagingAPI.searchMessagesGlobal(
+                              text.trim(),
+                              { limit: 50 },
+                            );
+                          if (results) {
+                            const convIds = new Set(
+                              results.map((msg) => msg.conversation_id),
+                            );
+                            setMessageSearchConvIds(convIds);
+                          } else {
+                            setMessageSearchConvIds(new Set());
+                          }
+                        } catch {
+                          setMessageSearchConvIds(new Set());
+                        }
+                      }, 300);
+                    }}
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSearchQuery("");
+                        setMessageSearchConvIds(new Set());
+                        if (searchTimeoutRef.current) {
+                          clearTimeout(searchTimeoutRef.current);
+                        }
+                      }}
+                      style={styles.clearButton}
+                    >
+                      <Ionicons
+                        name="close-circle"
+                        size={20}
+                        color="rgba(255, 255, 255, 0.7)"
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </AttachStep>
+
+            {renderContent()}
+
+            <Toast
+              visible={toast.visible}
+              message={toast.message}
+              type={toast.type}
+              onHide={() => setToast({ ...toast, visible: false })}
+            />
+          </SafeAreaView>
+
+          {editMode && (
+            <View
+              pointerEvents="box-none"
+              style={[
+                styles.editActionsFloating,
+                { bottom: FLOATING_TAB_BAR_BOTTOM_OFFSET + insets.bottom },
+              ]}
+            >
+              <View style={styles.editActionsShadow}>
+                <View style={styles.editActionsClip}>
+                  <BlurView
+                    intensity={Platform.OS === "ios" ? 60 : 80}
+                    tint="dark"
+                    style={styles.editActionsBlur}
+                  >
+                    <View style={styles.editActionsOverlay}>
+                      <View style={styles.editActionsRow}>
+                        <TouchableOpacity
+                          style={styles.editActionButton}
+                          onPress={handleBulkDelete}
+                          disabled={selectedConversations.size === 0}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={24}
+                            color={
+                              selectedConversations.size === 0
+                                ? "rgba(255, 80, 80, 0.4)"
+                                : colors.ui.error
+                            }
+                          />
+                          <Text
+                            style={[
+                              styles.editActionText,
+                              selectedConversations.size === 0 &&
+                                styles.editActionTextDisabled,
+                            ]}
+                          >
+                            Supprimer
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.editActionButton}
+                          onPress={handleBulkArchive}
+                          disabled={selectedConversations.size === 0}
+                        >
+                          <Ionicons
+                            name="archive-outline"
+                            size={24}
+                            color={
+                              selectedConversations.size === 0
+                                ? "rgba(255, 255, 255, 0.4)"
+                                : colors.text.light
+                            }
+                          />
+                          <Text
+                            style={[
+                              styles.editActionText,
+                              selectedConversations.size === 0 &&
+                                styles.editActionTextDisabled,
+                            ]}
+                          >
+                            Archiver
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.editActionButton}
+                          onPress={handleSelectAll}
+                        >
+                          <Ionicons
+                            name={
+                              selectedConversations.size ===
+                              filteredAndSortedConversations.length
+                                ? "checkmark-done-outline"
+                                : "checkmark-outline"
+                            }
+                            size={24}
+                            color={colors.primary.main}
+                          />
+                          <Text style={styles.editActionText}>
+                            {selectedConversations.size ===
+                            filteredAndSortedConversations.length
+                              ? "Désélec."
+                              : "Tout sélec."}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </BlurView>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <NewConversationModal
+            visible={showNewConversationModal}
+            onClose={() => setShowNewConversationModal(false)}
+            onConversationCreated={async (conversationId) => {
+              setShowNewConversationModal(false);
+              await fetchConversations();
+              setTimeout(() => {
+                navigation.navigate("Chat", { conversationId });
+              }, 100);
+            }}
+          />
+
+          <InboxPanel
+            visible={inboxPanelOpen}
+            onClose={() => setInboxPanelOpen(false)}
+          />
+
+          <SafariPWABanner />
+        </LinearGradient>
       )}
-
-      <NewConversationModal
-        visible={showNewConversationModal}
-        onClose={() => setShowNewConversationModal(false)}
-        onConversationCreated={async (conversationId) => {
-          setShowNewConversationModal(false);
-          await fetchConversations();
-          setTimeout(() => {
-            navigation.navigate("Chat", { conversationId });
-          }, 100);
-        }}
-      />
-
-      <InboxPanel
-        visible={inboxPanelOpen}
-        onClose={() => setInboxPanelOpen(false)}
-      />
-
-      <SafariPWABanner />
-    </LinearGradient>
+    </SpotlightTourProvider>
   );
 };
 
