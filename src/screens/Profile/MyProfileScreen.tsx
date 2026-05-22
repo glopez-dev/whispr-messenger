@@ -134,7 +134,7 @@ const PROFILE_TOUR_STEPS: TourStep[] = [
   {
     placement: "bottom",
     offset: 10,
-    render: (props) => (
+    render: (props: import("react-native-spotlight-tour").RenderProps) => (
       <TourTooltip
         {...props}
         title="Photo de profil"
@@ -146,7 +146,7 @@ const PROFILE_TOUR_STEPS: TourStep[] = [
   {
     placement: "bottom",
     offset: 10,
-    render: (props) => (
+    render: (props: import("react-native-spotlight-tour").RenderProps) => (
       <TourTooltip
         {...props}
         title="Modifier le profil"
