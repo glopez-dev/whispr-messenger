@@ -69,7 +69,7 @@ describe("gateChatVideoBeforeSend", () => {
     mockGate.mockResolvedValue({
       allowed: true,
       bestClass: "not_food",
-      probs: { food: 0.1, not_food: 0.9 },
+      probs: { healthy: 0.05, not_food: 0.9, unhealthy: 0.05 },
     });
 
     const result = await gateChatVideoBeforeSend("file:///videos/clip.mp4");
@@ -90,16 +90,16 @@ describe("gateChatVideoBeforeSend", () => {
     mockGetThumbnail.mockResolvedValue({ uri: "file:///cache/thumb-0.jpg" });
     mockGate.mockResolvedValue({
       allowed: false,
-      bestClass: "food",
-      probs: { food: 0.94, not_food: 0.06 },
+      bestClass: "unhealthy",
+      probs: { healthy: 0.03, not_food: 0.03, unhealthy: 0.94 },
     });
 
     const result = await gateChatVideoBeforeSend("file:///videos/clip.mp4");
 
     expect(result).toMatchObject({
       ok: false,
-      bestClass: "food",
-      scores: { food: 0.94, not_food: 0.06 },
+      bestClass: "unhealthy",
+      scores: { healthy: 0.03, not_food: 0.03, unhealthy: 0.94 },
     });
   });
 

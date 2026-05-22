@@ -2,7 +2,7 @@ import type { GateResult } from "./moderation.types";
 import {
   CLASS_NAMES_V2,
   CLASS_NAMES_V3,
-  V3_FOOD_INDEX,
+  V3_UNHEALTHY_INDEX,
 } from "./moderation.constants";
 
 /**
@@ -14,7 +14,7 @@ import {
 
 export const OTHER_CONFIDENCE_CEILING = 0.85;
 export const SECONDARY_FOOD_THRESHOLD = 0.15;
-export const V3_FOOD_THRESHOLD_DEFAULT = 0.5;
+export const V3_UNHEALTHY_THRESHOLD_DEFAULT = 0.5;
 
 /**
  * V2 decision: 9-class softmax (8 food classes + "Other"), with a runner-up
@@ -97,32 +97,47 @@ export function decideV2FromProbs(
 }
 
 /**
- * V3 decision: MobileNetV3-Small with a single sigmoid unit outputting
- * p(food). Block when p(food) >= threshold (default 0.5).
+ * V3 decision: MobileNetV3-Small with a 3-class softmax head over
+ * `[healthy, not_food, unhealthy]`. Block only when `unhealthy` is the
+ * top-1 class AND `p(unhealthy) >= threshold` (default 0.5). The healthy
+ * and not_food classes always pass — only flagged-as-unhealthy content
+ * gates the send.
  */
 export function decideV3FromProbs(
   data: ArrayLike<number>,
-  threshold = V3_FOOD_THRESHOLD_DEFAULT,
+  threshold = V3_UNHEALTHY_THRESHOLD_DEFAULT,
 ): GateResult {
-  if (data.length < 1) {
-    throw new Error("V3 output must contain at least one value");
+  if (data.length !== CLASS_NAMES_V3.length) {
+    throw new Error(
+      `V3 output length mismatch: got ${data.length}, expected ${CLASS_NAMES_V3.length}.`,
+    );
   }
-  const pFood = Number(data[0]);
-  const pNotFood = 1 - pFood;
-  const isFood = pFood >= threshold;
-  const [foodLabel, notFoodLabel] = CLASS_NAMES_V3;
-  const probs: Record<string, number> = {
-    [foodLabel]: pFood,
-    [notFoodLabel]: pNotFood,
-  };
 
-  if (isFood) {
+  let bestIndex = 0;
+  let bestProb = Number(data[0]);
+  for (let i = 1; i < data.length; i++) {
+    const v = Number(data[i]);
+    if (v > bestProb) {
+      bestProb = v;
+      bestIndex = i;
+    }
+  }
+
+  const probs: Record<string, number> = {};
+  for (let i = 0; i < CLASS_NAMES_V3.length; i++) {
+    probs[CLASS_NAMES_V3[i]] = Number(data[i]);
+  }
+
+  const bestClass = CLASS_NAMES_V3[bestIndex];
+  const pUnhealthy = Number(data[V3_UNHEALTHY_INDEX]);
+
+  if (bestIndex === V3_UNHEALTHY_INDEX && pUnhealthy >= threshold) {
     return {
       allowed: false,
       reason: "BLOCK_TRAINED_CLASS",
-      bestIndex: V3_FOOD_INDEX,
-      bestProb: pFood,
-      bestClass: foodLabel,
+      bestIndex,
+      bestProb,
+      bestClass,
       probs,
     };
   }
@@ -130,9 +145,9 @@ export function decideV3FromProbs(
   return {
     allowed: true,
     reason: "OTHER_CLASS",
-    bestIndex: 1 - V3_FOOD_INDEX,
-    bestProb: pNotFood,
-    bestClass: notFoodLabel,
+    bestIndex,
+    bestProb,
+    bestClass,
     probs,
   };
 }

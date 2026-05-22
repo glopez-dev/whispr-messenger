@@ -19,7 +19,7 @@ export {
   decideFromProbs,
   OTHER_CONFIDENCE_CEILING,
   SECONDARY_FOOD_THRESHOLD,
-  V3_FOOD_THRESHOLD_DEFAULT,
+  V3_UNHEALTHY_THRESHOLD_DEFAULT,
 } from "./tfjs.decide";
 
 // Manually register a React Native platform for Hermes compatibility
