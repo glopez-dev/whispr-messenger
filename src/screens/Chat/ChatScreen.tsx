@@ -3057,7 +3057,7 @@ export const ChatScreen: React.FC = () => {
             edges={["top"]}
           >
             <OfflineBanner connectionState={connectionState} />
-            <AttachStep index={0}>
+            <AttachStep index={0} fill>
               <ChatHeader
                 conversationName={
                   conversation
@@ -3238,7 +3238,7 @@ export const ChatScreen: React.FC = () => {
                       />
                     </View>
                   )}
-                  <AttachStep index={1}>
+                  <AttachStep index={1} fill>
                     <MessageInput
                       onSend={handleSendMessage}
                       onSendMedia={handleSendMedia}

@@ -740,7 +740,7 @@ export const ConversationsListScreen: React.FC = () => {
             </View>
 
             {/* Search Bar */}
-            <AttachStep index={2}>
+            <AttachStep index={2} fill>
               <View style={styles.searchContainer}>
                 <View
                   style={[
