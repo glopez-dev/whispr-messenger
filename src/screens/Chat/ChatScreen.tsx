@@ -3083,6 +3083,9 @@ export const ChatScreen: React.FC = () => {
                   .map((id) => typingUsersNames[id])
                   .filter(Boolean)}
                 onTitlePress={handleInfoPress}
+                onSearchPress={() => setShowSearch(true)}
+                onInfoPress={handleInfoPress}
+                onScheduledPress={handleScheduledPress}
                 onAudioCallPress={() => handleInitiateCall("audio")}
                 onVideoCallPress={() => handleInitiateCall("video")}
                 callsAvailable={callsAvailability.available}
