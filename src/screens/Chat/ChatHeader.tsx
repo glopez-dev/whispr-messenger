@@ -32,6 +32,9 @@ interface ChatHeaderProps {
   onAudioCallPress?: () => void;
   onVideoCallPress?: () => void;
   callsAvailable?: boolean;
+  onSearchPress?: () => void;
+  onInfoPress?: () => void;
+  onScheduledPress?: () => void;
 }
 
 const formatTypingLabel = (names: string[]): string => {
@@ -55,6 +58,9 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onAudioCallPress,
   onVideoCallPress,
   callsAvailable = true,
+  onSearchPress,
+  onInfoPress,
+  onScheduledPress,
 }) => {
   const navigation = useNavigation();
   const { getThemeColors } = useTheme();
@@ -191,6 +197,51 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </View>
       </TouchableOpacity>
       <View style={styles.actions}>
+        {onScheduledPress && (
+          <TouchableOpacity
+            onPress={onScheduledPress}
+            style={styles.actionButton}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Messages programmés"
+          >
+            <Ionicons
+              name="timer-outline"
+              size={22}
+              color={themeColors.text.primary}
+            />
+          </TouchableOpacity>
+        )}
+        {onSearchPress && (
+          <TouchableOpacity
+            onPress={onSearchPress}
+            style={styles.actionButton}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Rechercher"
+          >
+            <Ionicons
+              name="search"
+              size={22}
+              color={themeColors.text.primary}
+            />
+          </TouchableOpacity>
+        )}
+        {onInfoPress && (
+          <TouchableOpacity
+            onPress={onInfoPress}
+            style={styles.actionButton}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Informations"
+          >
+            <Ionicons
+              name="information-circle-outline"
+              size={22}
+              color={themeColors.text.primary}
+            />
+          </TouchableOpacity>
+        )}
         {hasCallActions && (
           <TouchableOpacity
             onPress={handleCallButtonPress}
@@ -198,7 +249,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               styles.actionButton,
               !callsAvailable && styles.actionButtonDisabled,
             ]}
-            // hitSlop pour respecter iOS HIG 44pt
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             accessibilityRole="button"
             accessibilityLabel="Lancer un appel"
