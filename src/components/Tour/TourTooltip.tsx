@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
+import { useSpotlightTour } from "react-native-spotlight-tour";
 import type { RenderProps } from "react-native-spotlight-tour";
 import { useTour } from "../../context/TourContext";
 import { colors } from "../../theme/colors";
@@ -27,9 +28,9 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
   current,
   isLast,
   next,
-  stop,
   total,
 }) => {
+  const { stop } = useSpotlightTour();
   const { skipTour } = useTour();
 
   const handleSkip = () => {
@@ -99,11 +100,11 @@ const styles = StyleSheet.create({
     minWidth: 260,
     maxWidth: 300,
     borderWidth: 1,
-    borderColor: "rgba(254,122,92,0.22)",
+    borderColor: "rgba(254,122,92,0.40)",
   },
   container: {
     padding: 18,
-    backgroundColor: "rgba(11,17,36,0.55)",
+    backgroundColor: "rgba(26,14,60,0.88)",
     borderRadius: 20,
   },
   header: {
@@ -129,13 +130,15 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
   counter: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(103,116,189,0.25)",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 99,
+    borderWidth: 1,
+    borderColor: "rgba(103,116,189,0.35)",
   },
   counterText: {
-    color: "rgba(255,255,255,0.55)",
+    color: "rgba(255,255,255,0.75)",
     fontSize: 11,
     fontFamily: "Inter_500Medium",
   },
@@ -153,7 +156,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "rgba(254,122,92,0.18)",
+    backgroundColor: "rgba(103,116,189,0.30)",
     marginVertical: 14,
   },
   actions: {
@@ -166,7 +169,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   skipText: {
-    color: "rgba(255,255,255,0.45)",
+    color: "rgba(255,255,255,0.60)",
     fontSize: 13,
     fontFamily: "Inter_500Medium",
   },

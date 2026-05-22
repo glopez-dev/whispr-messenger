@@ -43,7 +43,7 @@ module.exports = () => ({
   },
   extra: {
     ...base.expo.extra,
-    apiBaseUrl: process.env.API_BASE_URL || 'https://whispr.devzeyu.com',
+    apiBaseUrl: process.env.API_BASE_URL || 'https://whispr-preprod.roadmvn.com',
     appVersion: '1.0.0',
     eas: {
       projectId:

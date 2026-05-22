@@ -15,7 +15,7 @@ jest.mock("expo-constants", () => ({
   default: mockConstants,
 }));
 
-const FALLBACK_DEV = "https://whispr.devzeyu.com";
+const FALLBACK_DEV = "https://whispr-preprod.roadmvn.com";
 
 describe("getApiBaseUrl", () => {
   const originalDev = (global as { __DEV__?: boolean }).__DEV__;
