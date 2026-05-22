@@ -1,6 +1,14 @@
 import React, { useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -9,6 +17,8 @@ import { useTheme } from "../../context/ThemeContext";
 import { colors, spacing, typography } from "../../theme";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { AuthLanguageSwitcher } from "./AuthLanguageSwitcher";
+
+const WAITLIST_URL = "https://whispr-preprod.roadmvn.com/waitlist.html#pricing";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "Welcome">;
 
@@ -117,6 +127,27 @@ export const WelcomeScreen: React.FC = () => {
               navigation.navigate("PhoneInput", { mode: "register" })
             }
           />
+          <TouchableOpacity
+            style={styles.premiumBtn}
+            onPress={() => Linking.openURL(WAITLIST_URL)}
+            activeOpacity={0.7}
+            accessibilityRole="link"
+            accessibilityLabel={getLocalizedText("auth.premiumCta")}
+          >
+            <Ionicons
+              name="diamond-outline"
+              size={14}
+              color={colors.primary.main}
+            />
+            <Text style={styles.premiumText}>
+              {getLocalizedText("auth.premiumCta")}
+            </Text>
+            <Ionicons
+              name="arrow-forward"
+              size={13}
+              color={colors.primary.main}
+            />
+          </TouchableOpacity>
         </View>
       </Animated.View>
     </LinearGradient>
@@ -160,5 +191,18 @@ const styles = StyleSheet.create({
   },
   buttonGap: {
     height: spacing.md,
+  },
+  premiumBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: spacing.xxl,
+    paddingVertical: spacing.sm,
+  },
+  premiumText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: "600",
+    color: colors.primary.main,
   },
 });

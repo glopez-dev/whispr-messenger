@@ -624,6 +624,83 @@
     .trust-badge-label { font-size: 12.5px; font-weight: 600; color: var(--text-2); }
     .trust-badge-sub { font-size: 11px; color: var(--text-3); }
 
+    /* ── PRICING ── */
+    .pricing-wrap {
+      position: relative; z-index: 1;
+      max-width: 980px; margin: 0 auto; padding: 80px 40px 96px;
+    }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px;
+    }
+    .pricing-card {
+      padding: 36px 30px; border-radius: 24px;
+      border: 1px solid var(--border-2);
+      background: rgba(14,21,37,.55);
+      backdrop-filter: blur(24px) saturate(1.6);
+      position: relative; overflow: hidden;
+      opacity: 0; transform: translateY(22px);
+      transition: opacity .5s, transform .5s, border-color .28s, box-shadow .28s;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .pricing-card.visible { opacity: 1; transform: none; }
+    .pricing-card:nth-child(2) { transition-delay: .1s; border-color: rgba(103,116,189,.35); }
+    .pricing-card:nth-child(3) { transition-delay: .2s; }
+    .pricing-card:hover { transform: translateY(-6px); box-shadow: 0 28px 80px rgba(0,0,0,.45); }
+    .pricing-card:nth-child(1):hover { border-color: rgba(254,122,92,.35); }
+    .pricing-card:nth-child(2):hover { border-color: rgba(103,116,189,.55); box-shadow: 0 28px 80px rgba(103,116,189,.12); }
+    .pricing-card:nth-child(3):hover { border-color: rgba(254,122,92,.35); }
+    .pricing-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      opacity: 0; transition: opacity .3s;
+    }
+    .pricing-card:nth-child(1)::after { background: linear-gradient(90deg, transparent, var(--coral) 50%, transparent); }
+    .pricing-card:nth-child(2)::after { background: linear-gradient(90deg, transparent, var(--violet-mid) 50%, transparent); }
+    .pricing-card:nth-child(3)::after { background: linear-gradient(90deg, transparent, var(--coral) 50%, transparent); }
+    .pricing-card:hover::after { opacity: 1; }
+    .pricing-card .deco {
+      position: absolute; border-radius: 50%; pointer-events: none; filter: blur(60px);
+    }
+    .pricing-card:nth-child(1) .deco { width: 160px; height: 160px; right: -40px; top: -40px; background: rgba(254,122,92,.1); }
+    .pricing-card:nth-child(2) .deco { width: 160px; height: 160px; left: -40px; bottom: -40px; background: rgba(103,116,189,.14); }
+    .pricing-card:nth-child(3) .deco { width: 160px; height: 160px; right: -40px; top: -40px; background: rgba(254,122,92,.08); }
+    .plan-icon {
+      width: 48px; height: 48px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(103,116,189,.1); border: 1px solid rgba(103,116,189,.18);
+      font-size: 20px;
+    }
+    .plan-name {
+      font-size: 20px; font-weight: 800; letter-spacing: -.5px;
+    }
+    .plan-name.coral { color: var(--coral); }
+    .plan-name.violet { color: var(--violet-mid); }
+    .plan-desc {
+      font-size: 13.5px; color: var(--text-3); line-height: 1.72; flex: 1;
+    }
+    .plan-price {
+      font-size: 15px; font-weight: 700; letter-spacing: -.3px;
+    }
+    .plan-price.coral { color: var(--coral); }
+    .plan-price.violet { color: var(--violet-mid); }
+    .plan-divider { height: 1px; background: var(--border-2); }
+    .plan-cta {
+      display: inline-block; width: 100%;
+      padding: 13px 20px; border-radius: 12px;
+      font-size: 13px; font-weight: 700; letter-spacing: -.2px;
+      text-align: center; text-decoration: none;
+      transition: all .2s; cursor: none; border: none;
+    }
+    .plan-cta.coral { background: linear-gradient(135deg, var(--coral) 0%, #d95f42 100%); color: #fff; }
+    .plan-cta.coral:hover { opacity: .86; }
+    .plan-cta.violet { background: rgba(103,116,189,.18); color: var(--violet-mid); border: 1px solid rgba(103,116,189,.35); }
+    .plan-cta.violet:hover { background: rgba(103,116,189,.3); color: #fff; }
+    .plan-cta.outline { background: transparent; color: var(--text-2); border: 1px solid var(--border-2); }
+    .plan-cta.outline:hover { border-color: rgba(103,116,189,.4); background: rgba(103,116,189,.07); color: var(--text); }
+    @media (max-width: 860px) {
+      .pricing-grid { grid-template-columns: 1fr; }
+      .pricing-wrap { padding-left: 20px; padding-right: 20px; }
+    }
+
     /* ── FAQ ── */
     .faq-wrap {
       position: relative; z-index: 1;
@@ -713,6 +790,7 @@
   <div class="nav-right">
     <a href="legal/privacy.html" class="nav-pill">Confidentialité</a>
     <a href="legal/terms.html" class="nav-pill">CGU</a>
+    <a href="#pricing" class="nav-pill">Offres</a>
     <a href="waitlist.html" class="nav-pill active">Accès anticipé</a>
   </div>
 </nav>
@@ -905,10 +983,60 @@
   </div>
 </div>
 
+<!-- ── PRICING ── -->
+<div class="pricing-wrap" id="pricing">
+  <div class="section-head">
+    <div class="section-eyebrow">03 — Tarifs</div>
+    <h2>Des offres pour <em>chaque usage</em></h2>
+  </div>
+  <div class="pricing-grid">
+
+    <!-- Freemium -->
+    <div class="pricing-card">
+      <div class="deco"></div>
+      <div class="plan-icon">💬</div>
+      <div class="plan-name coral">Freemium</div>
+      <div class="plan-desc">
+        Messagerie chiffrée, conversations illimitées, appels audio &amp; vidéo, thèmes et personnalisation de base. Idéal pour découvrir Whispr sans engagement.
+      </div>
+      <div class="plan-divider"></div>
+      <div class="plan-price coral">Gratuit</div>
+      <a href="waitlist.html" class="plan-cta coral">Rejoindre la waitlist</a>
+    </div>
+
+    <!-- Premium -->
+    <div class="pricing-card">
+      <div class="deco"></div>
+      <div class="plan-icon">✦</div>
+      <div class="plan-name violet">Premium</div>
+      <div class="plan-desc">
+        Tout ce qu'offre le plan Freemium, plus : messages programmés, réponses IA avancées, stockage média étendu, thèmes exclusifs et support prioritaire.
+      </div>
+      <div class="plan-divider"></div>
+      <div class="plan-price violet">5,99 € / mois</div>
+      <a href="waitlist.html" class="plan-cta violet">Accès anticipé — 50 % off</a>
+    </div>
+
+    <!-- B2B -->
+    <div class="pricing-card">
+      <div class="deco"></div>
+      <div class="plan-icon">🏢</div>
+      <div class="plan-name coral">B2B &amp; Org</div>
+      <div class="plan-desc">
+        Déploiement sur mesure pour équipes et organisations : SSO, administration centralisée, conformité RGPD renforcée, SLA dédié et intégrations personnalisées.
+      </div>
+      <div class="plan-divider"></div>
+      <div class="plan-price coral">Sur devis</div>
+      <a href="mailto:contact@whispr.app" class="plan-cta outline">Nous contacter</a>
+    </div>
+
+  </div>
+</div>
+
 <!-- ── FAQ ── -->
 <div class="faq-wrap">
   <div class="section-head">
-    <div class="section-eyebrow">03 — Questions fréquentes</div>
+    <div class="section-eyebrow">04 — Questions fréquentes</div>
     <h2>On répond à tout <em>honnêtement</em></h2>
   </div>
   <div class="faq-list">
@@ -953,7 +1081,7 @@
 <!-- ── FOLLOW US ── -->
 <div class="follow-wrap" id="follow">
   <div class="section-head">
-    <div class="section-eyebrow">03 — Communauté</div>
+    <div class="section-eyebrow">04 — Communauté</div>
     <h2>Suivez <em>l'aventure</em></h2>
   </div>
 
@@ -1116,7 +1244,7 @@ pillIO.observe(document.getElementById('stats-row'));
 const revealIO = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: .1 });
-document.querySelectorAll('.section-head, .social-card, .form-card, .step-card, .trust-badge, .faq-item').forEach(el => revealIO.observe(el));
+document.querySelectorAll('.section-head, .social-card, .form-card, .step-card, .trust-badge, .pricing-card, .faq-item').forEach(el => revealIO.observe(el));
 
 /* ── 3D TILT ON SOCIAL CARDS ── */
 document.querySelectorAll('.tilt').forEach(card => {

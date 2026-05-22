@@ -703,6 +703,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.dejaCompte": "Déjà un compte ?",
     "auth.pasEncoreCompte": "Pas encore de compte ?",
     "auth.tagline": "Sécurisé. Privé. Simple.",
+    "auth.premiumCta": "Découvrir nos offres Premium",
     "auth.smsCode": "Nous vous enverrons un code de vérification par SMS",
     "auth.searchCountry": "Rechercher un pays...",
     "auth.noCountryFound": "Aucun pays trouvé",
@@ -1039,6 +1040,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.dejaCompte": "Already have an account?",
     "auth.pasEncoreCompte": "No account yet?",
     "auth.tagline": "Secure. Private. Simple.",
+    "auth.premiumCta": "Discover our Premium plans",
     "auth.smsCode": "We will send you a verification code by SMS",
     "auth.searchCountry": "Search for a country...",
     "auth.noCountryFound": "No country found",
@@ -1452,6 +1454,11 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
   const flushPendingRemoteVisualSync = useCallback(async () => {
     const pendingSettings = pendingRemoteVisualSyncRef.current;
     if (!pendingSettings) {
+      return;
+    }
+
+    const token = await TokenService.getAccessToken().catch(() => null);
+    if (!token) {
       return;
     }
 
