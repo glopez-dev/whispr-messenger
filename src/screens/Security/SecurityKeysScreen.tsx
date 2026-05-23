@@ -61,7 +61,7 @@ interface SecurityKey {
 }
 
 // Module-level cache — survives re-renders and component remounts
-const _qrCache: {
+export const _qrCache: {
   challenge: string | null;
   deviceId: string;
   generatedAt: number;

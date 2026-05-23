@@ -1,6 +1,6 @@
 import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
-import { SecurityKeysScreen } from "../SecurityKeysScreen";
+import { SecurityKeysScreen, _qrCache } from "../SecurityKeysScreen";
 
 const mockGoBack = jest.fn();
 jest.mock("@react-navigation/native", () => ({
@@ -56,6 +56,11 @@ describe("SecurityKeysScreen", () => {
     mockListDevices.mockResolvedValue([]);
     mockGenerateQRChallenge.mockResolvedValue("jwt-challenge-token");
     jest.spyOn(console, "warn").mockImplementation(() => {});
+    // Reset module-level cache so each test starts fresh
+    _qrCache.challenge = null;
+    _qrCache.deviceId = "";
+    _qrCache.generatedAt = 0;
+    _qrCache.inFlight = null;
   });
 
   it("renders without crashing", () => {
@@ -83,17 +88,21 @@ describe("SecurityKeysScreen", () => {
     expect(await findByText("Mon iPhone")).toBeTruthy();
   });
 
-  it("opens QR modal and calls generateQRChallenge when QR button pressed", async () => {
+  it("pre-fetches QR challenge on mount and opens modal on button press", async () => {
     const { getByText } = render(<SecurityKeysScreen />);
     await waitFor(() => expect(mockListDevices).toHaveBeenCalled());
+
+    // generateQRChallenge is called immediately on mount (pre-fetch), not on button press
+    await waitFor(() =>
+      expect(mockGenerateQRChallenge).toHaveBeenCalledWith("test-device-id"),
+    );
 
     const qrButton = getByText("security.scanQRCode");
     await act(async () => {
       fireEvent.press(qrButton);
     });
 
-    await waitFor(() =>
-      expect(mockGenerateQRChallenge).toHaveBeenCalledWith("test-device-id"),
-    );
+    // Cache is fresh — no additional API call on button press
+    expect(mockGenerateQRChallenge).toHaveBeenCalledTimes(1);
   });
 });
