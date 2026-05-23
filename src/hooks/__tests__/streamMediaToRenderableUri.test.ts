@@ -17,6 +17,13 @@ jest.mock("react-native", () => ({
   Platform: { OS: "web" },
 }));
 
+// AuthService est importe par useResolvedMediaUrl pour le retry 401 ;
+// on le mock ici pour eviter que expo-device ne soit resolu dans le
+// contexte jest-node (il necessite un module natif).
+jest.mock("../../services/AuthService", () => ({
+  AuthService: { refreshTokens: jest.fn().mockResolvedValue(undefined) },
+}));
+
 import {
   probeMediaUrlThrottled,
   streamMediaToRenderableUri,
