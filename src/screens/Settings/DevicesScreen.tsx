@@ -125,9 +125,9 @@ export const DevicesScreen: React.FC = () => {
           <View style={styles.deviceIconWrap}>
             <Ionicons
               name={
-                item.platform.toLowerCase().includes("ios")
+                item.platform?.toLowerCase().includes("ios")
                   ? "phone-portrait-outline"
-                  : item.platform.toLowerCase().includes("android")
+                  : item.platform?.toLowerCase().includes("android")
                     ? "phone-portrait-outline"
                     : "laptop-outline"
               }
@@ -167,9 +167,11 @@ export const DevicesScreen: React.FC = () => {
             <Text
               style={[styles.deviceMeta, { color: themeColors.text.secondary }]}
             >
-              {item.platform} ·{" "}
+              {item.platform ?? "–"} ·{" "}
               {getLocalizedText("devices.lastActive") || "Last active"}{" "}
-              {formatRelative(item.last_active, settings.language)}
+              {item.last_active
+                ? formatRelative(item.last_active, settings.language)
+                : "–"}
             </Text>
           </View>
           {!item.is_current && (
