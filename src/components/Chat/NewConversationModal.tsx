@@ -318,10 +318,16 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
                     setGroupName(text);
                     setGroupNameTouched(true);
                   }}
+                  onFocus={() => {
+                    // marque le champ comme touche des le focus pour eviter
+                    // que defaultGroupName ecrase ce que l'user va taper
+                    if (!groupNameTouched) setGroupNameTouched(true);
+                  }}
                   placeholder="Nom du groupe"
                   placeholderTextColor="rgba(255, 255, 255, 0.5)"
                   maxLength={100}
                   returnKeyType="done"
+                  selectTextOnFocus
                 />
                 <Ionicons
                   name="pencil"
