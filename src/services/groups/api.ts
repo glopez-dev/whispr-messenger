@@ -1161,6 +1161,56 @@ export const groupsAPI = {
     }
   },
 
+  /**
+   * PATCH /user/v1/groups/:groupId/members/:userId/promote — admin only
+   * Promouvoir un membre en admin.
+   */
+  async promoteMember(groupId: string, userId: string): Promise<void> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(
+      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/promote`,
+      {
+        method: "PATCH",
+        headers,
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        (body as { error?: string; message?: string })?.error ??
+        (body as { message?: string })?.message ??
+        `HTTP ${res.status}`;
+      const err = new Error(msg) as Error & { status: number };
+      err.status = res.status;
+      throw err;
+    }
+  },
+
+  /**
+   * PATCH /user/v1/groups/:groupId/members/:userId/demote — admin only
+   * Retirer le rôle admin d'un membre. 409 si dernier admin.
+   */
+  async demoteMember(groupId: string, userId: string): Promise<void> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(
+      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/demote`,
+      {
+        method: "PATCH",
+        headers,
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        (body as { error?: string; message?: string })?.error ??
+        (body as { message?: string })?.message ??
+        `HTTP ${res.status}`;
+      const err = new Error(msg) as Error & { status: number };
+      err.status = res.status;
+      throw err;
+    }
+  },
+
   async deleteGroup(groupId: string, conversationId?: string): Promise<void> {
     const ownerId = await getOwnerId();
     const headers = await getAuthHeaders();
