@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { CallsUnavailableScreen } from "../screens/Calls/CallsUnavailableScreen";
 import { isCallsAvailable } from "../hooks/useCallsAvailable";
@@ -213,10 +213,21 @@ export const AuthNavigator: React.FC = () => {
     isBiometricEnabled().then((enabled) => setBiometricLocked(enabled));
   }, [isAuthenticated]);
 
+  const backgroundedAtRef = useRef<number | null>(null);
+  const MIN_BACKGROUND_MS = 30_000;
+
   useEffect(() => {
     if (!isAuthenticated) return;
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
+      if (state === "background" || state === "inactive") {
+        backgroundedAtRef.current = Date.now();
+      } else if (state === "active") {
+        const backgroundedAt = backgroundedAtRef.current;
+        backgroundedAtRef.current = null;
+        const wasLongEnough =
+          backgroundedAt !== null &&
+          Date.now() - backgroundedAt >= MIN_BACKGROUND_MS;
+        if (!wasLongEnough) return;
         isBiometricEnabled().then((enabled) => {
           if (enabled) setBiometricLocked(true);
         });
