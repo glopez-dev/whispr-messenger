@@ -177,13 +177,17 @@ export const DeviceManagerService = {
           sub?: string;
         };
         authenticatedDeviceId = payload.deviceId ?? payload.sub ?? "";
-      } catch {}
+      } catch {
+        // malformed JWT payload — proceed without authenticatedDeviceId
+      }
     }
 
     const { deviceName, deviceType } = await DeviceService.getDeviceInfo();
     const raw = await apiFetch<{
-      access_token: string;
-      refresh_token: string;
+      access_token?: string;
+      refresh_token?: string;
+      accessToken?: string;
+      refreshToken?: string;
     }>("/qr-code/scan", {
       method: "POST",
       body: JSON.stringify({
@@ -193,7 +197,10 @@ export const DeviceManagerService = {
         deviceType,
       }),
     });
-    return { accessToken: raw.access_token, refreshToken: raw.refresh_token };
+    return {
+      accessToken: raw.access_token ?? raw.accessToken ?? "",
+      refreshToken: raw.refresh_token ?? raw.refreshToken ?? "",
+    };
   },
 
   async generateQRChallenge(deviceId: string): Promise<string> {
@@ -217,17 +224,10 @@ export const DeviceManagerService = {
       ) as ApiError;
       err.status = response.status;
       err.body = body;
-      console.error("[QR] generateQRChallenge failed:", response.status, body);
       throw err;
     }
 
     const text = await response.text();
-    console.log(
-      "[QR] challenge received, length:",
-      text.length,
-      "starts:",
-      text.slice(0, 30),
-    );
     // NestJS sends string primitives as plain text — handle both formats
     try {
       return JSON.parse(text) as string;
