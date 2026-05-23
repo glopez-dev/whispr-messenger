@@ -2,6 +2,7 @@ import { AuthService } from "./AuthService";
 import { TokenService } from "./TokenService";
 import { DeviceService } from "./DeviceService";
 import { getApiBaseUrl } from "./apiBase";
+import type { TokenPair } from "../types/auth";
 
 type ApiError = Error & { status?: number; body?: unknown };
 
@@ -157,6 +158,82 @@ export const DeviceManagerService = {
     await apiFetch<void>(`/device/${encodeURIComponent(deviceId)}`, {
       method: "DELETE",
     });
+  },
+
+  /**
+   * POST /auth/qr-code/scan
+   * Exchange a QR challenge JWT (scanned from an authenticated device) for tokens.
+   * Called from an unauthenticated device — no access token required.
+   */
+  async scanQRChallenge(challenge: string): Promise<TokenPair> {
+    let authenticatedDeviceId = "";
+    const parts = challenge.split(".");
+    if (parts.length === 3) {
+      try {
+        const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "==".slice(0, (4 - (base64.length % 4)) % 4);
+        const payload = JSON.parse(atob(padded)) as {
+          deviceId?: string;
+          sub?: string;
+        };
+        authenticatedDeviceId = payload.deviceId ?? payload.sub ?? "";
+      } catch {
+        // malformed JWT payload — proceed without authenticatedDeviceId
+      }
+    }
+
+    const { deviceName, deviceType } = await DeviceService.getDeviceInfo();
+    const raw = await apiFetch<{
+      access_token?: string;
+      refresh_token?: string;
+      accessToken?: string;
+      refreshToken?: string;
+    }>("/qr-code/scan", {
+      method: "POST",
+      body: JSON.stringify({
+        challenge,
+        authenticatedDeviceId,
+        deviceName,
+        deviceType,
+      }),
+    });
+    return {
+      accessToken: raw.access_token ?? raw.accessToken ?? "",
+      refreshToken: raw.refresh_token ?? raw.refreshToken ?? "",
+    };
+  },
+
+  async generateQRChallenge(deviceId: string): Promise<string> {
+    const token = await TokenService.getAccessToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "text/plain, application/json",
+      "x-device-type": "mobile",
+    };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch(
+      `${getAuthBaseUrl()}/qr-code/challenge/${encodeURIComponent(deviceId)}`,
+      { method: "POST", headers },
+    );
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      const err = new Error(
+        (body as { message?: string })?.message ?? `HTTP ${response.status}`,
+      ) as ApiError;
+      err.status = response.status;
+      err.body = body;
+      throw err;
+    }
+
+    const text = await response.text();
+    // NestJS sends string primitives as plain text — handle both formats
+    try {
+      return JSON.parse(text) as string;
+    } catch {
+      return text;
+    }
   },
 };
 

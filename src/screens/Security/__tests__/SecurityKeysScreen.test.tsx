@@ -1,6 +1,6 @@
 import React from "react";
-import { render, waitFor } from "@testing-library/react-native";
-import { SecurityKeysScreen } from "../SecurityKeysScreen";
+import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
+import { SecurityKeysScreen, _qrCache } from "../SecurityKeysScreen";
 
 const mockGoBack = jest.fn();
 jest.mock("@react-navigation/native", () => ({
@@ -37,18 +37,72 @@ jest.mock("../../../components/Toast/Toast", () => () => null);
 jest.mock("../../../utils/clipboard", () => ({
   copyToClipboard: jest.fn(),
 }));
+jest.mock("react-native-qrcode-styled", () => () => null);
+
+const mockListDevices = jest.fn();
+const mockRevokeDevice = jest.fn();
+const mockGenerateQRChallenge = jest.fn();
+jest.mock("../../../services/SecurityService", () => ({
+  DeviceManagerService: {
+    listDevices: (...a: unknown[]) => mockListDevices(...a),
+    revokeDevice: (...a: unknown[]) => mockRevokeDevice(...a),
+    generateQRChallenge: (...a: unknown[]) => mockGenerateQRChallenge(...a),
+  },
+}));
 
 describe("SecurityKeysScreen", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockListDevices.mockResolvedValue([]);
+    mockGenerateQRChallenge.mockResolvedValue("jwt-challenge-token");
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+    // Reset module-level cache so each test starts fresh
+    _qrCache.challenge = null;
+    _qrCache.deviceId = "";
+    _qrCache.generatedAt = 0;
+    _qrCache.inFlight = null;
+  });
 
   it("renders without crashing", () => {
     const { toJSON } = render(<SecurityKeysScreen />);
     expect(toJSON()).toBeTruthy();
   });
 
-  it("renders security keys title", () => {
+  it("fetches device list on mount", async () => {
+    render(<SecurityKeysScreen />);
+    await waitFor(() => expect(mockListDevices).toHaveBeenCalled());
+  });
+
+  it("renders devices returned by the API", async () => {
+    mockListDevices.mockResolvedValue([
+      {
+        id: "test-device-id",
+        deviceName: "Mon iPhone",
+        deviceType: "ios",
+        lastActive: new Date().toISOString(),
+        isVerified: true,
+        isActive: true,
+      },
+    ]);
+    const { findByText } = render(<SecurityKeysScreen />);
+    expect(await findByText("Mon iPhone")).toBeTruthy();
+  });
+
+  it("pre-fetches QR challenge on mount and opens modal on button press", async () => {
     const { getByText } = render(<SecurityKeysScreen />);
-    // The screen renders some title text
-    expect(getByText).toBeTruthy();
+    await waitFor(() => expect(mockListDevices).toHaveBeenCalled());
+
+    // generateQRChallenge is called immediately on mount (pre-fetch), not on button press
+    await waitFor(() =>
+      expect(mockGenerateQRChallenge).toHaveBeenCalledWith("test-device-id"),
+    );
+
+    const qrButton = getByText("security.scanQRCode");
+    await act(async () => {
+      fireEvent.press(qrButton);
+    });
+
+    // Cache is fresh — no additional API call on button press
+    expect(mockGenerateQRChallenge).toHaveBeenCalledTimes(1);
   });
 });

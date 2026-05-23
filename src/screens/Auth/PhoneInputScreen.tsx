@@ -12,6 +12,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -406,15 +407,43 @@ export const PhoneInputScreen: React.FC = () => {
                   }}
                 />
               ) : (
-                <Button
-                  title={getLocalizedText("auth.continue")}
-                  variant="primary"
-                  size="large"
-                  fullWidth
-                  loading={loading}
-                  disabled={!isPhoneValid || loading}
-                  onPress={handleContinue}
-                />
+                <>
+                  <Button
+                    title={getLocalizedText("auth.continue")}
+                    variant="primary"
+                    size="large"
+                    fullWidth
+                    loading={loading}
+                    disabled={!isPhoneValid || loading}
+                    onPress={handleContinue}
+                  />
+                  {mode === "login" && (
+                    <>
+                      <View style={styles.divider}>
+                        <View style={styles.dividerLine} />
+                        <Text style={styles.dividerText}>ou</Text>
+                        <View style={styles.dividerLine} />
+                      </View>
+                      <TouchableOpacity
+                        style={styles.qrButton}
+                        onPress={() =>
+                          navigation.navigate("DevicePairingScanner")
+                        }
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons
+                          name="qr-code-outline"
+                          size={18}
+                          color="rgba(255, 255, 255, 0.75)"
+                          style={styles.qrButtonIcon}
+                        />
+                        <Text style={styles.qrButtonText}>
+                          {getLocalizedText("auth.loginViaQR")}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </>
               )}
             </View>
           </Animated.View>
@@ -569,5 +598,34 @@ const styles = StyleSheet.create({
   },
   buttons: {
     // Toujours présent dans le layout, disabled géré par le prop Button
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+  },
+  dividerText: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: typography.fontSize.sm,
+    marginHorizontal: spacing.md,
+    fontWeight: "500",
+  },
+  qrButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  qrButtonIcon: {},
+  qrButtonText: {
+    color: "rgba(255, 255, 255, 0.75)",
+    fontSize: typography.fontSize.base,
+    fontWeight: "500",
   },
 });
