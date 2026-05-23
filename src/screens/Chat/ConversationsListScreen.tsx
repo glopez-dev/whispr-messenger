@@ -78,6 +78,10 @@ import { BellIcon } from "../../components/Common/BellIcon";
 import { InboxPanel } from "../../components/Common/InboxPanel";
 import { SafariPWABanner } from "../../components/Common/SafariPWABanner";
 import { useInboxStore } from "../../store/inboxStore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafetyNumberModal } from "../../components/Chat/SafetyNumberModal";
+
+const SAFETY_STORAGE_PREFIX = "@whispr:safety:";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "Chat">;
 
@@ -217,6 +221,13 @@ export const ConversationsListScreen: React.FC = () => {
   const [messageSearchConvIds, setMessageSearchConvIds] = useState<Set<string>>(
     new Set(),
   );
+  const [verifiedContacts, setVerifiedContacts] = useState<
+    Record<string, boolean>
+  >({});
+  const [safetyModalTarget, setSafetyModalTarget] = useState<{
+    contactUserId: string;
+    contactName: string;
+  } | null>(null);
   const { getThemeColors } = useTheme();
   const themeColors = getThemeColors();
 
@@ -318,6 +329,27 @@ export const ConversationsListScreen: React.FC = () => {
     fetchConversations();
     loadManuallyUnreadIds();
   }, [fetchConversations, loadManuallyUnreadIds, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const prefix = `${SAFETY_STORAGE_PREFIX}${userId}:`;
+    AsyncStorage.getAllKeys()
+      .then((keys) => {
+        const safetyKeys = (keys as string[]).filter((k) =>
+          k.startsWith(prefix),
+        );
+        return AsyncStorage.multiGet(safetyKeys);
+      })
+      .then((pairs) => {
+        const map: Record<string, boolean> = {};
+        for (const [key, value] of pairs as [string, string | null][]) {
+          const contactId = key.slice(prefix.length);
+          if (contactId && value === "verified") map[contactId] = true;
+        }
+        setVerifiedContacts(map);
+      })
+      .catch(() => undefined);
+  }, [userId]);
 
   // Refresh conversations when WebSocket reconnects to pick up messages
   // that were missed during the disconnection window
@@ -537,21 +569,46 @@ export const ConversationsListScreen: React.FC = () => {
     [pinConversation],
   );
 
+  const handleLongPress = useCallback(
+    (conversationId: string) => {
+      const conv = conversations.find((c) => c.id === conversationId);
+      if (!conv || conv.type !== "direct") return;
+      const contactId = conv.member_user_ids?.find((id) => id !== userId);
+      if (!contactId) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setSafetyModalTarget({
+        contactUserId: contactId,
+        contactName: getConversationDisplayName(conv),
+      });
+    },
+    [conversations, userId],
+  );
+
   const renderItem = useCallback(
-    ({ item, index }: { item: Conversation; index: number }) => (
-      <SwipeableConversationItem
-        conversation={item}
-        onPress={handleConversationPress}
-        onDelete={handleDelete}
-        onMute={handleMute}
-        onToggleRead={handleToggleRead}
-        onArchive={handleArchive}
-        onPin={handlePin}
-        index={index}
-        editMode={editMode}
-        isSelected={selectedConversations.has(item.id)}
-      />
-    ),
+    ({ item, index }: { item: Conversation; index: number }) => {
+      const contactId =
+        item.type === "direct"
+          ? item.member_user_ids?.find((id) => id !== userId)
+          : undefined;
+      return (
+        <SwipeableConversationItem
+          conversation={item}
+          onPress={handleConversationPress}
+          onDelete={handleDelete}
+          onMute={handleMute}
+          onToggleRead={handleToggleRead}
+          onArchive={handleArchive}
+          onPin={handlePin}
+          onLongPress={item.type === "direct" ? handleLongPress : undefined}
+          index={index}
+          editMode={editMode}
+          isSelected={selectedConversations.has(item.id)}
+          isContactVerified={
+            contactId ? verifiedContacts[contactId] === true : false
+          }
+        />
+      );
+    },
     [
       handleConversationPress,
       handleDelete,
@@ -559,8 +616,11 @@ export const ConversationsListScreen: React.FC = () => {
       handleToggleRead,
       handleArchive,
       handlePin,
+      handleLongPress,
       editMode,
       selectedConversations,
+      verifiedContacts,
+      userId,
     ],
   );
 
@@ -823,6 +883,21 @@ export const ConversationsListScreen: React.FC = () => {
               onHide={() => setToast({ ...toast, visible: false })}
             />
           </SafeAreaView>
+
+          {safetyModalTarget && (
+            <SafetyNumberModal
+              visible={!!safetyModalTarget}
+              onClose={() => setSafetyModalTarget(null)}
+              contactUserId={safetyModalTarget.contactUserId}
+              contactName={safetyModalTarget.contactName}
+              onVerified={(contactUserId) => {
+                setVerifiedContacts((prev) => ({
+                  ...prev,
+                  [contactUserId]: true,
+                }));
+              }}
+            />
+          )}
 
           {editMode && (
             <View

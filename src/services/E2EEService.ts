@@ -5,7 +5,11 @@ import {
   encodeBase64,
   encodeUTF8,
 } from "tweetnacl-util";
-import { getRandomBytes } from "expo-crypto";
+import {
+  getRandomBytes,
+  digestStringAsync,
+  CryptoDigestAlgorithm,
+} from "expo-crypto";
 import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import { TokenService } from "./TokenService";
@@ -68,6 +72,46 @@ function concatBytes(...parts: Uint8Array[]): Uint8Array {
     offset += p.length;
   }
   return out;
+}
+
+function compareBytes(a: Uint8Array, b: Uint8Array): number {
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    if (a[i] !== b[i]) return a[i] - b[i];
+  }
+  return a.length - b.length;
+}
+
+function bytesToHex(b: Uint8Array): string {
+  return Array.from(b, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function computeSafetyNumber(
+  myIdentityKey: string,
+  myUserId: string,
+  theirIdentityKey: string,
+  theirUserId: string,
+): Promise<string> {
+  const ikA = decodeBase64(myIdentityKey);
+  const ikB = decodeBase64(theirIdentityKey);
+  const aFirst = compareBytes(ikA, ikB) <= 0;
+  const orderedKeyHex = aFirst
+    ? bytesToHex(ikA) + bytesToHex(ikB)
+    : bytesToHex(ikB) + bytesToHex(ikA);
+  const idABytes = uuidToBytes(myUserId) ?? decodeUTF8(myUserId);
+  const idBBytes = uuidToBytes(theirUserId) ?? decodeUTF8(theirUserId);
+  const orderedIdHex = aFirst
+    ? bytesToHex(idABytes) + bytesToHex(idBBytes)
+    : bytesToHex(idBBytes) + bytesToHex(idABytes);
+  const hash = await digestStringAsync(
+    CryptoDigestAlgorithm.SHA256,
+    orderedKeyHex + orderedIdHex,
+  );
+  const decimal = BigInt("0x" + hash)
+    .toString(10)
+    .padStart(60, "0")
+    .slice(-60);
+  return (decimal.match(/.{1,5}/g) ?? []).join(" ");
 }
 
 function safeJsonParse(raw: string): unknown | null {

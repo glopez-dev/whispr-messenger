@@ -30,17 +30,21 @@ const EMPTY_GROUP_AVATARS: Array<{ uri?: string; name: string }> = [];
 interface ConversationItemProps {
   conversation: Conversation;
   onPress: (conversationId: string) => void;
+  onLongPress?: () => void;
   index?: number;
   editMode?: boolean;
   isSelected?: boolean;
+  isContactVerified?: boolean;
 }
 
 export const ConversationItem: React.FC<ConversationItemProps> = ({
   conversation,
   onPress,
+  onLongPress,
   index = 0,
   editMode = false,
   isSelected = false,
+  isContactVerified = false,
 }) => {
   useTheme();
   const { userId: currentUserId } = useAuth();
@@ -309,6 +313,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           onPress(conversation.id);
         }}
+        onLongPress={onLongPress}
         activeOpacity={0.7}
       >
         <View style={styles.content}>
@@ -399,6 +404,14 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
                   size={14}
                   color="rgba(255, 255, 255, 0.6)"
                   style={styles.mutedIcon}
+                />
+              )}
+              {isContactVerified && conversation.type === "direct" && (
+                <Ionicons
+                  name="lock-closed"
+                  size={12}
+                  color="#4CAF50"
+                  style={{ marginLeft: 4 }}
                 />
               )}
               {formattedTime ? (
@@ -600,6 +613,8 @@ export default memo(ConversationItem, (prevProps, nextProps) => {
     JSON.stringify(prevLastMessage?.metadata) ===
       JSON.stringify(nextLastMessage?.metadata) &&
     prevEditMode === nextEditMode &&
-    prevIsSelected === nextIsSelected
+    prevIsSelected === nextIsSelected &&
+    (prevProps as ConversationItemProps).isContactVerified ===
+      (nextProps as ConversationItemProps).isContactVerified
   );
 });
