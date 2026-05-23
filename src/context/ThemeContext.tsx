@@ -761,6 +761,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.cancel": "Annuler",
     "auth.skip": "Passer",
     "auth.linkedAccount": "Compte associé :",
+    "auth.loginViaQR": "Se connecter via QR code",
 
     // Profile
     "profile.title": "Profil",
@@ -1110,6 +1111,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.cancel": "Cancel",
     "auth.skip": "Skip",
     "auth.linkedAccount": "Linked account:",
+    "auth.loginViaQR": "Sign in with QR code",
 
     // Profile
     "profile.title": "Profile",

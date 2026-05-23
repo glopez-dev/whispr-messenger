@@ -2,6 +2,7 @@ import { AuthService } from "./AuthService";
 import { TokenService } from "./TokenService";
 import { DeviceService } from "./DeviceService";
 import { getApiBaseUrl } from "./apiBase";
+import type { TokenPair } from "../types/auth";
 
 type ApiError = Error & { status?: number; body?: unknown };
 
@@ -157,6 +158,42 @@ export const DeviceManagerService = {
     await apiFetch<void>(`/device/${encodeURIComponent(deviceId)}`, {
       method: "DELETE",
     });
+  },
+
+  /**
+   * POST /auth/qr-code/scan
+   * Exchange a QR challenge JWT (scanned from an authenticated device) for tokens.
+   * Called from an unauthenticated device — no access token required.
+   */
+  async scanQRChallenge(challenge: string): Promise<TokenPair> {
+    let authenticatedDeviceId = "";
+    const parts = challenge.split(".");
+    if (parts.length === 3) {
+      try {
+        const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "==".slice(0, (4 - (base64.length % 4)) % 4);
+        const payload = JSON.parse(atob(padded)) as {
+          deviceId?: string;
+          sub?: string;
+        };
+        authenticatedDeviceId = payload.deviceId ?? payload.sub ?? "";
+      } catch {}
+    }
+
+    const { deviceName, deviceType } = await DeviceService.getDeviceInfo();
+    const raw = await apiFetch<{
+      access_token: string;
+      refresh_token: string;
+    }>("/qr-code/scan", {
+      method: "POST",
+      body: JSON.stringify({
+        challenge,
+        authenticatedDeviceId,
+        deviceName,
+        deviceType,
+      }),
+    });
+    return { accessToken: raw.access_token, refreshToken: raw.refresh_token };
   },
 };
 

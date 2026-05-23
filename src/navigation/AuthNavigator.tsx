@@ -112,6 +112,7 @@ export type AuthStackParamList = {
   Contacts: undefined;
   MyQRCode: undefined;
   QRCodeScanner: undefined;
+  DevicePairingScanner: undefined;
   BlockedUsers: undefined;
   GroupDetails: {
     groupId: string;
@@ -484,6 +485,13 @@ export const AuthNavigator: React.FC = () => {
           getComponent={() =>
             require("../screens/Contacts/QRCodeScannerScreen")
               .QRCodeScannerScreen
+          }
+        />
+        <Stack.Screen
+          name="DevicePairingScanner"
+          getComponent={() =>
+            require("../screens/Auth/DevicePairingScannerScreen")
+              .DevicePairingScannerScreen
           }
         />
         <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
