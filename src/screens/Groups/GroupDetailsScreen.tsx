@@ -297,14 +297,19 @@ export const GroupDetailsScreen: React.FC = () => {
   const otherMembers = members.filter((m) => m.user_id !== CURRENT_USER_ID);
 
   const handleLeaveGroup = useCallback(async () => {
-    if (isLastAdmin) {
+    // si dernier admin sans autres membres, on ne peut pas quitter (groupe orphelin)
+    if (isLastAdmin && otherMembers.length === 0) {
       setShowLeaveModal(false);
-      setShowTransferAdminModal(true);
+      Alert.alert(
+        "Impossible de quitter",
+        "Tu es le seul membre et admin. Supprime le groupe si tu veux le fermer.",
+      );
       return;
     }
 
     try {
       setLeaving(true);
+      // le backend promeut automatiquement un autre membre si l'user est le dernier admin
       await groupsAPI.leaveGroup(groupId, CURRENT_USER_ID, conversationId);
       removeConversationLocal(conversationKey);
       refreshConversations().catch(() => {});
@@ -326,6 +331,7 @@ export const GroupDetailsScreen: React.FC = () => {
     groupId,
     isLastAdmin,
     navigation,
+    otherMembers.length,
     refreshConversations,
     removeConversationLocal,
   ]);
@@ -649,11 +655,48 @@ export const GroupDetailsScreen: React.FC = () => {
       try {
         setMemberActionLoading(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        await messagingAPI.updateGroupMemberRole(
-          conversationId,
-          member.user_id,
-          role,
-        );
+
+        // préférer les endpoints dédiés user-service (PR #151), repli messaging
+        if (role === "admin") {
+          try {
+            await groupsAPI.promoteMember(groupId, member.user_id);
+          } catch (e: any) {
+            if (e?.status === 404 || e?.status === 405) {
+              await messagingAPI.updateGroupMemberRole(
+                conversationId,
+                member.user_id,
+                "admin",
+              );
+            } else {
+              throw e;
+            }
+          }
+        } else {
+          try {
+            await groupsAPI.demoteMember(groupId, member.user_id);
+          } catch (e: any) {
+            if (e?.status === 409) {
+              // dernier admin - ne devrait pas arriver ici vu isSelfDemotionBlocked,
+              // mais on le gère quand même pour les races conditions
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert(
+                "Impossible",
+                "Tu ne peux pas retirer le dernier admin",
+              );
+              return;
+            }
+            if (e?.status === 404 || e?.status === 405) {
+              await messagingAPI.updateGroupMemberRole(
+                conversationId,
+                member.user_id,
+                "member",
+              );
+            } else {
+              throw e;
+            }
+          }
+        }
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setMemberActionFor(null);
         loadGroupData();
@@ -665,7 +708,7 @@ export const GroupDetailsScreen: React.FC = () => {
         setMemberActionLoading(false);
       }
     },
-    [CURRENT_USER_ID, conversationId, isLastAdmin, loadGroupData],
+    [CURRENT_USER_ID, conversationId, groupId, isLastAdmin, loadGroupData],
   );
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -1543,9 +1586,20 @@ export const GroupDetailsScreen: React.FC = () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               // refresh members avant decision pour eviter isLastAdmin stale (concurrent demote)
               await loadGroupData().catch(() => {});
-              // si dernier admin, on saute la typed-confirm et on force le transfert direct
-              if (isLastAdmin) {
-                setShowTransferAdminModal(true);
+              if (isLastAdmin && otherMembers.length > 0) {
+                // dernier admin + autres membres : auto-promotion BE, on confirme juste
+                Alert.alert(
+                  "Tu es le dernier admin",
+                  "Un autre membre sera promu admin automatiquement. Continuer ?",
+                  [
+                    { text: "Annuler", style: "cancel" },
+                    {
+                      text: "Quitter",
+                      style: "destructive",
+                      onPress: () => setShowLeaveModal(true),
+                    },
+                  ],
+                );
               } else {
                 setShowLeaveModal(true);
               }
