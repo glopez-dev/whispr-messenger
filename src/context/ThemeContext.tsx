@@ -890,6 +890,15 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "security.minutesAgo": "Il y a",
     "security.hoursAgo": "Il y a",
     "security.daysAgo": "Il y a",
+    "biometric.lockSubtitle": "Authentifiez-vous pour continuer",
+    "biometric.unlockButton": "Déverrouiller",
+    "biometric.promptMessage": "Déverrouillez Whispr",
+    "biometric.cancelLabel": "Annuler",
+    "biometric.notAvailable":
+      "Authentification biométrique non disponible sur cet appareil",
+    "biometric.notEnrolled":
+      "Aucune empreinte ou Face ID configuré dans les réglages du système",
+    "biometric.enableConfirm": "Confirmer l'activation",
 
     // Two Factor Authentication
     "twoFactor.title": "Authentification à deux facteurs",
@@ -1227,6 +1236,15 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "security.minutesAgo": "ago",
     "security.hoursAgo": "ago",
     "security.daysAgo": "ago",
+    "biometric.lockSubtitle": "Authenticate to continue",
+    "biometric.unlockButton": "Unlock",
+    "biometric.promptMessage": "Unlock Whispr",
+    "biometric.cancelLabel": "Cancel",
+    "biometric.notAvailable":
+      "Biometric authentication is not available on this device",
+    "biometric.notEnrolled":
+      "No fingerprint or Face ID configured in system settings",
+    "biometric.enableConfirm": "Confirm activation",
 
     // Two Factor Authentication
     "twoFactor.title": "Two-Factor Authentication",
