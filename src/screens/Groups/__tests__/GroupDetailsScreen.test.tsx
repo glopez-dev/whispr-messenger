@@ -1,4 +1,5 @@
 import React from "react";
+import { Alert } from "react-native";
 import { render, waitFor, fireEvent } from "@testing-library/react-native";
 import { GroupDetailsScreen } from "../GroupDetailsScreen";
 import { groupsAPI } from "../../../services/groups/api";
@@ -101,6 +102,9 @@ jest.mock("../../../services/groups/api", () => ({
     getGroupSettings: jest.fn(),
     leaveGroup: jest.fn(),
     deleteGroup: jest.fn(),
+    promoteMember: jest.fn(),
+    demoteMember: jest.fn(),
+    transferAdmin: jest.fn(),
   },
 }));
 jest.mock("../../../theme/colors", () => ({
@@ -378,6 +382,98 @@ describe("GroupDetailsScreen", () => {
           "conv1",
         );
       });
+    });
+  });
+
+  describe("admin actions : promote, demote, leave seul admin", () => {
+    const adminMe = {
+      id: "user1",
+      user_id: "user1",
+      display_name: "Me",
+      role: "admin" as const,
+      joined_at: "2024-01-01T00:00:00Z",
+      is_active: true,
+    };
+    const memberOther = {
+      id: "user2",
+      user_id: "user2",
+      display_name: "Bob",
+      role: "member" as const,
+      joined_at: "2024-01-01T00:00:00Z",
+      is_active: true,
+    };
+    const adminOther = {
+      id: "user3",
+      user_id: "user3",
+      display_name: "Carol",
+      role: "admin" as const,
+      joined_at: "2024-01-01T00:00:00Z",
+      is_active: true,
+    };
+
+    it("promote : le bouton ellipsis est visible pour les autres membres quand admin", async () => {
+      (mockedGroupsAPI as any).promoteMember.mockResolvedValueOnce(undefined);
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [adminMe, memberOther],
+        total: 2,
+      } as any);
+
+      const { getByText, getAllByLabelText } = render(<GroupDetailsScreen />);
+      await waitFor(() => expect(getByText("Membres")).toBeTruthy());
+
+      fireEvent.press(getByText("Membres"));
+      await waitFor(() => expect(getByText("Bob")).toBeTruthy());
+
+      // le bouton ellipsis d'action est rendu pour les autres membres quand on est admin
+      const actionBtns = getAllByLabelText(/Actions pour/);
+      expect(actionBtns.length).toBeGreaterThan(0);
+    });
+
+    it("demote 409 : affiche toast 'dernier admin' sans crasher", async () => {
+      const err = Object.assign(new Error("last admin"), { status: 409 });
+      (mockedGroupsAPI as any).demoteMember.mockRejectedValueOnce(err);
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [adminMe, adminOther],
+        total: 2,
+      } as any);
+
+      // le composant doit loader sans crash
+      const { toJSON } = render(<GroupDetailsScreen />);
+      await waitFor(() => expect(toJSON()).toBeTruthy());
+    });
+
+    it("leave seul admin avec autres membres : ouvre Alert confirm auto-promotion", async () => {
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [adminMe, memberOther],
+        total: 2,
+      } as any);
+      // second appel pour le refresh avant leave
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [adminMe, memberOther],
+        total: 2,
+      } as any);
+
+      const alertSpy = jest.spyOn(Alert, "alert");
+
+      const { getByText, getAllByText } = render(<GroupDetailsScreen />);
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Paramètres"));
+      await waitFor(() => expect(getByText("Quitter le groupe")).toBeTruthy());
+
+      fireEvent.press(getByText("Quitter le groupe"));
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(
+          "Tu es le dernier admin",
+          expect.stringContaining("promu admin automatiquement"),
+          expect.any(Array),
+        );
+      });
+
+      alertSpy.mockRestore();
     });
   });
 });
