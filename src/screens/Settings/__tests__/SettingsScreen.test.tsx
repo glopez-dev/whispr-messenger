@@ -173,7 +173,7 @@ describe("SettingsScreen", () => {
   it("reads security settings from SecureStore on mount (WHISPR-1359)", async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { storage: secureStorageMock } = require("../../../services/storage");
-    secureStoreBackend["@whispr_settings_security"] = JSON.stringify({
+    secureStoreBackend["whispr_settings_security"] = JSON.stringify({
       twoFactorAuth: true,
       biometricAuth: true,
     });
@@ -181,7 +181,7 @@ describe("SettingsScreen", () => {
     render(<SettingsScreen />);
     await waitFor(() => {
       expect(secureStorageMock.getItem).toHaveBeenCalledWith(
-        "@whispr_settings_security",
+        "whispr_settings_security",
       );
     });
   });
@@ -196,19 +196,19 @@ describe("SettingsScreen", () => {
       biometricAuth: false,
     });
     AsyncStorage.getItem.mockImplementation(async (key: string) =>
-      key === "@whispr_settings_security" ? legacyValue : null,
+      key === "whispr_settings_security" ? legacyValue : null,
     );
 
     render(<SettingsScreen />);
 
     await waitFor(() => {
       expect(secureStorageMock.setItem).toHaveBeenCalledWith(
-        "@whispr_settings_security",
+        "whispr_settings_security",
         legacyValue,
       );
     });
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith(
-      "@whispr_settings_security",
+      "whispr_settings_security",
     );
   });
 });
