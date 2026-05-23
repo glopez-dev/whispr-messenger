@@ -250,16 +250,28 @@ export const SettingsScreen: React.FC = () => {
    * Uses a PATCH-style merge: reads current backend settings first, then
    * updates only the fields we manage locally, preserving backend-only
    * fields (message_previews, show_sender_name, quiet_hours_*).
+   * Si le backend refuse, rollback vers previous et alerte l'utilisateur.
    */
   const syncNotificationsToBackend = useCallback(
-    async (local: typeof notificationSettings) => {
+    async (
+      local: typeof notificationSettings,
+      previous: typeof notificationSettings,
+    ) => {
       if (!userId) return;
+      const doRollback = () => {
+        setNotificationSettings(previous);
+        persistSettings(STORAGE_KEYS.notifications, previous);
+        Alert.alert(
+          "Erreur",
+          "Impossible de synchroniser ce parametre. Veuillez reessayer.",
+        );
+      };
       try {
         let existing: Partial<NotificationSettings> = {};
         try {
           existing = await NotificationService.getSettings(userId);
         } catch {
-          // If fetching fails, proceed with only local fields
+          // si fetch echoue, on continue avec les champs locaux uniquement
         }
         const merged: Partial<NotificationSettings> = {
           ...existing,
@@ -268,28 +280,43 @@ export const SettingsScreen: React.FC = () => {
         await NotificationService.updateSettings(userId, merged);
       } catch (error) {
         console.error("Error syncing notification settings to backend:", error);
+        doRollback();
       }
     },
-    [userId, notificationToApi],
+    [userId, notificationToApi, persistSettings, STORAGE_KEYS.notifications],
   );
 
   /**
-   * Sync privacy settings to the backend API
+   * Sync privacy settings to the backend API.
+   * Si le backend refuse, rollback vers previous et alerte l'utilisateur.
    */
   const syncPrivacyToBackend = useCallback(
-    async (localPrivacy: typeof privacySettings) => {
+    async (
+      localPrivacy: typeof privacySettings,
+      previous: typeof privacySettings,
+    ) => {
+      const doRollback = () => {
+        setPrivacySettings(previous);
+        persistSettings(STORAGE_KEYS.privacy, previous);
+        Alert.alert(
+          "Erreur",
+          "Impossible de synchroniser ce parametre. Veuillez reessayer.",
+        );
+      };
       try {
         const userService = UserService.getInstance();
         const apiSettings = privacyToApi(localPrivacy);
         const result = await userService.updatePrivacySettings(apiSettings);
         if (!result.success) {
           console.error("Failed to sync privacy settings:", result.message);
+          doRollback();
         }
       } catch (error) {
         console.error("Error syncing privacy to backend:", error);
+        doRollback();
       }
     },
-    [privacyToApi],
+    [privacyToApi, persistSettings, STORAGE_KEYS.privacy],
   );
 
   /**
@@ -414,7 +441,7 @@ export const SettingsScreen: React.FC = () => {
         setNotificationSettings((prev) => {
           const updated = { ...prev, [key]: value };
           persistSettings(STORAGE_KEYS.notifications, updated);
-          syncNotificationsToBackend(updated);
+          syncNotificationsToBackend(updated, prev);
           return updated;
         });
         break;
@@ -609,7 +636,7 @@ export const SettingsScreen: React.FC = () => {
         setPrivacySettings((prev) => {
           const updated = { ...prev, [selectedPrivacyItem]: value };
           persistSettings(STORAGE_KEYS.privacy, updated);
-          syncPrivacyToBackend(updated);
+          syncPrivacyToBackend(updated, prev);
           return updated;
         });
         setShowPrivacyModal(false);
