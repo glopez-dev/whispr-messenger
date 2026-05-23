@@ -23,9 +23,11 @@ interface SwipeableConversationItemProps {
   onToggleRead?: (conversationId: string, isCurrentlyUnread: boolean) => void;
   onArchive?: (conversationId: string) => void;
   onPin?: (conversationId: string) => void;
+  onLongPress?: (conversationId: string) => void;
   index?: number;
   editMode?: boolean;
   isSelected?: boolean;
+  isContactVerified?: boolean;
 }
 
 export const SwipeableConversationItem: React.FC<
@@ -38,9 +40,11 @@ export const SwipeableConversationItem: React.FC<
   onToggleRead,
   onArchive,
   onPin,
+  onLongPress,
   index = 0,
   editMode = false,
   isSelected = false,
+  isContactVerified = false,
 }) => {
   const swipeableRef = useRef<Swipeable>(null);
   const [isSwiping, setIsSwiping] = useState(false);
@@ -194,6 +198,7 @@ export const SwipeableConversationItem: React.FC<
         index={index}
         editMode={editMode}
         isSelected={isSelected}
+        isContactVerified={isContactVerified}
       />
     );
   }
@@ -224,9 +229,13 @@ export const SwipeableConversationItem: React.FC<
           <ConversationItem
             conversation={conversation}
             onPress={handlePress}
+            onLongPress={
+              onLongPress ? () => onLongPress(conversation.id) : undefined
+            }
             index={index}
             editMode={editMode}
             isSelected={isSelected}
+            isContactVerified={isContactVerified}
           />
         </View>
       </Swipeable>
