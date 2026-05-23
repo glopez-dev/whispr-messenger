@@ -516,6 +516,9 @@ export const ConversationsListScreen: React.FC = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       try {
         await archiveConversation(conversationId);
+        // re-fetch pour garantir la sync multi-device (un autre device peut
+        // avoir modifie la liste entre temps)
+        fetchConversations();
       } catch {
         setToast({
           visible: true,
@@ -524,7 +527,7 @@ export const ConversationsListScreen: React.FC = () => {
         });
       }
     },
-    [archiveConversation],
+    [archiveConversation, fetchConversations],
   );
 
   const handlePin = useCallback(

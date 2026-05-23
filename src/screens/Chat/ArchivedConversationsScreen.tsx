@@ -129,6 +129,7 @@ export const ArchivedConversationsScreen: React.FC = () => {
   const unarchiveConversation = useConversationsStore(
     (s) => s.unarchiveConversation,
   );
+  const fetchConversations = useConversationsStore((s) => s.fetchConversations);
 
   const [refreshing, setRefreshing] = useState(false);
   const [screenRefreshKey, setScreenRefreshKey] = useState(0);
@@ -160,6 +161,8 @@ export const ArchivedConversationsScreen: React.FC = () => {
     async (conversationId: string) => {
       try {
         await unarchiveConversation(conversationId);
+        // re-fetch pour garantir la sync multi-device
+        fetchConversations();
         setToast({
           visible: true,
           message: "Conversation désarchivée",
@@ -173,7 +176,7 @@ export const ArchivedConversationsScreen: React.FC = () => {
         });
       }
     },
-    [unarchiveConversation],
+    [unarchiveConversation, fetchConversations],
   );
 
   const onRefresh = useCallback(async () => {
