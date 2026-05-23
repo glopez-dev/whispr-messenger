@@ -442,7 +442,7 @@ describe("GroupDetailsScreen", () => {
       await waitFor(() => expect(toJSON()).toBeTruthy());
     });
 
-    it("leave seul admin avec autres membres : ouvre Alert confirm auto-promotion", async () => {
+    it("leave seul admin avec autres membres : ouvre le modal custom auto-promotion (pas Alert)", async () => {
       mockedGroupsAPI.getGroupMembers.mockResolvedValue({
         members: [adminMe, memberOther],
         total: 2,
@@ -453,9 +453,9 @@ describe("GroupDetailsScreen", () => {
         total: 2,
       } as any);
 
-      const alertSpy = jest.spyOn(Alert, "alert");
-
-      const { getByText, getAllByText } = render(<GroupDetailsScreen />);
+      const { getByText, getAllByText, queryByText } = render(
+        <GroupDetailsScreen />,
+      );
       await waitFor(() =>
         expect(getAllByText("Test Group").length).toBeGreaterThan(0),
       );
@@ -465,15 +465,13 @@ describe("GroupDetailsScreen", () => {
 
       fireEvent.press(getByText("Quitter le groupe"));
 
+      // le modal custom doit s'afficher (pas Alert.alert)
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith(
-          "Tu es le dernier admin",
-          expect.stringContaining("promu admin automatiquement"),
-          expect.any(Array),
-        );
+        expect(getByText("Dernier administrateur")).toBeTruthy();
+        expect(
+          queryByText(/promu administrateur automatiquement/),
+        ).toBeTruthy();
       });
-
-      alertSpy.mockRestore();
     });
   });
 });
