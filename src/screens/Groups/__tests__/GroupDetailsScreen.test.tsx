@@ -105,6 +105,7 @@ jest.mock("../../../services/groups/api", () => ({
     promoteMember: jest.fn(),
     demoteMember: jest.fn(),
     transferAdmin: jest.fn(),
+    kickMember: jest.fn(),
   },
 }));
 jest.mock("../../../theme/colors", () => ({
@@ -471,6 +472,248 @@ describe("GroupDetailsScreen", () => {
         expect(
           queryByText(/promu administrateur automatiquement/),
         ).toBeTruthy();
+      });
+    });
+  });
+
+  describe("owner role — WHISPR-group-owner-ui", () => {
+    const ownerMe = {
+      id: "user1",
+      user_id: "user1",
+      display_name: "Me",
+      role: "owner" as const,
+      joined_at: "2024-01-01T00:00:00Z",
+      is_active: true,
+    };
+    const adminOther = {
+      id: "user2",
+      user_id: "user2",
+      display_name: "AdminUser",
+      role: "admin" as const,
+      joined_at: "2024-01-01T00:00:00Z",
+      is_active: true,
+    };
+    const memberOther = {
+      id: "user3",
+      user_id: "user3",
+      display_name: "Bob",
+      role: "member" as const,
+      joined_at: "2024-01-01T00:00:00Z",
+      is_active: true,
+    };
+
+    it("badge Propriétaire visible pour le membre owner dans l'onglet Membres", async () => {
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [ownerMe, memberOther],
+        total: 2,
+      } as any);
+
+      const { getByText, getAllByText } = render(<GroupDetailsScreen />);
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+
+      await waitFor(() => {
+        expect(getByText("Propriétaire")).toBeTruthy();
+      });
+    });
+
+    it("badge Admin toujours visible pour les admins quand owner est présent", async () => {
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [ownerMe, adminOther, memberOther],
+        total: 3,
+      } as any);
+
+      const { getByText, getAllByText } = render(<GroupDetailsScreen />);
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+
+      await waitFor(() => {
+        expect(getByText("Propriétaire")).toBeTruthy();
+        expect(getByText("Admin")).toBeTruthy();
+      });
+    });
+
+    it("header compte propriétaire et admins séparément", async () => {
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [ownerMe, adminOther, memberOther],
+        total: 3,
+      } as any);
+
+      const { getByText, getAllByText } = render(<GroupDetailsScreen />);
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+
+      await waitFor(() => {
+        // le header doit mentionner proprietaire et admin séparément
+        expect(getByText(/propriétaire/)).toBeTruthy();
+        expect(getByText(/administrateur/)).toBeTruthy();
+      });
+    });
+
+    it("owner voit le bouton ellipsis sur un admin", async () => {
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [ownerMe, adminOther],
+        total: 2,
+      } as any);
+
+      const { getByText, getAllByText, getAllByLabelText } = render(
+        <GroupDetailsScreen />,
+      );
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+      await waitFor(() => expect(getByText("AdminUser")).toBeTruthy());
+
+      const actionBtns = getAllByLabelText(/Actions pour/);
+      expect(actionBtns.length).toBeGreaterThan(0);
+    });
+
+    it("admin ne voit pas le bouton ellipsis sur un autre admin", async () => {
+      const adminMe = {
+        id: "user1",
+        user_id: "user1",
+        display_name: "Me",
+        role: "admin" as const,
+        joined_at: "2024-01-01T00:00:00Z",
+        is_active: true,
+      };
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [adminMe, adminOther],
+        total: 2,
+      } as any);
+
+      const { getByText, getAllByText, queryAllByLabelText } = render(
+        <GroupDetailsScreen />,
+      );
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+      await waitFor(() => expect(getByText("AdminUser")).toBeTruthy());
+
+      // aucun bouton ellipsis visible car admin ne peut pas agir sur un autre admin
+      const actionBtns = queryAllByLabelText(/Actions pour/);
+      expect(actionBtns.length).toBe(0);
+    });
+
+    it("modal actions owner sur membre : Promouvoir en admin visible", async () => {
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [ownerMe, memberOther],
+        total: 2,
+      } as any);
+
+      const { getByText, getAllByText, getAllByLabelText } = render(
+        <GroupDetailsScreen />,
+      );
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+      await waitFor(() => expect(getByText("Bob")).toBeTruthy());
+
+      const actionBtns = getAllByLabelText(/Actions pour Bob/);
+      fireEvent.press(actionBtns[0]);
+
+      await waitFor(() => {
+        expect(getByText("Promouvoir en admin")).toBeTruthy();
+      });
+    });
+
+    it("modal actions owner sur admin : Rétrograder en membre visible", async () => {
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [ownerMe, adminOther],
+        total: 2,
+      } as any);
+
+      const { getByText, getAllByText, getAllByLabelText } = render(
+        <GroupDetailsScreen />,
+      );
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+      await waitFor(() => expect(getByText("AdminUser")).toBeTruthy());
+
+      const actionBtns = getAllByLabelText(/Actions pour AdminUser/);
+      fireEvent.press(actionBtns[0]);
+
+      await waitFor(() => {
+        expect(getByText("Rétrograder en membre")).toBeTruthy();
+      });
+    });
+
+    it("modal actions admin sur membre : pas de Promouvoir ni Rétrograder", async () => {
+      const adminMe = {
+        id: "user1",
+        user_id: "user1",
+        display_name: "Me",
+        role: "admin" as const,
+        joined_at: "2024-01-01T00:00:00Z",
+        is_active: true,
+      };
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [adminMe, memberOther],
+        total: 2,
+      } as any);
+
+      const { getByText, getAllByText, getAllByLabelText, queryByText } = render(
+        <GroupDetailsScreen />,
+      );
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+      await waitFor(() => expect(getByText("Bob")).toBeTruthy());
+
+      const actionBtns = getAllByLabelText(/Actions pour Bob/);
+      fireEvent.press(actionBtns[0]);
+
+      await waitFor(() => {
+        // admin ne peut pas promouvoir ni rétrograder
+        expect(queryByText("Promouvoir en admin")).toBeNull();
+        expect(queryByText("Rétrograder en membre")).toBeNull();
+        // mais peut retirer
+        expect(getByText("Retirer du groupe")).toBeTruthy();
+      });
+    });
+
+    it("sous-texte role 'Propriétaire' dans le modal détails", async () => {
+      mockedGroupsAPI.getGroupMembers.mockResolvedValue({
+        members: [ownerMe, memberOther],
+        total: 2,
+      } as any);
+
+      const { getByText, getAllByText, getAllByLabelText } = render(
+        <GroupDetailsScreen />,
+      );
+      await waitFor(() =>
+        expect(getAllByText("Test Group").length).toBeGreaterThan(0),
+      );
+
+      fireEvent.press(getByText("Membres"));
+      await waitFor(() => expect(getByText("Bob")).toBeTruthy());
+
+      const actionBtns = getAllByLabelText(/Actions pour Bob/);
+      fireEvent.press(actionBtns[0]);
+
+      // le sous-texte du rôle dans le modal est "Membre"
+      await waitFor(() => {
+        expect(getByText("Membre")).toBeTruthy();
       });
     });
   });

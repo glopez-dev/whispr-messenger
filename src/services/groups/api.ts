@@ -25,7 +25,7 @@ export interface GroupMember {
   display_name: string;
   username?: string;
   avatar_url?: string;
-  role: "admin" | "moderator" | "member";
+  role: "owner" | "admin" | "moderator" | "member";
   joined_at: string;
   is_active: boolean;
 }
@@ -87,7 +87,7 @@ interface RawConversationMember {
 }
 
 interface ResolvedMemberMeta {
-  role: "admin" | "moderator" | "member";
+  role: "owner" | "admin" | "moderator" | "member";
   joinedAt?: string;
   isActive?: boolean;
 }
@@ -483,8 +483,10 @@ async function fetchConversationMembers(
     const uid = m.userId ?? m.user_id;
     if (!uid) continue;
     const rawRole = (m.role ?? "member").toLowerCase();
-    let role: "admin" | "moderator" | "member" = "member";
-    if (rawRole === "admin" || rawRole === "owner") {
+    let role: "owner" | "admin" | "moderator" | "member" = "member";
+    if (rawRole === "owner") {
+      role = "owner";
+    } else if (rawRole === "admin") {
       role = "admin";
     } else if (rawRole === "moderator") {
       role = "moderator";
@@ -704,7 +706,7 @@ export const groupsAPI = {
         const displayName = fullName || profile?.username || "Utilisateur";
 
         const memberMeta = roleByUserId.get(userId);
-        const role: "admin" | "moderator" | "member" =
+        const role: "owner" | "admin" | "moderator" | "member" =
           memberMeta?.role ?? (userId === ownerId ? "admin" : "member");
 
         return {
@@ -1196,6 +1198,31 @@ export const groupsAPI = {
       `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/demote`,
       {
         method: "PATCH",
+        headers,
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        (body as { error?: string; message?: string })?.error ??
+        (body as { message?: string })?.message ??
+        `HTTP ${res.status}`;
+      const err = new Error(msg) as Error & { status: number };
+      err.status = res.status;
+      throw err;
+    }
+  },
+
+  /**
+   * DELETE /user/v1/groups/:groupId/members/:userId/kick — owner ou admin
+   * Retirer un membre par force (équivalent de remove, mais via user-service).
+   */
+  async kickMember(groupId: string, userId: string): Promise<void> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(
+      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/kick`,
+      {
+        method: "DELETE",
         headers,
       },
     );

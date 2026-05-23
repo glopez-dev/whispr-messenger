@@ -293,9 +293,12 @@ export const GroupDetailsScreen: React.FC = () => {
   }, [navigation, conversationId, conversationKey]);
 
   const currentUserMember = members.find((m) => m.user_id === CURRENT_USER_ID);
-  const isAdmin = currentUserMember?.role === "admin";
+  const isOwner = currentUserMember?.role === "owner";
+  // owner compte aussi comme admin pour les permissions existantes
+  const isAdmin = isOwner || currentUserMember?.role === "admin";
+  const ownerCount = members.filter((m) => m.role === "owner").length;
   const adminCount = members.filter((m) => m.role === "admin").length;
-  const isLastAdmin = isAdmin && adminCount === 1;
+  const isLastAdmin = isAdmin && (ownerCount + adminCount) === 1;
   const otherMembers = members.filter((m) => m.user_id !== CURRENT_USER_ID);
 
   const handleLeaveGroup = useCallback(async () => {
@@ -1006,8 +1009,14 @@ export const GroupDetailsScreen: React.FC = () => {
               { color: withOpacity(colors.text.light, 0.7) },
             ]}
           >
-            {stats?.adminCount || 0} administrateur
-            {stats && stats.adminCount > 1 ? "s" : ""}
+            {(() => {
+              const owners = members.filter((m) => m.role === "owner").length;
+              const admins = members.filter((m) => m.role === "admin").length;
+              const parts: string[] = [];
+              if (owners > 0) parts.push(`${owners} propriétaire${owners > 1 ? "s" : ""}`);
+              if (admins > 0) parts.push(`${admins} administrateur${admins > 1 ? "s" : ""}`);
+              return parts.length > 0 ? parts.join(", ") : "0 administrateur";
+            })()}
           </Text>
         </View>
         <TouchableOpacity
@@ -1076,6 +1085,28 @@ export const GroupDetailsScreen: React.FC = () => {
                 <Text style={[styles.memberName, { color: colors.text.light }]}>
                   {member.display_name}
                 </Text>
+                {member.role === "owner" && (
+                  <View
+                    style={[
+                      styles.roleBadge,
+                      { backgroundColor: "#B8860B" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="star"
+                      size={12}
+                      color="#FFD700"
+                    />
+                    <Text
+                      style={[
+                        styles.roleBadgeText,
+                        { color: "#FFD700" },
+                      ]}
+                    >
+                      Propriétaire
+                    </Text>
+                  </View>
+                )}
                 {member.role === "admin" && (
                   <View
                     style={[
@@ -1144,10 +1175,13 @@ export const GroupDetailsScreen: React.FC = () => {
                 })}
               </Text>
             </View>
-            {isAdmin && member.user_id !== CURRENT_USER_ID && (
+            {member.user_id !== CURRENT_USER_ID &&
+              // owner peut agir sur tout le monde sauf lui-même
+              // admin peut agir uniquement sur les membres simples
+              (isOwner || (isAdmin && member.role === "member")) && (
               <TouchableOpacity
                 onPress={(e) => {
-                  e.stopPropagation?.();
+                  e?.stopPropagation?.();
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setMemberActionFor(member);
                 }}
@@ -2090,11 +2124,13 @@ export const GroupDetailsScreen: React.FC = () => {
                   {member.display_name}
                 </Text>
                 <Text style={styles.modalDescription}>
-                  {member.role === "admin"
-                    ? "Administrateur"
-                    : member.role === "moderator"
-                      ? "Modérateur"
-                      : "Membre"}
+                  {member.role === "owner"
+                    ? "Propriétaire"
+                    : member.role === "admin"
+                      ? "Administrateur"
+                      : member.role === "moderator"
+                        ? "Modérateur"
+                        : "Membre"}
                 </Text>
               </View>
 
@@ -2106,7 +2142,8 @@ export const GroupDetailsScreen: React.FC = () => {
                 />
               )}
 
-              {member.role !== "admin" && !isSelf && (
+              {/* Promouvoir : owner uniquement, sur les membres simples */}
+              {isOwner && member.role === "member" && !isSelf && (
                 <TouchableOpacity
                   style={styles.memberActionRow}
                   onPress={() => handleChangeRole(member, "admin")}
@@ -2124,7 +2161,8 @@ export const GroupDetailsScreen: React.FC = () => {
                 </TouchableOpacity>
               )}
 
-              {member.role === "admin" && !isSelf && (
+              {/* Rétrograder : owner uniquement, sur les admins */}
+              {isOwner && member.role === "admin" && !isSelf && (
                 <TouchableOpacity
                   style={styles.memberActionRow}
                   onPress={() => handleChangeRole(member, "member")}
@@ -2142,7 +2180,11 @@ export const GroupDetailsScreen: React.FC = () => {
                 </TouchableOpacity>
               )}
 
-              {!isSelf && (
+              {/* Retirer : owner sur admin+membre, admin sur membre uniquement */}
+              {!isSelf &&
+                (isOwner
+                  ? member.role !== "owner"
+                  : isAdmin && member.role === "member") && (
                 <TouchableOpacity
                   style={styles.memberActionRow}
                   onPress={() => handleRemoveMember(member)}
