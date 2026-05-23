@@ -195,6 +195,13 @@ export const DeviceManagerService = {
     });
     return { accessToken: raw.access_token, refreshToken: raw.refresh_token };
   },
+
+  async generateQRChallenge(deviceId: string): Promise<string> {
+    return apiFetch<string>(
+      `/qr-code/challenge/${encodeURIComponent(deviceId)}`,
+      { method: "POST" },
+    );
+  },
 };
 
 // ─── Signal Protocol keys ────────────────────────────────────────────────────
