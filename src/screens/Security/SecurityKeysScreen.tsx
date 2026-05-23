@@ -25,6 +25,10 @@ import * as Haptics from "expo-haptics";
 import Toast from "../../components/Toast/Toast";
 
 import { copyToClipboard } from "../../utils/clipboard";
+import {
+  DeviceManagerService,
+  type DeviceInfo,
+} from "../../services/SecurityService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -59,53 +63,10 @@ export const SecurityKeysScreen: React.FC = () => {
   const modalScale = useRef(new Animated.Value(0.9)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
 
-  const [devices, setDevices] = useState<ConnectedDevice[]>([
-    {
-      id: "1",
-      name: "iPhone 15 Pro",
-      type: "mobile",
-      lastActive: "Maintenant",
-      location: "Paris, France",
-      isCurrent: true,
-    },
-    {
-      id: "2",
-      name: "MacBook Pro",
-      type: "desktop",
-      lastActive: "Il y a 2 heures",
-      location: "Paris, France",
-      isCurrent: false,
-      securityCode: "ABC123-DEF456-GHI789",
-    },
-    {
-      id: "3",
-      name: "iPad Air",
-      type: "tablet",
-      lastActive: "Il y a 3 jours",
-      location: "Lyon, France",
-      isCurrent: false,
-      securityCode: "XYZ789-UVW456-RST123",
-    },
-  ]);
+  const [devices, setDevices] = useState<ConnectedDevice[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(true);
 
-  const [securityKeys, setSecurityKeys] = useState<SecurityKey[]>([
-    {
-      id: "1",
-      deviceId: "1",
-      deviceName: "iPhone 15 Pro",
-      fingerprint: "A1B2C3D4E5F6G7H8",
-      createdAt: "2024-01-15T10:30:00Z",
-      verified: true,
-    },
-    {
-      id: "2",
-      deviceId: "2",
-      deviceName: "MacBook Pro",
-      fingerprint: "I9J0K1L2M3N4O5P6",
-      createdAt: "2024-01-10T14:20:00Z",
-      verified: true,
-    },
-  ]);
+  const [securityKeys, setSecurityKeys] = useState<SecurityKey[]>([]);
 
   const [showSecurityCodeModal, setShowSecurityCodeModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<ConnectedDevice | null>(
@@ -123,6 +84,29 @@ export const SecurityKeysScreen: React.FC = () => {
     type: "info",
   });
 
+  const mapPlatformToType = (platform: string): ConnectedDevice["type"] => {
+    const p = platform.toLowerCase();
+    if (p === "ios" || p === "android") return "mobile";
+    if (p === "web") return "web";
+    if (p === "tablet") return "tablet";
+    if (p === "desktop" || p === "macos" || p === "windows" || p === "linux")
+      return "desktop";
+    return "mobile";
+  };
+
+  const formatLastActive = (isoString: string): string => {
+    const diff = Date.now() - new Date(isoString).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 2) return getLocalizedText("security.now") || "Maintenant";
+    if (minutes < 60)
+      return `${getLocalizedText("security.minutesAgo") || "Il y a"} ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24)
+      return `${getLocalizedText("security.hoursAgo") || "Il y a"} ${hours}h`;
+    const days = Math.floor(hours / 24);
+    return `${getLocalizedText("security.daysAgo") || "Il y a"} ${days}j`;
+  };
+
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -136,6 +120,36 @@ export const SecurityKeysScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    DeviceManagerService.listDevices()
+      .then((apiDevices: DeviceInfo[]) => {
+        const mapped: ConnectedDevice[] = apiDevices.map((d) => ({
+          id: d.id,
+          name: d.name,
+          type: mapPlatformToType(d.platform),
+          lastActive: formatLastActive(d.last_active),
+          isCurrent: d.is_current,
+        }));
+        setDevices(mapped);
+        setSecurityKeys(
+          mapped.map((d, i) => ({
+            id: String(i + 1),
+            deviceId: d.id,
+            deviceName: d.name,
+            fingerprint: "—",
+            createdAt: new Date().toISOString(),
+            verified: d.isCurrent,
+          })),
+        );
+      })
+      .catch(() => {
+        showToast(
+          getLocalizedText("security.loadDevicesError") ||
+            "Impossible de charger les appareils",
+          "error",
+        );
+      })
+      .finally(() => setLoadingDevices(false));
   }, []);
 
   useEffect(() => {
@@ -192,10 +206,20 @@ export const SecurityKeysScreen: React.FC = () => {
     setToast({ visible: true, message, type });
   };
 
-  const confirmDisconnectDevice = (device: ConnectedDevice) => {
+  const confirmDisconnectDevice = async (device: ConnectedDevice) => {
     triggerHaptic("medium");
-    setDevices((prev) => prev.filter((d) => d.id !== device.id));
-    showToast(getLocalizedText("security.deviceDisconnected"), "success");
+    try {
+      await DeviceManagerService.revokeDevice(device.id);
+      setDevices((prev) => prev.filter((d) => d.id !== device.id));
+      setSecurityKeys((prev) => prev.filter((k) => k.deviceId !== device.id));
+      showToast(getLocalizedText("security.deviceDisconnected"), "success");
+    } catch {
+      showToast(
+        getLocalizedText("security.disconnectError") ||
+          "Impossible de déconnecter cet appareil",
+        "error",
+      );
+    }
   };
 
   const handleDisconnectDevice = (device: ConnectedDevice) => {
@@ -806,9 +830,34 @@ export const SecurityKeysScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-            {devices.map((device, index) => (
-              <DeviceCard key={device.id} device={device} index={index} />
-            ))}
+            {loadingDevices ? (
+              <View style={{ paddingVertical: 24, alignItems: "center" }}>
+                <Text
+                  style={{
+                    color: themeColors.text.secondary,
+                    fontSize: getFontSize("sm"),
+                  }}
+                >
+                  {getLocalizedText("common.loading") || "Chargement…"}
+                </Text>
+              </View>
+            ) : devices.length === 0 ? (
+              <View style={{ paddingVertical: 24, alignItems: "center" }}>
+                <Text
+                  style={{
+                    color: themeColors.text.secondary,
+                    fontSize: getFontSize("sm"),
+                  }}
+                >
+                  {getLocalizedText("security.noDevices") ||
+                    "Aucun appareil connecté"}
+                </Text>
+              </View>
+            ) : (
+              devices.map((device, index) => (
+                <DeviceCard key={device.id} device={device} index={index} />
+              ))
+            )}
           </View>
 
           <View style={styles.section}>
