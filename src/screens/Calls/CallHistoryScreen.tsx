@@ -1,23 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform } from "react-native";
 import {
-  AttachStep as RNAttachStep,
-  SpotlightTourProvider as RNSpotlightTourProvider,
+  AttachStep,
+  SpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
 import { TourTooltip } from "../../components/Tour/TourTooltip";
 import { TourAutoStart } from "../../components/Tour/TourAutoStart";
-
-// Le SpotlightTour casse le layout web (overlay SVG qui squeeze le flex root).
-// On garde le tour produit uniquement en natif iOS/Android.
-const IS_WEB = Platform.OS === "web";
-const SpotlightTourProvider: any = IS_WEB
-  ? ({ children }: { children: any }) =>
-      typeof children === "function" ? children() : children
-  : RNSpotlightTourProvider;
-const AttachStep: any = IS_WEB
-  ? ({ children }: { children: React.ReactNode }) => <>{children}</>
-  : RNAttachStep;
 
 const CALLS_STEPS_COUNT = 2;
 
