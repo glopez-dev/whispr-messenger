@@ -496,6 +496,7 @@ export const SettingsScreen: React.FC = () => {
   };
 
   const enableBiometric = async () => {
+    if (Platform.OS === "web") return;
     const [hasHardware, isEnrolled] = await Promise.all([
       LocalAuthentication.hasHardwareAsync(),
       LocalAuthentication.isEnrolledAsync(),
@@ -1286,47 +1287,46 @@ export const SettingsScreen: React.FC = () => {
             onPress={() => navigation.navigate("TwoFactorAuth")}
             icon="shield-checkmark-outline"
           />
-          {Platform.OS !== "web" && (
-            <View style={styles.settingItem}>
-              <View style={styles.settingItemLeft}>
-                <View style={styles.settingTextContainer}>
-                  <Text
-                    style={[
-                      styles.settingLabel,
-                      {
-                        color: themeColors.text.primary,
-                        fontSize: getFontSize("base"),
-                      },
-                    ]}
-                  >
-                    Authentification biométrique
-                  </Text>
-                  <Text
-                    style={[
-                      styles.settingSubtitle,
-                      {
-                        color: themeColors.text.secondary,
-                        fontSize: getFontSize("sm"),
-                      },
-                    ]}
-                  >
-                    Déverrouiller avec l'empreinte ou le visage
-                  </Text>
-                </View>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <View style={styles.settingTextContainer}>
+                <Text
+                  style={[
+                    styles.settingLabel,
+                    {
+                      color: themeColors.text.primary,
+                      fontSize: getFontSize("base"),
+                    },
+                  ]}
+                >
+                  Authentification biométrique
+                </Text>
+                <Text
+                  style={[
+                    styles.settingSubtitle,
+                    {
+                      color: themeColors.text.secondary,
+                      fontSize: getFontSize("sm"),
+                    },
+                  ]}
+                >
+                  Déverrouiller avec l'empreinte ou le visage
+                </Text>
               </View>
-              <Switch
-                value={securitySettings.biometricAuth}
-                onValueChange={(value) =>
-                  handleToggle("security", "biometricAuth", value)
-                }
-                trackColor={{
-                  false: themeColors.text.tertiary,
-                  true: themeColors.primary,
-                }}
-                thumbColor="#FFFFFF"
-              />
             </View>
-          )}
+            <Switch
+              value={securitySettings.biometricAuth}
+              onValueChange={(value) =>
+                handleToggle("security", "biometricAuth", value)
+              }
+              disabled={Platform.OS === "web"}
+              trackColor={{
+                false: themeColors.text.tertiary,
+                true: themeColors.primary,
+              }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
         </SettingSection>
 
         {/* Moderation Section */}
