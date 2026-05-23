@@ -357,8 +357,13 @@ export const OnboardingScreen: React.FC = () => {
 
   const goNext = useCallback(() => {
     if (current < SLIDES.length - 1) {
+      // Sur web onViewableItemsChanged ne fire pas fiablement avec
+      // pagingEnabled, donc le current restait bloque a 0 et le clic
+      // suivant recalculait le meme offset. On met a jour current direct.
+      const next = current + 1;
+      setCurrent(next);
       flatRef.current?.scrollToOffset({
-        offset: (current + 1) * W,
+        offset: next * W,
         animated: true,
       });
     } else {
