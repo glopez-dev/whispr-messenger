@@ -1286,45 +1286,47 @@ export const SettingsScreen: React.FC = () => {
             onPress={() => navigation.navigate("TwoFactorAuth")}
             icon="shield-checkmark-outline"
           />
-          <View style={styles.settingItem}>
-            <View style={styles.settingItemLeft}>
-              <View style={styles.settingTextContainer}>
-                <Text
-                  style={[
-                    styles.settingLabel,
-                    {
-                      color: themeColors.text.primary,
-                      fontSize: getFontSize("base"),
-                    },
-                  ]}
-                >
-                  Authentification biométrique
-                </Text>
-                <Text
-                  style={[
-                    styles.settingSubtitle,
-                    {
-                      color: themeColors.text.secondary,
-                      fontSize: getFontSize("sm"),
-                    },
-                  ]}
-                >
-                  Déverrouiller avec l'empreinte ou le visage
-                </Text>
+          {Platform.OS !== "web" && (
+            <View style={styles.settingItem}>
+              <View style={styles.settingItemLeft}>
+                <View style={styles.settingTextContainer}>
+                  <Text
+                    style={[
+                      styles.settingLabel,
+                      {
+                        color: themeColors.text.primary,
+                        fontSize: getFontSize("base"),
+                      },
+                    ]}
+                  >
+                    Authentification biométrique
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingSubtitle,
+                      {
+                        color: themeColors.text.secondary,
+                        fontSize: getFontSize("sm"),
+                      },
+                    ]}
+                  >
+                    Déverrouiller avec l'empreinte ou le visage
+                  </Text>
+                </View>
               </View>
+              <Switch
+                value={securitySettings.biometricAuth}
+                onValueChange={(value) =>
+                  handleToggle("security", "biometricAuth", value)
+                }
+                trackColor={{
+                  false: themeColors.text.tertiary,
+                  true: themeColors.primary,
+                }}
+                thumbColor="#FFFFFF"
+              />
             </View>
-            <Switch
-              value={securitySettings.biometricAuth}
-              onValueChange={(value) =>
-                handleToggle("security", "biometricAuth", value)
-              }
-              trackColor={{
-                false: themeColors.text.tertiary,
-                true: themeColors.primary,
-              }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
+          )}
         </SettingSection>
 
         {/* Moderation Section */}
