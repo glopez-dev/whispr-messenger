@@ -136,6 +136,8 @@ export const GroupDetailsScreen: React.FC = () => {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showTransferAdminModal, setShowTransferAdminModal] = useState(false);
+  const [showLastAdminWarningModal, setShowLastAdminWarningModal] =
+    useState(false);
   const [leaving, setLeaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -1587,19 +1589,8 @@ export const GroupDetailsScreen: React.FC = () => {
               // refresh members avant decision pour eviter isLastAdmin stale (concurrent demote)
               await loadGroupData().catch(() => {});
               if (isLastAdmin && otherMembers.length > 0) {
-                // dernier admin + autres membres : auto-promotion BE, on confirme juste
-                Alert.alert(
-                  "Tu es le dernier admin",
-                  "Un autre membre sera promu admin automatiquement. Continuer ?",
-                  [
-                    { text: "Annuler", style: "cancel" },
-                    {
-                      text: "Quitter",
-                      style: "destructive",
-                      onPress: () => setShowLeaveModal(true),
-                    },
-                  ],
-                );
+                // dernier admin + autres membres : Modal custom (Alert.alert muet sur web)
+                setShowLastAdminWarningModal(true);
               } else {
                 setShowLeaveModal(true);
               }
@@ -1710,6 +1701,76 @@ export const GroupDetailsScreen: React.FC = () => {
       onCancel={() => setShowLeaveModal(false)}
       onConfirm={handleLeaveGroup}
     />
+  );
+
+  const renderLastAdminWarningModal = () => (
+    <Modal
+      visible={showLastAdminWarningModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowLastAdminWarningModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <AnimatedView
+          style={styles.modalContainer}
+          entering={FadeInDown.duration(250).springify()}
+        >
+          <LinearGradient
+            colors={colors.background.gradient.app}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.modalGradient}
+          >
+            <View style={styles.modalHeader}>
+              <View
+                style={[
+                  styles.modalIconContainer,
+                  styles.modalIconContainerInfo,
+                ]}
+              >
+                <LinearGradient
+                  colors={[colors.ui.warning, colors.ui.error]}
+                  style={styles.modalIconGradient}
+                >
+                  <Ionicons
+                    name="shield-outline"
+                    size={28}
+                    color={colors.text.light}
+                  />
+                </LinearGradient>
+              </View>
+              <Text style={styles.modalTitle}>Dernier administrateur</Text>
+              <Text style={styles.modalDescription}>
+                Un autre membre sera promu administrateur automatiquement.
+                Continuer ?
+              </Text>
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={() => setShowLastAdminWarningModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalButtonCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButtonConfirm,
+                  { backgroundColor: colors.ui.error },
+                ]}
+                onPress={() => {
+                  setShowLastAdminWarningModal(false);
+                  setShowLeaveModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalButtonConfirmText}>Quitter</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </AnimatedView>
+      </View>
+    </Modal>
   );
 
   const renderDeleteModal = () => (
@@ -2214,6 +2275,7 @@ export const GroupDetailsScreen: React.FC = () => {
           <View style={styles.contentContainer}>{renderContent()}</View>
         </ScrollView>
         {renderLeaveModal()}
+        {renderLastAdminWarningModal()}
         {renderDeleteModal()}
         {renderTransferAdminModal()}
         {renderAddMemberModal()}
@@ -2674,6 +2736,19 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semiBold,
     color: withOpacity(colors.text.light, 0.9),
+    letterSpacing: 0.3,
+  },
+  modalButtonConfirm: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalButtonConfirmText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.text.light,
     letterSpacing: 0.3,
   },
   membersList: {
