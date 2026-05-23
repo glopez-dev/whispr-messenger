@@ -16,7 +16,15 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
 jest.mock("../../../context/AuthContext", () => ({
-  useAuth: () => ({ deviceId: "test-device-id" }),
+  useAuth: () => ({ userId: "test-user-id", deviceId: "test-device-id" }),
+}));
+jest.mock("expo-crypto", () => ({
+  digestStringAsync: jest
+    .fn()
+    .mockResolvedValue(
+      "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899",
+    ),
+  CryptoDigestAlgorithm: { SHA256: "SHA-256" },
 }));
 jest.mock("../../../context/ThemeContext", () => ({
   useTheme: () => ({
@@ -42,11 +50,15 @@ jest.mock("react-native-qrcode-styled", () => () => null);
 const mockListDevices = jest.fn();
 const mockRevokeDevice = jest.fn();
 const mockGenerateQRChallenge = jest.fn();
+const mockGetKeyBundle = jest.fn();
 jest.mock("../../../services/SecurityService", () => ({
   DeviceManagerService: {
     listDevices: (...a: unknown[]) => mockListDevices(...a),
     revokeDevice: (...a: unknown[]) => mockRevokeDevice(...a),
     generateQRChallenge: (...a: unknown[]) => mockGenerateQRChallenge(...a),
+  },
+  SignalKeysService: {
+    getKeyBundle: (...a: unknown[]) => mockGetKeyBundle(...a),
   },
 }));
 
@@ -55,6 +67,15 @@ describe("SecurityKeysScreen", () => {
     jest.clearAllMocks();
     mockListDevices.mockResolvedValue([]);
     mockGenerateQRChallenge.mockResolvedValue("jwt-challenge-token");
+    mockGetKeyBundle.mockResolvedValue({
+      identity_key: "dGVzdC1pZGVudGl0eS1rZXk=",
+      signed_prekey: {
+        key_id: 1,
+        public_key: "cHVibGljS2V5",
+        signature: "c2ln",
+      },
+      one_time_prekeys: [],
+    });
     jest.spyOn(console, "warn").mockImplementation(() => {});
     // Reset module-level cache so each test starts fresh
     _qrCache.challenge = null;

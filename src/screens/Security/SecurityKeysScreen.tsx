@@ -27,9 +27,12 @@ import * as Haptics from "expo-haptics";
 import Toast from "../../components/Toast/Toast";
 import QRCodeStyled from "react-native-qrcode-styled";
 
+import * as Crypto from "expo-crypto";
+
 import { copyToClipboard } from "../../utils/clipboard";
 import {
   DeviceManagerService,
+  SignalKeysService,
   type DeviceInfo,
 } from "../../services/SecurityService";
 
@@ -56,8 +59,12 @@ interface SecurityKey {
   deviceId: string;
   deviceName: string;
   fingerprint: string;
-  createdAt: string;
   verified: boolean;
+}
+
+function formatFingerprint(hex: string): string {
+  const truncated = hex.slice(0, 32);
+  return truncated.match(/.{1,4}/g)?.join(" ") ?? hex;
 }
 
 // Module-level cache — survives re-renders and component remounts
@@ -367,7 +374,7 @@ const QRCodeModal: React.FC<{
 export const SecurityKeysScreen: React.FC = () => {
   const navigation = useNavigation();
   const { getThemeColors, getFontSize, getLocalizedText } = useTheme();
-  const { deviceId: currentDeviceId } = useAuth();
+  const { userId, deviceId: currentDeviceId } = useAuth();
   const themeColors = getThemeColors();
   const accentColor = "#9692AC";
   const accentColorDark = "#727596";
@@ -436,7 +443,7 @@ export const SecurityKeysScreen: React.FC = () => {
     ]).start();
 
     DeviceManagerService.listDevices()
-      .then((apiDevices: DeviceInfo[]) => {
+      .then(async (apiDevices: DeviceInfo[]) => {
         const mapped: ConnectedDevice[] = apiDevices.map((d) => ({
           id: d.id,
           name: d.deviceName,
@@ -445,16 +452,35 @@ export const SecurityKeysScreen: React.FC = () => {
           isCurrent: d.id === currentDeviceId,
         }));
         setDevices(mapped);
-        setSecurityKeys(
-          mapped.map((d, i) => ({
-            id: String(i + 1),
-            deviceId: d.id,
-            deviceName: d.name,
-            fingerprint: "—",
-            createdAt: new Date().toISOString(),
-            verified: d.isCurrent,
-          })),
+
+        const keys: SecurityKey[] = await Promise.all(
+          mapped.map(async (d, i) => {
+            let fingerprint = "—";
+            if (userId) {
+              try {
+                const bundle = await SignalKeysService.getKeyBundle(
+                  userId,
+                  d.id,
+                );
+                const raw = await Crypto.digestStringAsync(
+                  Crypto.CryptoDigestAlgorithm.SHA256,
+                  bundle.identity_key + d.id,
+                );
+                fingerprint = formatFingerprint(raw);
+              } catch {
+                // keep "—" if bundle unavailable
+              }
+            }
+            return {
+              id: String(i + 1),
+              deviceId: d.id,
+              deviceName: d.name,
+              fingerprint,
+              verified: d.isCurrent,
+            };
+          }),
         );
+        setSecurityKeys(keys);
       })
       .catch(() => {
         showToast(
@@ -611,15 +637,6 @@ export const SecurityKeysScreen: React.FC = () => {
       default:
         return { name: "device-desktop", color: iconColor };
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
   };
 
   const DeviceCard = ({
@@ -985,25 +1002,6 @@ export const SecurityKeysScreen: React.FC = () => {
                     color={themeColors.text.tertiary}
                   />
                 </TouchableOpacity>
-              </View>
-              <View style={styles.keyDateRow}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={12}
-                  color={themeColors.text.tertiary}
-                />
-                <Text
-                  style={[
-                    styles.keyDate,
-                    {
-                      color: themeColors.text.tertiary,
-                      fontSize: getFontSize("xs"),
-                    },
-                  ]}
-                >
-                  {getLocalizedText("security.createdOn")}{" "}
-                  {formatDate(securityKey.createdAt)}
-                </Text>
               </View>
             </View>
           </View>
