@@ -49,6 +49,8 @@ import {
   SanctionFormScreen,
 } from "../screens/Admin";
 
+import { AppState } from "react-native";
+import * as LocalAuthentication from "expo-local-authentication";
 import { useAuth } from "../context/AuthContext";
 import { useOfflineQueueDrainer } from "../hooks/useOfflineQueueDrainer";
 import { useModerationStore } from "../store/moderationStore";
@@ -56,7 +58,9 @@ import { useConversationsStore } from "../store/conversationsStore";
 import { profileSetupFlag } from "../services/profileSetupFlag";
 import { SplashScreen } from "../screens/SplashScreen/SplashScreen";
 import { OnboardingScreen } from "../screens/Auth/OnboardingScreen";
+import { BiometricLockScreen } from "../screens/Auth/BiometricLockScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { storage as secureStorage } from "../services/storage";
 import { TourProvider } from "../context/TourContext";
 import { contactsAPI } from "../services/contacts/api";
 import { TokenService } from "../services/TokenService";
@@ -161,6 +165,8 @@ const Stack = createStackNavigator<AuthStackParamList>();
 
 const ONBOARDING_KEY = "@whispr:onboarding_done";
 
+const SECURITY_STORAGE_KEY = "whispr_settings_security";
+
 export const AuthNavigator: React.FC = () => {
   const { isLoading, isAuthenticated, userId } = useAuth();
   const [splashMinElapsed, setSplashMinElapsed] = useState(false);
@@ -168,6 +174,7 @@ export const AuthNavigator: React.FC = () => {
     boolean | null
   >(null);
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const [biometricLocked, setBiometricLocked] = useState<boolean | null>(null);
   const fetchMyRole = useModerationStore((s) => s.fetchMyRole);
   // Source de vérité unique pour la disponibilité des appels (Expo Go,
   // module natif WebRTC manquant, web). Mémorisé : la dispo ne change pas
@@ -186,6 +193,37 @@ export const AuthNavigator: React.FC = () => {
     const t = setTimeout(() => setSplashMinElapsed(true), SPLASH_MIN_MS);
     return () => clearTimeout(t);
   }, []);
+
+  const isBiometricEnabled = async (): Promise<boolean> => {
+    try {
+      const raw = await secureStorage.getItem(SECURITY_STORAGE_KEY);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return parsed.biometricAuth === true;
+    } catch {
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setBiometricLocked(false);
+      return;
+    }
+    isBiometricEnabled().then((enabled) => setBiometricLocked(enabled));
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        isBiometricEnabled().then((enabled) => {
+          if (enabled) setBiometricLocked(true);
+        });
+      }
+    });
+    return () => sub.remove();
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // TODO: remove before ship — forces onboarding on every launch in dev
@@ -317,10 +355,15 @@ export const AuthNavigator: React.FC = () => {
     isLoading ||
     !splashMinElapsed ||
     profileSetupPending === null ||
-    onboardingDone === null;
+    onboardingDone === null ||
+    (isAuthenticated && biometricLocked === null);
 
   if (showSplash) {
     return <SplashScreen />;
+  }
+
+  if (isAuthenticated && biometricLocked) {
+    return <BiometricLockScreen onUnlock={() => setBiometricLocked(false)} />;
   }
 
   const initialRouteName = !isAuthenticated

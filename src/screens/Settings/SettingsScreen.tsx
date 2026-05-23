@@ -17,6 +17,7 @@ import {
   InteractionManager,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as LocalAuthentication from "expo-local-authentication";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { storage as secureStorage } from "../../services/storage";
@@ -481,12 +482,43 @@ export const SettingsScreen: React.FC = () => {
         });
         break;
       case "security":
-        setSecuritySettings((prev) => {
-          const updated = { ...prev, [key]: value };
-          persistSettings(STORAGE_KEYS.security, updated);
-          return updated;
-        });
+        if (key === "biometricAuth" && value) {
+          void enableBiometric();
+        } else {
+          setSecuritySettings((prev) => {
+            const updated = { ...prev, [key]: value };
+            persistSettings(STORAGE_KEYS.security, updated);
+            return updated;
+          });
+        }
         break;
+    }
+  };
+
+  const enableBiometric = async () => {
+    const [hasHardware, isEnrolled] = await Promise.all([
+      LocalAuthentication.hasHardwareAsync(),
+      LocalAuthentication.isEnrolledAsync(),
+    ]);
+    if (!hasHardware) {
+      Alert.alert("Non disponible", getLocalizedText("biometric.notAvailable"));
+      return;
+    }
+    if (!isEnrolled) {
+      Alert.alert("Non configuré", getLocalizedText("biometric.notEnrolled"));
+      return;
+    }
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: getLocalizedText("biometric.enableConfirm"),
+      cancelLabel: getLocalizedText("biometric.cancelLabel"),
+      disableDeviceFallback: false,
+    });
+    if (result.success) {
+      setSecuritySettings((prev) => {
+        const updated = { ...prev, biometricAuth: true };
+        persistSettings(STORAGE_KEYS.security, updated);
+        return updated;
+      });
     }
   };
 
