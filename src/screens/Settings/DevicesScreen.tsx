@@ -77,12 +77,12 @@ export const DevicesScreen: React.FC = () => {
 
   const handleRevoke = useCallback(
     (device: DeviceInfo) => {
-      if (device.is_current) return;
+      if (device.id === currentDeviceId) return;
 
       const title = getLocalizedText("devices.revokeTitle") || "Revoke device";
       const message =
         getLocalizedText("devices.revokeConfirm") ||
-        `Are you sure you want to sign out "${device.name}"? You'll need to log in again on that device.`;
+        `Are you sure you want to sign out "${device.deviceName}"? You'll need to log in again on that device.`;
       const cancel = getLocalizedText("auth.cancel") || "Cancel";
       const confirm =
         getLocalizedText("devices.revokeConfirmAction") || "Revoke";

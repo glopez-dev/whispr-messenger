@@ -15,6 +15,9 @@ jest.mock("expo-haptics", () => ({
   impactAsync: jest.fn(),
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
+jest.mock("../../../context/AuthContext", () => ({
+  useAuth: () => ({ deviceId: "test-device-id" }),
+}));
 jest.mock("../../../context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
