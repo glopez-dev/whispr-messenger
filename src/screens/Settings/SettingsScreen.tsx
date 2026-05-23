@@ -107,7 +107,7 @@ export const SettingsScreen: React.FC = () => {
     notifications: "@whispr_settings_notifications",
     messaging: "@whispr_settings_messaging",
     app: "@whispr_settings_app",
-    security: "@whispr_settings_security",
+    security: "whispr_settings_security",
   };
 
   // Privacy settings
@@ -180,36 +180,23 @@ export const SettingsScreen: React.FC = () => {
   /**
    * Map local privacy values (Everyone/Contacts/Nobody) to API format (everyone/contacts/nobody)
    */
+  const toVisibility = (
+    val: string | undefined,
+  ): "everyone" | "contacts" | "nobody" => {
+    const v = (val ?? "everyone").toLowerCase();
+    if (v === "contacts" || v === "nobody") return v;
+    return "everyone";
+  };
+
   const privacyToApi = useCallback(
     (local: typeof privacySettings): PrivacySettings => ({
-      profilePictureVisibility: local.profilePhoto.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      firstNameVisibility: local.firstName.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      lastNameVisibility: local.lastName.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      biographyVisibility: local.biography.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      lastSeenVisibility: local.lastSeen.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      onlineStatusVisibility: local.onlineStatus.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      groupAddPermission: local.groupAdd.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
+      profilePictureVisibility: toVisibility(local.profilePhoto),
+      firstNameVisibility: toVisibility(local.firstName),
+      lastNameVisibility: toVisibility(local.lastName),
+      biographyVisibility: toVisibility(local.biography),
+      lastSeenVisibility: toVisibility(local.lastSeen),
+      onlineStatusVisibility: toVisibility(local.onlineStatus),
+      groupAddPermission: toVisibility(local.groupAdd),
       searchVisibility: true,
       phoneNumberSearch: "everyone",
     }),
