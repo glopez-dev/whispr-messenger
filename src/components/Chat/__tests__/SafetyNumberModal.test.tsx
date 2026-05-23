@@ -87,11 +87,26 @@ describe("SafetyNumberModal", () => {
     expect(await findByText("67890")).toBeTruthy();
   });
 
-  it("shows error when getKeyBundle fails", async () => {
+  it("shows error when own keys are missing", async () => {
     mockGetKeyBundle.mockRejectedValue(new Error("Network error"));
     const { findByText } = render(<SafetyNumberModal {...defaultProps} />);
     expect(
-      await findByText("Impossible de calculer le Safety Number."),
+      await findByText(
+        "Vos clés Signal ne sont pas encore enregistrées. Reconnectez-vous.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("shows error when contact has no Signal keys", async () => {
+    mockGetKeyBundle.mockImplementation((userId: string) => {
+      if (userId === "user-a") return Promise.resolve(MY_BUNDLE);
+      return Promise.reject(new Error("404"));
+    });
+    const { findByText } = render(<SafetyNumberModal {...defaultProps} />);
+    expect(
+      await findByText(
+        "Ce contact n'a pas encore de clés Signal enregistrées. Il doit se connecter au moins une fois depuis l'app.",
+      ),
     ).toBeTruthy();
   });
 
