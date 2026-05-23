@@ -21,6 +21,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import * as Haptics from "expo-haptics";
 import Toast from "../../components/Toast/Toast";
 
@@ -54,6 +55,7 @@ interface SecurityKey {
 export const SecurityKeysScreen: React.FC = () => {
   const navigation = useNavigation();
   const { getThemeColors, getFontSize, getLocalizedText } = useTheme();
+  const { deviceId: currentDeviceId } = useAuth();
   const themeColors = getThemeColors();
   const accentColor = "#9692AC";
   const accentColorDark = "#727596";
@@ -84,8 +86,8 @@ export const SecurityKeysScreen: React.FC = () => {
     type: "info",
   });
 
-  const mapPlatformToType = (platform: string): ConnectedDevice["type"] => {
-    const p = platform.toLowerCase();
+  const mapPlatformToType = (platform?: string): ConnectedDevice["type"] => {
+    const p = platform?.toLowerCase() ?? "";
     if (p === "ios" || p === "android") return "mobile";
     if (p === "web") return "web";
     if (p === "tablet") return "tablet";
@@ -125,10 +127,10 @@ export const SecurityKeysScreen: React.FC = () => {
       .then((apiDevices: DeviceInfo[]) => {
         const mapped: ConnectedDevice[] = apiDevices.map((d) => ({
           id: d.id,
-          name: d.name,
-          type: mapPlatformToType(d.platform),
-          lastActive: formatLastActive(d.last_active),
-          isCurrent: d.is_current,
+          name: d.deviceName,
+          type: mapPlatformToType(d.deviceType),
+          lastActive: formatLastActive(d.lastActive?.toString() ?? ""),
+          isCurrent: d.id === currentDeviceId,
         }));
         setDevices(mapped);
         setSecurityKeys(

@@ -28,6 +28,10 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
+jest.mock("../../../context/AuthContext", () => ({
+  useAuth: () => ({ deviceId: "d-1" }),
+}));
+
 const mockListDevices = jest.fn();
 const mockRevokeDevice = jest.fn();
 jest.mock("../../../services/SecurityService", () => ({
@@ -60,17 +64,19 @@ describe("DevicesScreen — load", () => {
     mockListDevices.mockResolvedValue([
       {
         id: "d-1",
-        name: "iPhone d'Alice",
-        platform: "iOS 18.0",
-        last_active: new Date().toISOString(),
-        is_current: true,
+        deviceName: "iPhone d'Alice",
+        deviceType: "ios",
+        lastActive: new Date().toISOString(),
+        isVerified: true,
+        isActive: true,
       },
       {
         id: "d-2",
-        name: "Pixel d'Alice",
-        platform: "Android 15",
-        last_active: new Date().toISOString(),
-        is_current: false,
+        deviceName: "Pixel d'Alice",
+        deviceType: "android",
+        lastActive: new Date().toISOString(),
+        isVerified: true,
+        isActive: true,
       },
     ]);
     const { findByText } = render(<DevicesScreen />);
@@ -84,10 +90,11 @@ describe("DevicesScreen — revoke", () => {
     mockListDevices.mockResolvedValue([
       {
         id: "d-2",
-        name: "Pixel",
-        platform: "Android 15",
-        last_active: new Date().toISOString(),
-        is_current: false,
+        deviceName: "Pixel",
+        deviceType: "android",
+        lastActive: new Date().toISOString(),
+        isVerified: true,
+        isActive: true,
       },
     ]);
     const { findByLabelText } = render(<DevicesScreen />);
@@ -100,10 +107,11 @@ describe("DevicesScreen — revoke", () => {
     mockListDevices.mockResolvedValue([
       {
         id: "d-2",
-        name: "Pixel",
-        platform: "Android 15",
-        last_active: new Date().toISOString(),
-        is_current: false,
+        deviceName: "Pixel",
+        deviceType: "android",
+        lastActive: new Date().toISOString(),
+        isVerified: true,
+        isActive: true,
       },
     ]);
     mockRevokeDevice.mockResolvedValue(undefined);
@@ -128,10 +136,11 @@ describe("DevicesScreen — revoke", () => {
     mockListDevices.mockResolvedValue([
       {
         id: "d-2",
-        name: "Pixel",
-        platform: "Android 15",
-        last_active: new Date().toISOString(),
-        is_current: false,
+        deviceName: "Pixel",
+        deviceType: "android",
+        lastActive: new Date().toISOString(),
+        isVerified: true,
+        isActive: true,
       },
     ]);
     mockRevokeDevice.mockRejectedValue(new Error("net"));
