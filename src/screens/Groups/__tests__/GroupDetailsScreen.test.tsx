@@ -97,8 +97,6 @@ jest.mock("../../../services/groups/api", () => ({
   groupsAPI: {
     getGroupDetails: jest.fn(),
     getGroupMembers: jest.fn(),
-    getGroupStats: jest.fn(),
-    getGroupLogs: jest.fn(),
     getGroupSettings: jest.fn(),
     leaveGroup: jest.fn(),
     deleteGroup: jest.fn(),
@@ -139,11 +137,6 @@ describe("GroupDetailsScreen", () => {
       member_count: 3,
     });
     mockedGroupsAPI.getGroupMembers.mockResolvedValue({ members: [] } as any);
-    mockedGroupsAPI.getGroupStats.mockResolvedValue({
-      message_count: 0,
-      member_count: 3,
-    } as any);
-    mockedGroupsAPI.getGroupLogs.mockResolvedValue({ logs: [] } as any);
     mockedGroupsAPI.getGroupSettings.mockResolvedValue({} as any);
   });
 
@@ -175,20 +168,6 @@ describe("GroupDetailsScreen", () => {
     render(<GroupDetailsScreen />);
     await waitFor(() => {
       expect(mockedGroupsAPI.getGroupMembers).toHaveBeenCalled();
-    });
-  });
-
-  it("loads group stats on mount", async () => {
-    render(<GroupDetailsScreen />);
-    await waitFor(() => {
-      expect(mockedGroupsAPI.getGroupStats).toHaveBeenCalled();
-    });
-  });
-
-  it("loads group logs on mount", async () => {
-    render(<GroupDetailsScreen />);
-    await waitFor(() => {
-      expect(mockedGroupsAPI.getGroupLogs).toHaveBeenCalled();
     });
   });
 
