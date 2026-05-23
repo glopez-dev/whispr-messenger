@@ -28,6 +28,7 @@ import {
   type DeviceInfo,
 } from "../../services/SecurityService";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import { colors } from "../../theme/colors";
 
 function formatRelative(iso: string, lang: string): string {
@@ -46,6 +47,7 @@ function formatRelative(iso: string, lang: string): string {
 export const DevicesScreen: React.FC = () => {
   const navigation = useNavigation();
   const { getThemeColors, getLocalizedText, settings } = useTheme();
+  const { deviceId: currentDeviceId } = useAuth();
   const themeColors = getThemeColors();
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,6 +117,7 @@ export const DevicesScreen: React.FC = () => {
   const renderItem = useCallback(
     ({ item }: { item: DeviceInfo }) => {
       const isRevoking = revokingId === item.id;
+      const isCurrent = item.id === currentDeviceId;
       return (
         <View
           style={[
@@ -125,9 +128,9 @@ export const DevicesScreen: React.FC = () => {
           <View style={styles.deviceIconWrap}>
             <Ionicons
               name={
-                item.platform?.toLowerCase().includes("ios")
+                item.deviceType?.toLowerCase().includes("ios")
                   ? "phone-portrait-outline"
-                  : item.platform?.toLowerCase().includes("android")
+                  : item.deviceType?.toLowerCase().includes("android")
                     ? "phone-portrait-outline"
                     : "laptop-outline"
               }
@@ -141,9 +144,9 @@ export const DevicesScreen: React.FC = () => {
                 style={[styles.deviceName, { color: themeColors.text.primary }]}
                 numberOfLines={1}
               >
-                {item.name}
+                {item.deviceName}
               </Text>
-              {item.is_current && (
+              {isCurrent && (
                 <View
                   style={[
                     styles.currentBadge,
@@ -167,14 +170,14 @@ export const DevicesScreen: React.FC = () => {
             <Text
               style={[styles.deviceMeta, { color: themeColors.text.secondary }]}
             >
-              {item.platform ?? "–"} ·{" "}
+              {item.deviceType ?? "–"} ·{" "}
               {getLocalizedText("devices.lastActive") || "Last active"}{" "}
-              {item.last_active
-                ? formatRelative(item.last_active, settings.language)
+              {item.lastActive
+                ? formatRelative(item.lastActive.toString(), settings.language)
                 : "–"}
             </Text>
           </View>
-          {!item.is_current && (
+          {!isCurrent && (
             <TouchableOpacity
               onPress={() => handleRevoke(item)}
               disabled={isRevoking}
@@ -199,6 +202,7 @@ export const DevicesScreen: React.FC = () => {
       );
     },
     [
+      currentDeviceId,
       getLocalizedText,
       handleRevoke,
       revokingId,

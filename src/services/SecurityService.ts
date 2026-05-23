@@ -129,10 +129,14 @@ export const TwoFactorAuthService = {
 
 export interface DeviceInfo {
   id: string;
-  name: string;
-  platform: string;
-  last_active: string;
-  is_current: boolean;
+  deviceName: string;
+  deviceType: string;
+  model?: string;
+  osVersion?: string;
+  appVersion?: string;
+  lastActive: Date | string;
+  isVerified: boolean;
+  isActive: boolean;
 }
 
 export const DeviceManagerService = {
