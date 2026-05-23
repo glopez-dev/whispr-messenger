@@ -116,12 +116,24 @@ jobs:
           fi
           echo "✅ Image found in registry"
 
+      - name: Determine trigger branch
+        id: branch
+        env:
+          TRIGGER_BRANCH: ${{ github.event.workflow_run.head_branch || 'main' }}
+        run: |
+          echo "trigger_branch=${TRIGGER_BRANCH}" >> $GITHUB_OUTPUT
+          if [ "$TRIGGER_BRANCH" = "main" ]; then
+            echo "infra_branch=main" >> $GITHUB_OUTPUT
+          else
+            echo "infra_branch=deploy/preprod" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout infrastructure repository
         uses: actions/checkout@v5
         with:
           repository: whispr-messenger/infrastructure
           path: infrastructure
-          ref: main
+          ref: ${{ steps.branch.outputs.infra_branch }}
           token: ${{ steps.generate_token.outputs.token }}
           fetch-depth: 0
 
@@ -157,7 +169,7 @@ jobs:
           COMMIT_SHA: ${{ steps.validate_commit.outputs.commit_sha }}
           EVENT_NAME: ${{ github.event_name }}
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
-          INFRA_BRANCH: main
+          INFRA_BRANCH: ${{ steps.branch.outputs.infra_branch }}
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
