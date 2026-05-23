@@ -1,4 +1,5 @@
 import React from "react";
+import { Platform } from "react-native";
 import { render, waitFor } from "@testing-library/react-native";
 import { ChatScreen } from "../ChatScreen";
 import { messagingAPI } from "../../../services/messaging/api";
@@ -281,5 +282,19 @@ describe("ChatScreen", () => {
       expect(firstCall[0]).toBe("conv1");
       expect(typeof firstCall[1]).toBe("object");
     });
+  });
+});
+
+describe("ChatScreen sur web", () => {
+  const originalOS = Platform.OS;
+  beforeAll(() => {
+    (Platform as { OS: string }).OS = "web";
+  });
+  afterAll(() => {
+    (Platform as { OS: string }).OS = originalOS;
+  });
+
+  it("rend sans planter (fill du tour borné au child)", () => {
+    expect(() => render(<ChatScreen />)).not.toThrow();
   });
 });

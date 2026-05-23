@@ -1,4 +1,5 @@
 import React from "react";
+import { Platform } from "react-native";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { ContactsScreen } from "../ContactsScreen";
 import { contactsAPI } from "../../../services/contacts/api";
@@ -204,5 +205,19 @@ describe("ContactsScreen", () => {
         conversationId: "conv1",
       });
     });
+  });
+});
+
+describe("ContactsScreen sur web", () => {
+  const originalOS = Platform.OS;
+  beforeAll(() => {
+    (Platform as { OS: string }).OS = "web";
+  });
+  afterAll(() => {
+    (Platform as { OS: string }).OS = originalOS;
+  });
+
+  it("rend sans planter (fill du tour borné au child)", () => {
+    expect(() => render(<ContactsScreen />)).not.toThrow();
   });
 });

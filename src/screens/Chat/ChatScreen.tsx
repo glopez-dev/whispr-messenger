@@ -79,23 +79,12 @@ import { PinnedMessagesBar } from "../../components/Chat/PinnedMessagesBar";
 import { EmptyChatState } from "../../components/Chat/EmptyChatState";
 import { ChatHeader } from "./ChatHeader";
 import {
-  AttachStep as RNAttachStep,
-  SpotlightTourProvider as RNSpotlightTourProvider,
+  AttachStep,
+  SpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
 import { TourTooltip } from "../../components/Tour/TourTooltip";
 import { TourAutoStart } from "../../components/Tour/TourAutoStart";
-
-// Le SpotlightTour casse le layout web (overlay SVG qui squeeze le flex root).
-// On garde le tour produit uniquement en natif iOS/Android.
-const IS_WEB = Platform.OS === "web";
-const SpotlightTourProvider: any = IS_WEB
-  ? ({ children }: { children: any }) =>
-      typeof children === "function" ? children() : children
-  : RNSpotlightTourProvider;
-const AttachStep: any = IS_WEB
-  ? ({ children }: { children: React.ReactNode }) => <>{children}</>
-  : RNAttachStep;
 
 const CHAT_STEPS_COUNT = 2;
 
@@ -3104,7 +3093,7 @@ export const ChatScreen: React.FC = () => {
             edges={["top"]}
           >
             <OfflineBanner connectionState={connectionState} />
-            <AttachStep index={0} fill>
+            <AttachStep index={0} fill={Platform.OS !== "web"}>
               <ChatHeader
                 conversationName={
                   conversation
@@ -3329,7 +3318,7 @@ export const ChatScreen: React.FC = () => {
                       />
                     </View>
                   )}
-                  <AttachStep index={1} fill>
+                  <AttachStep index={1} fill={Platform.OS !== "web"}>
                     <MessageInput
                       onSend={handleSendMessage}
                       onSendMedia={handleSendMedia}

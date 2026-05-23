@@ -1,4 +1,5 @@
 import React from "react";
+import { Platform } from "react-native";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
 import { ConversationsListScreen } from "../ConversationsListScreen";
 
@@ -193,5 +194,19 @@ describe("ConversationsListScreen", () => {
     const { getByText } = render(<ConversationsListScreen />);
     fireEvent.press(getByText("Modifier"));
     expect(getByText("Annuler")).toBeTruthy();
+  });
+});
+
+describe("ConversationsListScreen sur web", () => {
+  const originalOS = Platform.OS;
+  beforeAll(() => {
+    (Platform as { OS: string }).OS = "web";
+  });
+  afterAll(() => {
+    (Platform as { OS: string }).OS = originalOS;
+  });
+
+  it("rend sans planter (fill du tour borné au child)", () => {
+    expect(() => render(<ConversationsListScreen />)).not.toThrow();
   });
 });
