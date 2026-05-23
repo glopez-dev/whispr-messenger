@@ -126,7 +126,7 @@ export const CallHistoryScreen: React.FC = () => {
             ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
             ListHeaderComponent={
               <View style={styles.headerBlock}>
-                <AttachStep index={0} fill>
+                <AttachStep index={0} fill={Platform.OS !== "web"}>
                   <BlurView
                     intensity={45}
                     tint="dark"
@@ -150,7 +150,7 @@ export const CallHistoryScreen: React.FC = () => {
                     </View>
                   </BlurView>
                 </AttachStep>
-                <AttachStep index={1} fill>
+                <AttachStep index={1} fill={Platform.OS !== "web"}>
                   <BlurView intensity={45} tint="dark" style={styles.heroBlur}>
                     <View style={styles.heroCard}>
                       <View style={styles.heroBadge}>

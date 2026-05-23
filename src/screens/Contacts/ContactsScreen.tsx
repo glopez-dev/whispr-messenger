@@ -417,7 +417,7 @@ export const ContactsScreen: React.FC = () => {
                 </View>
               </BlurView>
 
-              <AttachStep index={1} fill>
+              <AttachStep index={1} fill={Platform.OS !== "web"}>
                 <BlurView intensity={34} tint="dark" style={styles.searchShell}>
                   <View style={styles.searchContainer}>
                     <View style={styles.searchBar}>
