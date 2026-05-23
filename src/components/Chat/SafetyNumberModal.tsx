@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../../context/AuthContext";
@@ -108,42 +109,78 @@ export const SafetyNumberModal: React.FC<SafetyNumberModalProps> = ({
       <View style={styles.sheet}>
         <View style={styles.handle} />
 
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Safety Number</Text>
+          <View style={styles.headerLeft}>
+            <View style={styles.lockIconWrap}>
+              <Ionicons
+                name={alreadyVerified ? "lock-closed" : "shield-checkmark"}
+                size={18}
+                color={
+                  alreadyVerified ? colors.ui.success : colors.primary.main
+                }
+              />
+            </View>
+            <Text style={styles.title}>Safety Number</Text>
+          </View>
           <TouchableOpacity
             onPress={onClose}
             style={styles.closeButton}
             testID="safety-close-btn"
           >
-            <Ionicons name="close" size={22} color="rgba(255,255,255,0.6)" />
+            <Ionicons name="close" size={20} color={colors.secondary.light} />
           </TouchableOpacity>
         </View>
 
+        {/* Subtitle */}
         <Text style={styles.subtitle}>
-          Vérifiez ce code avec{" "}
-          <Text style={styles.contactName}>{contactName}</Text> pour confirmer
-          que votre conversation est chiffrée de bout en bout.
+          Comparez ce code avec{" "}
+          <Text style={styles.contactName}>{contactName}</Text> (en personne ou
+          par appel) pour confirmer que la conversation est bien chiffrée de
+          bout en bout.
         </Text>
 
+        {/* Loading */}
         {loading && (
           <View style={styles.center}>
-            <ActivityIndicator color={colors.primary.main} />
+            <ActivityIndicator color={colors.primary.main} size="large" />
+            <Text style={styles.loadingText}>Calcul en cours...</Text>
           </View>
         )}
 
+        {/* Error */}
         {error && (
           <View style={styles.center}>
+            <Ionicons
+              name="warning-outline"
+              size={32}
+              color={colors.ui.error}
+            />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
 
+        {/* Grid 3×4 */}
         {groups.length === 12 && (
           <View style={styles.grid}>
             {[0, 1, 2].map((row) => (
               <View key={row} style={styles.gridRow}>
                 {groups.slice(row * 4, row * 4 + 4).map((g, col) => (
-                  <View key={col} style={styles.groupCell}>
-                    <Text style={styles.groupText}>{g}</Text>
+                  <View
+                    key={col}
+                    style={[
+                      styles.groupCell,
+                      alreadyVerified && styles.groupCellVerified,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.groupText,
+                        alreadyVerified && styles.groupTextVerified,
+                      ]}
+                    >
+                      {g}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -151,20 +188,35 @@ export const SafetyNumberModal: React.FC<SafetyNumberModalProps> = ({
           </View>
         )}
 
+        {/* Already verified banner */}
         {alreadyVerified && (
           <View style={styles.verifiedBanner}>
-            <Ionicons name="lock-closed" size={16} color="#4CAF50" />
+            <Ionicons
+              name="checkmark-circle"
+              size={18}
+              color={colors.ui.success}
+            />
             <Text style={styles.verifiedText}>Contact vérifié</Text>
           </View>
         )}
 
+        {/* Verify button */}
         {!alreadyVerified && !loading && !error && groups.length === 12 && (
-          <TouchableOpacity
-            style={styles.verifyButton}
-            onPress={handleMarkVerified}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.verifyButtonText}>Marquer comme vérifié</Text>
+          <TouchableOpacity onPress={handleMarkVerified} activeOpacity={0.85}>
+            <LinearGradient
+              colors={["#FE7A5C", "#F04882"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.verifyButton}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={18}
+                color="#fff"
+                style={{ marginRight: 8 }}
+              />
+              <Text style={styles.verifyButtonText}>Marquer comme vérifié</Text>
+            </LinearGradient>
           </TouchableOpacity>
         )}
       </View>
@@ -175,51 +227,80 @@ export const SafetyNumberModal: React.FC<SafetyNumberModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
   },
   sheet: {
-    backgroundColor: "#1A1F3A",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.background.dark,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 20,
-    paddingBottom: 36,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: `${colors.secondary.medium}60`,
   },
   handle: {
-    width: 40,
+    width: 36,
     height: 4,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: colors.secondary.main,
     borderRadius: 2,
     alignSelf: "center",
     marginTop: 12,
-    marginBottom: 16,
+    marginBottom: 20,
+    opacity: 0.5,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 14,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  lockIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: `${colors.secondary.medium}80`,
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: colors.text.light,
+    letterSpacing: 0.3,
   },
   closeButton: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: `${colors.secondary.medium}60`,
+    justifyContent: "center",
+    alignItems: "center",
   },
   subtitle: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.65)",
-    lineHeight: 20,
-    marginBottom: 24,
+    fontSize: 13,
+    color: colors.secondary.light,
+    lineHeight: 19,
+    marginBottom: 20,
   },
   contactName: {
-    color: "#FFFFFF",
+    color: colors.text.light,
     fontWeight: "600",
   },
   center: {
     alignItems: "center",
-    paddingVertical: 24,
+    paddingVertical: 28,
+    gap: 10,
+  },
+  loadingText: {
+    color: colors.secondary.light,
+    fontSize: 13,
   },
   errorText: {
     color: colors.ui.error,
@@ -227,50 +308,62 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   grid: {
-    gap: 10,
-    marginBottom: 24,
+    gap: 8,
+    marginBottom: 20,
   },
   gridRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
   },
   groupCell: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: `${colors.secondary.medium}50`,
     borderRadius: 10,
-    paddingVertical: 12,
+    paddingVertical: 13,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: `${colors.secondary.main}40`,
+  },
+  groupCellVerified: {
+    backgroundColor: `${colors.ui.success}15`,
+    borderColor: `${colors.ui.success}40`,
   },
   groupText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#FFFFFF",
-    letterSpacing: 1,
+    color: colors.text.light,
+    letterSpacing: 1.5,
+  },
+  groupTextVerified: {
+    color: colors.ui.success,
   },
   verifiedBanner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 14,
+    paddingVertical: 13,
     borderRadius: 12,
-    backgroundColor: "rgba(76,175,80,0.12)",
-    marginBottom: 8,
+    backgroundColor: `${colors.ui.success}18`,
+    borderWidth: 1,
+    borderColor: `${colors.ui.success}30`,
+    marginBottom: 4,
   },
   verifiedText: {
-    color: "#4CAF50",
+    color: colors.ui.success,
     fontWeight: "600",
-    fontSize: 15,
+    fontSize: 14,
   },
   verifyButton: {
-    backgroundColor: colors.primary.main,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 14,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
   },
   verifyButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
+    color: colors.text.light,
+    fontWeight: "700",
     fontSize: 15,
   },
 });
