@@ -433,8 +433,8 @@ export const PhoneInputScreen: React.FC = () => {
                       >
                         <Ionicons
                           name="qr-code-outline"
-                          size={20}
-                          color={colors.text.light}
+                          size={18}
+                          color="rgba(255, 255, 255, 0.75)"
                           style={styles.qrButtonIcon}
                         />
                         <Text style={styles.qrButtonText}>
@@ -619,19 +619,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-    borderRadius: 12,
-    paddingVertical: spacing.base,
-    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
     gap: spacing.sm,
   },
-  qrButtonIcon: {
-    marginRight: 2,
-  },
+  qrButtonIcon: {},
   qrButtonText: {
-    color: colors.text.light,
-    fontSize: typography.fontSize.md,
-    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.75)",
+    fontSize: typography.fontSize.base,
+    fontWeight: "500",
   },
 });
