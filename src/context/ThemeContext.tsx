@@ -883,6 +883,13 @@ const localizedTexts: Record<Language, Record<string, string>> = {
       "Ces clés permettent de vérifier l'identité de vos appareils et de sécuriser vos conversations.",
     "security.showSecurityKeys": "Afficher les clés de sécurité",
     "security.hideSecurityKeys": "Masquer les clés de sécurité",
+    "security.noDevices": "Aucun appareil connecté",
+    "security.loadDevicesError": "Impossible de charger les appareils",
+    "security.disconnectError": "Impossible de déconnecter cet appareil",
+    "security.now": "Maintenant",
+    "security.minutesAgo": "Il y a",
+    "security.hoursAgo": "Il y a",
+    "security.daysAgo": "Il y a",
 
     // Two Factor Authentication
     "twoFactor.title": "Authentification à deux facteurs",
@@ -1213,6 +1220,13 @@ const localizedTexts: Record<Language, Record<string, string>> = {
       "These keys allow you to verify your devices' identity and secure your conversations.",
     "security.showSecurityKeys": "Show security keys",
     "security.hideSecurityKeys": "Hide security keys",
+    "security.noDevices": "No devices connected",
+    "security.loadDevicesError": "Unable to load devices",
+    "security.disconnectError": "Unable to disconnect this device",
+    "security.now": "Just now",
+    "security.minutesAgo": "ago",
+    "security.hoursAgo": "ago",
+    "security.daysAgo": "ago",
 
     // Two Factor Authentication
     "twoFactor.title": "Two-Factor Authentication",
