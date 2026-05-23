@@ -783,6 +783,80 @@ describe("groupsAPI.deleteGroup", () => {
   });
 });
 
+// ---------------- promoteMember ----------------
+
+describe("groupsAPI.promoteMember", () => {
+  it("PATCHes the promote endpoint and resolves on 2xx", async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse({ body: { ok: true } }));
+
+    await groupsAPI.promoteMember("grp-1", "u-2");
+
+    const call = mockFetch.mock.calls[0];
+    expect(call[0]).toBe(`${USER_BASE}/groups/grp-1/members/u-2/promote`);
+    expect(call[1].method).toBe("PATCH");
+    expect(call[1].headers.Authorization).toBe("Bearer at");
+  });
+
+  it("throws with status 403 when caller is not admin", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ status: 403, body: { error: "forbidden" } }),
+    );
+
+    let caught: any;
+    try {
+      await groupsAPI.promoteMember("grp-1", "u-2");
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught.status).toBe(403);
+    expect(caught.message).toBe("forbidden");
+  });
+});
+
+// ---------------- demoteMember ----------------
+
+describe("groupsAPI.demoteMember", () => {
+  it("PATCHes the demote endpoint and resolves on 2xx", async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse({ body: { ok: true } }));
+
+    await groupsAPI.demoteMember("grp-1", "u-2");
+
+    const call = mockFetch.mock.calls[0];
+    expect(call[0]).toBe(`${USER_BASE}/groups/grp-1/members/u-2/demote`);
+    expect(call[1].method).toBe("PATCH");
+  });
+
+  it("throws with status 409 when target is the last admin", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ status: 409, body: { error: "last admin" } }),
+    );
+
+    let caught: any;
+    try {
+      await groupsAPI.demoteMember("grp-1", "u-2");
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught.status).toBe(409);
+    expect(caught.message).toBe("last admin");
+  });
+
+  it("throws with status 403 when caller is not admin", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ status: 403, body: { error: "forbidden" } }),
+    );
+
+    let caught: any;
+    try {
+      await groupsAPI.demoteMember("grp-1", "u-2");
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught.status).toBe(403);
+    expect(caught.message).toBe("forbidden");
+  });
+});
+
 // ---------------- auth header propagation ----------------
 
 describe("auth headers", () => {
