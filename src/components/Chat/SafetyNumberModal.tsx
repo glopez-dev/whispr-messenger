@@ -48,13 +48,30 @@ export const SafetyNumberModal: React.FC<SafetyNumberModalProps> = ({
 
     const storageKey = `${SAFETY_STORAGE_PREFIX}${userId}:${contactUserId}`;
 
-    Promise.all([
-      SignalKeysService.getKeyBundle(userId, deviceId),
-      SignalKeysService.listDevices(contactUserId).then((r) => {
+    const myBundlePromise = SignalKeysService.getKeyBundle(
+      userId,
+      deviceId,
+    ).catch(() => {
+      throw new Error("NO_OWN_KEYS");
+    });
+
+    const theirBundlePromise = SignalKeysService.listDevices(contactUserId)
+      .catch(() => {
+        throw new Error("NO_DEVICE");
+      })
+      .then((r) => {
         const firstDevice = r.deviceIds[0];
         if (!firstDevice) throw new Error("NO_DEVICE");
-        return SignalKeysService.getKeyBundle(contactUserId, firstDevice);
-      }),
+        return SignalKeysService.getKeyBundle(contactUserId, firstDevice).catch(
+          () => {
+            throw new Error("NO_THEIR_KEYS");
+          },
+        );
+      });
+
+    Promise.all([
+      myBundlePromise,
+      theirBundlePromise,
       AsyncStorage.getItem(storageKey),
     ])
       .then(([myBundle, theirBundle, stored]) => {
@@ -71,8 +88,19 @@ export const SafetyNumberModal: React.FC<SafetyNumberModalProps> = ({
         if (cancelled || !num) return;
         setSafetyNumber(num);
       })
-      .catch(() => {
-        if (!cancelled) setError("Impossible de calculer le Safety Number.");
+      .catch((err: Error) => {
+        if (cancelled) return;
+        if (err.message === "NO_DEVICE" || err.message === "NO_THEIR_KEYS") {
+          setError(
+            "Ce contact n'a pas encore de clés Signal enregistrées. Il doit se connecter au moins une fois depuis l'app.",
+          );
+        } else if (err.message === "NO_OWN_KEYS") {
+          setError(
+            "Vos clés Signal ne sont pas encore enregistrées. Reconnectez-vous.",
+          );
+        } else {
+          setError("Impossible de calculer le Safety Number.");
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
