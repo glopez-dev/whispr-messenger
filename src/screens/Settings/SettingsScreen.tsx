@@ -1395,6 +1395,18 @@ export const SettingsScreen: React.FC = () => {
           )}
         </SettingSection>
 
+        {/* Administration - visible uniquement pour les admins/modérateurs */}
+        {isStaff && (
+          <SettingSection title="Administration" icon="flask-outline">
+            <SettingItem
+              label="Demos IA (Admin)"
+              subtitle="Demontrer les modeles IA Zeyou et Maya aux prospects"
+              onPress={() => navigation.navigate("AdminDemos")}
+              icon="cube-outline"
+            />
+          </SettingSection>
+        )}
+
         {/* Developer / Debug - visible en dev local + en build preprod (jamais en prod) */}
         {(__DEV__ || process.env.EXPO_PUBLIC_ENV === "preprod") && (
           <SettingSection title="Debug" icon="bug-outline">
