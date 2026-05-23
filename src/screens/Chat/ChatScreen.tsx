@@ -79,12 +79,25 @@ import { PinnedMessagesBar } from "../../components/Chat/PinnedMessagesBar";
 import { EmptyChatState } from "../../components/Chat/EmptyChatState";
 import { ChatHeader } from "./ChatHeader";
 import {
-  AttachStep,
-  SpotlightTourProvider,
+  AttachStep as RNAttachStep,
+  SpotlightTourProvider as RNSpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
 import { TourTooltip } from "../../components/Tour/TourTooltip";
 import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+
+// Sur web, le SpotlightTour casse le layout du ChatScreen (le flex root
+// est squeeze a la largeur mobile). On garde le tour seulement en natif.
+const IS_WEB = Platform.OS === "web";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SpotlightTourProvider: any = IS_WEB
+  ? ({ children }: { children: unknown }) =>
+      typeof children === "function" ? children() : children
+  : RNSpotlightTourProvider;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AttachStep: any = IS_WEB
+  ? ({ children }: { children: React.ReactNode }) => <>{children}</>
+  : RNAttachStep;
 
 const CHAT_STEPS_COUNT = 2;
 
