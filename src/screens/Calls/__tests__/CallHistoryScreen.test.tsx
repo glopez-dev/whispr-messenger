@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
+import { Platform } from "react-native";
 import { render, waitFor } from "@testing-library/react-native";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
@@ -101,5 +102,19 @@ describe("CallHistoryScreen", () => {
     mockListCalls.mockRejectedValue(new Error("boom"));
     const { findByText } = render(<CallHistoryScreen />);
     expect(await findByText("Aucun appel pour le moment")).toBeTruthy();
+  });
+});
+
+describe("CallHistoryScreen sur web", () => {
+  const originalOS = Platform.OS;
+  beforeAll(() => {
+    (Platform as { OS: string }).OS = "web";
+  });
+  afterAll(() => {
+    (Platform as { OS: string }).OS = originalOS;
+  });
+
+  it("rend sans planter (fill du tour borné au child)", () => {
+    expect(() => render(<CallHistoryScreen />)).not.toThrow();
   });
 });
