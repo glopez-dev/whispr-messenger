@@ -308,8 +308,12 @@ export const E2EEService = {
 
     // CRITICAL: If we have NO recipients (other than ourselves), and E2EE is mandatory, we MUST fail
     // because we cannot encrypt for anyone else.
+    // Previous filter used `r.user_id !== userId || r.device_id !== deviceId` which counted
+    // the sender's OWN secondary devices as recipients — a user with >=1 other device would
+    // never trip the guard even when 0 packets could be produced for the real interlocutor.
+    // Use strict user-id comparison so only true counterparts are counted.
     const otherRecipientsCount = recipients.filter(
-      (r) => r.user_id !== userId || r.device_id !== deviceId,
+      (r) => r.user_id !== userId,
     ).length;
 
     if (otherRecipientsCount === 0 && params.recipientUserIds.length > 0) {
