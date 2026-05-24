@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const mockSaveIdentityPrivateKey = jest.fn();
+const mockResetIdentityCache = jest.fn();
 
 jest.mock("../TokenService", () => ({
   TokenService: {
     saveIdentityPrivateKey: (...args: any[]) =>
       mockSaveIdentityPrivateKey(...args),
+  },
+}));
+
+jest.mock("../E2EEService", () => ({
+  E2EEService: {
+    resetIdentityCache: (...args: any[]) => mockResetIdentityCache(...args),
   },
 }));
 
@@ -56,6 +63,7 @@ const mockedNacl = nacl as unknown as {
 
 beforeEach(() => {
   mockSaveIdentityPrivateKey.mockReset().mockResolvedValue(undefined);
+  mockResetIdentityCache.mockReset();
   mockedNacl.box.keyPair.mockClear();
   mockedNacl.sign.keyPair.fromSeed.mockClear();
   mockedNacl.sign.detached.mockClear();
@@ -104,6 +112,26 @@ describe("SignalKeyService.generateKeyBundle", () => {
     expect(mockSaveIdentityPrivateKey).toHaveBeenCalledWith(
       expect.stringContaining("b64("),
     );
+  });
+
+  it("invalidates the E2EE identity cache after writing the new private key", async () => {
+    // Cache must be dropped at the moment the on-disk key changes so a
+    // re-login on the same JS process stops returning the stale cached
+    // keypair from E2EEService.loadIdentityKeypair. Order matters: the
+    // save must happen before the reset so a failed write doesn't wipe a
+    // cache that's still consistent with disk.
+    const callOrder: string[] = [];
+    mockSaveIdentityPrivateKey.mockImplementation(async () => {
+      callOrder.push("save");
+    });
+    mockResetIdentityCache.mockImplementation(() => {
+      callOrder.push("reset");
+    });
+
+    await SignalKeyService.generateKeyBundle();
+
+    expect(mockResetIdentityCache).toHaveBeenCalledTimes(1);
+    expect(callOrder).toEqual(["save", "reset"]);
   });
 
   it("signs the signed pre-key public key with the derived Ed25519 key", async () => {

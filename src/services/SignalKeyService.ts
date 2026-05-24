@@ -2,6 +2,7 @@ import nacl from "tweetnacl";
 import { encodeBase64 } from "tweetnacl-util";
 import { getRandomBytes } from "expo-crypto";
 import { TokenService } from "./TokenService";
+import { E2EEService } from "./E2EEService";
 import { generateClientRandom } from "../utils/crypto";
 import type { SignalKeyBundleDto } from "../types/auth";
 
@@ -76,6 +77,13 @@ export const SignalKeyService = {
     await TokenService.saveIdentityPrivateKey(
       toBase64(identityKeyPair.secretKey),
     );
+    // Drop any stale cached identity keypair from E2EEService so subsequent
+    // encrypt/decrypt operations pick up this freshly-generated key. Without
+    // this a re-login on the same JS process keeps signing and decrypting
+    // with the previous identity, producing envelopes whose
+    // `sender.identity_key` doesn't match the one the server now publishes
+    // — counterparts can't decrypt and see "Message chiffré".
+    E2EEService.resetIdentityCache();
 
     return {
       identityKey: toBase64(identityKeyPair.publicKey),

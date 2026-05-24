@@ -56,6 +56,16 @@ export const makeSignalKeyServiceMock = () => ({
   },
 });
 
+export const makeE2EEServiceMock = () => ({
+  E2EEService: {
+    resetIdentityCache: jest.fn(),
+    isEncryptedPayload: jest.fn(),
+    encryptMessageForConversation: jest.fn(),
+    encryptDirectTextMessage: jest.fn(),
+    decryptTextMessage: jest.fn(),
+  },
+});
+
 export const makeNotificationServiceMock = () => ({
   NotificationService: {
     getBadge: jest.fn(),
