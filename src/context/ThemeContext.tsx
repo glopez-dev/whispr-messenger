@@ -1033,6 +1033,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "common.next": "Suivant",
     "common.retry": "Réessayer",
     "common.optional": "optionnel",
+    "common.soon": "Bientôt",
     "common.copyError": "Impossible de copier dans le presse-papiers.",
 
     // Confirmation forte (typed-confirm)
@@ -1395,6 +1396,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "common.next": "Next",
     "common.retry": "Retry",
     "common.optional": "optional",
+    "common.soon": "Soon",
     "common.copyError": "Unable to copy to clipboard.",
 
     // Strong confirmation (typed-confirm)

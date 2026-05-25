@@ -65,4 +65,19 @@ describe("AboutContentScreen", () => {
     fireEvent.press(getByLabelText("about.testImageAnalysis"));
     expect(mockNavigate).toHaveBeenCalledWith("ModerationTest");
   });
+
+  it("le bouton Signaler est desactive - pas de navigation ni Alert", () => {
+    const { getByTestId } = render(<AboutContentScreen />);
+    const reportBtn = getByTestId("btn-report-content");
+    // accessibilityState.disabled doit etre true
+    expect(reportBtn.props.accessibilityState?.disabled).toBe(true);
+    // presser le bouton desactive ne doit pas appeler navigate
+    fireEvent.press(reportBtn);
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("affiche le badge soon sur le bouton Signaler", () => {
+    const { getByText } = render(<AboutContentScreen />);
+    expect(getByText("common.soon")).toBeTruthy();
+  });
 });
