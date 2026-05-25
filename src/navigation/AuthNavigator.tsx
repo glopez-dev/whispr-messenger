@@ -59,6 +59,7 @@ import { useConversationsStore } from "../store/conversationsStore";
 import { profileSetupFlag } from "../services/profileSetupFlag";
 import { SplashScreen } from "../screens/SplashScreen/SplashScreen";
 import { OnboardingScreen } from "../screens/Auth/OnboardingScreen";
+import { AccountRecoveredScreen } from "../screens/Auth/AccountRecoveredScreen";
 import { BiometricLockScreen } from "../screens/Auth/BiometricLockScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { storage as secureStorage } from "../services/storage";
@@ -94,6 +95,7 @@ export type AuthStackParamList = {
     demoCode?: string;
   };
   ProfileSetup: undefined;
+  AccountRecovered: undefined;
   MyProfile: undefined;
   UserProfile: { userId: string };
   Settings: undefined;
@@ -423,6 +425,11 @@ export const AuthNavigator: React.FC = () => {
         <Stack.Screen name="PhoneInput" component={PhoneInputScreen} />
         <Stack.Screen name="Otp" component={OtpScreen} />
         <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+        <Stack.Screen
+          name="AccountRecovered"
+          component={AccountRecoveredScreen}
+          options={{ gestureEnabled: false }}
+        />
         <Stack.Screen name="MyProfile" component={MyProfileScreen} />
         <Stack.Screen name="UserProfile" component={UserProfileScreen} />
         <Stack.Screen

@@ -762,6 +762,18 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.skip": "Passer",
     "auth.linkedAccount": "Compte associé :",
     "auth.loginViaQR": "Se connecter via QR code",
+    "auth.recoveryLink": "Vous n'avez plus accès à ce numéro ?",
+    "auth.recovery": "Récupérer mon compte",
+    "auth.recoverySmsCode":
+      "Entrez le numéro lié à votre compte pour recevoir un code de vérification",
+    "auth.accountRecoveredTitle": "Compte récupéré",
+    "auth.accountRecoveredSubtitle":
+      "Votre identité a été vérifiée avec succès.",
+    "auth.accountRecoveredKeysInfo":
+      "Vos clés de chiffrement ont été regénérées",
+    "auth.accountRecoveredDevicesInfo":
+      "Vos autres appareils ont été déconnectés",
+    "auth.accountRecoveredCta": "Accéder à mes conversations",
 
     // Profile
     "profile.title": "Profil",
@@ -1117,6 +1129,18 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.skip": "Skip",
     "auth.linkedAccount": "Linked account:",
     "auth.loginViaQR": "Sign in with QR code",
+    "auth.recoveryLink": "No longer have access to this number?",
+    "auth.recovery": "Recover my account",
+    "auth.recoverySmsCode":
+      "Enter the number linked to your account to receive a verification code",
+    "auth.accountRecoveredTitle": "Account recovered",
+    "auth.accountRecoveredSubtitle":
+      "Your identity has been successfully verified.",
+    "auth.accountRecoveredKeysInfo":
+      "Your encryption keys have been regenerated",
+    "auth.accountRecoveredDevicesInfo":
+      "Your other devices have been signed out",
+    "auth.accountRecoveredCta": "Go to my conversations",
 
     // Profile
     "profile.title": "Profile",

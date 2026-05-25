@@ -203,6 +203,11 @@ export const OtpScreen: React.FC = () => {
         if (purpose === "register") {
           await profileSetupFlag.markPending();
           navigation.reset({ index: 0, routes: [{ name: "ProfileSetup" }] });
+        } else if (purpose === "recovery") {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "AccountRecovered" }],
+          });
         } else {
           navigation.reset({
             index: 0,
