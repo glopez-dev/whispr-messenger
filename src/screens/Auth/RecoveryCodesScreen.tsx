@@ -83,13 +83,16 @@ export const RecoveryCodesScreen: React.FC = () => {
           styles.scroll,
           {
             paddingTop: insets.top + spacing.xl,
-            paddingBottom: insets.bottom + spacing.xl,
+            paddingBottom: spacing.lg,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
         <Animated.View
-          style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
+          style={[
+            styles.animatedContent,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
         >
           <View style={styles.iconCircle}>
             <Ionicons
@@ -173,20 +176,26 @@ export const RecoveryCodesScreen: React.FC = () => {
               {getLocalizedText("auth.iSavedMyCodes")}
             </Text>
           </TouchableOpacity>
-
-          <View style={styles.ctaWrapper}>
-            <Button
-              title={getLocalizedText("auth.continueToApp")}
-              variant="primary"
-              size="large"
-              fullWidth
-              disabled={!confirmed || loading}
-              loading={proceeding}
-              onPress={handleContinue}
-            />
-          </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Sticky CTA — always visible regardless of scroll position */}
+      <View
+        style={[
+          styles.stickyFooter,
+          { paddingBottom: insets.bottom + spacing.md },
+        ]}
+      >
+        <Button
+          title={getLocalizedText("auth.continueToApp")}
+          variant="primary"
+          size="large"
+          fullWidth
+          disabled={!confirmed || loading}
+          loading={proceeding}
+          onPress={handleContinue}
+        />
+      </View>
     </LinearGradient>
   );
 };
@@ -196,6 +205,15 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: spacing.xl,
     alignItems: "center",
+  },
+  animatedContent: {
+    width: "100%",
+    alignItems: "center",
+  },
+  stickyFooter: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    backgroundColor: "transparent",
   },
   iconCircle: {
     width: 80,
@@ -315,5 +333,4 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 20,
   },
-  ctaWrapper: { width: "100%" },
 });

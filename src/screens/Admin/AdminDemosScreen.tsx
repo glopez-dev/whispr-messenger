@@ -141,6 +141,54 @@ export const AdminDemosScreen: React.FC = () => {
               </View>
             ))}
 
+            {__DEV__ && (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="key-outline" size={22} color="#f59e0b" />
+                  <Text style={[styles.cardTitle, { color: "#f59e0b" }]}>
+                    Preview — Recovery Backup Codes
+                  </Text>
+                </View>
+                <Text style={styles.cardDescription}>
+                  Écrans de récupération par code de backup (données mockées,
+                  DEV uniquement).
+                </Text>
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={styles.demoButton}
+                    onPress={() => navigation.navigate("RecoveryCodes")}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name="shield-checkmark-outline"
+                      size={16}
+                      color="#fff"
+                    />
+                    <Text style={styles.demoButtonText}>RecoveryCodes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.demoButton, styles.demoButtonSecondary]}
+                    onPress={() => navigation.navigate("RecoveryCodeEntry")}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name="enter-outline"
+                      size={16}
+                      color="rgba(255,255,255,0.8)"
+                    />
+                    <Text
+                      style={[
+                        styles.demoButtonText,
+                        styles.demoButtonTextSecondary,
+                      ]}
+                    >
+                      CodeEntry
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <View style={styles.bottomSpacer} />
           </ScrollView>
         </AdminGate>
