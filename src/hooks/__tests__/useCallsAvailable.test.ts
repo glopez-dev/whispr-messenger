@@ -6,18 +6,30 @@
  */
 
 describe("useCallsAvailable", () => {
+  const originalNavigator = global.navigator;
+
   beforeEach(() => {
     jest.resetModules();
+  });
+
+  afterEach(() => {
+    Object.defineProperty(global, "navigator", {
+      value: originalNavigator,
+      writable: true,
+      configurable: true,
+    });
   });
 
   function setupMocks(opts: {
     platform?: "ios" | "android" | "web";
     expoGo?: boolean;
     hasWebRtc?: boolean;
+    browserGetUserMedia?: boolean;
   }) {
     const platform = opts.platform ?? "ios";
     const expoGo = opts.expoGo ?? false;
     const hasWebRtc = opts.hasWebRtc ?? true;
+    const browserGetUserMedia = opts.browserGetUserMedia ?? true;
 
     jest.doMock("expo-constants", () => ({
       __esModule: true,
@@ -31,6 +43,19 @@ describe("useCallsAvailable", () => {
       Platform: { OS: platform },
       NativeModules: hasWebRtc ? { WebRTCModule: {} } : {},
     }));
+
+    if (platform === "web") {
+      Object.defineProperty(global, "navigator", {
+        value: {
+          mediaDevices: browserGetUserMedia
+            ? { getUserMedia: jest.fn() }
+            : undefined,
+          vibrate: jest.fn(),
+        },
+        writable: true,
+        configurable: true,
+      });
+    }
   }
 
   it("returns available=true on a native dev build with WebRTC linked", () => {
@@ -57,13 +82,20 @@ describe("useCallsAvailable", () => {
     expect(getCallsUnavailableMessage(result.reason)).toMatch(/Expo Go/);
   });
 
-  it("returns reason=web on web platform", () => {
-    setupMocks({ platform: "web", expoGo: false });
+  it("returns available=true on web when browser has getUserMedia", () => {
+    setupMocks({ platform: "web", browserGetUserMedia: true });
+    const { getCallsAvailability } = require("../useCallsAvailable");
+
+    expect(getCallsAvailability()).toEqual({ available: true, reason: null });
+  });
+
+  it("returns reason=web-no-webrtc on web when getUserMedia is absent", () => {
+    setupMocks({ platform: "web", browserGetUserMedia: false });
     const { getCallsAvailability } = require("../useCallsAvailable");
 
     expect(getCallsAvailability()).toEqual({
       available: false,
-      reason: "web",
+      reason: "web-no-webrtc",
     });
   });
 
@@ -83,7 +115,7 @@ describe("useCallsAvailable", () => {
 
     expect(getCallsUnavailableMessage("expo-go")).toContain("Expo Go");
     expect(getCallsUnavailableMessage("no-webrtc")).toContain("WebRTC");
-    expect(getCallsUnavailableMessage("web")).toContain("web");
+    expect(getCallsUnavailableMessage("web-no-webrtc")).toContain("navigateur");
     expect(getCallsUnavailableMessage(null)).toBeTruthy();
   });
 });
