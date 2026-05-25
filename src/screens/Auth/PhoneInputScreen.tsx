@@ -441,6 +441,15 @@ export const PhoneInputScreen: React.FC = () => {
                           {getLocalizedText("auth.loginViaQR")}
                         </Text>
                       </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.recoveryCodeLink}
+                        onPress={() => navigation.navigate("RecoveryCodeEntry")}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.recoveryCodeLinkText}>
+                          {getLocalizedText("auth.useRecoveryCode")}
+                        </Text>
+                      </TouchableOpacity>
                     </>
                   )}
                 </>
@@ -626,6 +635,16 @@ const styles = StyleSheet.create({
   qrButtonText: {
     color: "rgba(255, 255, 255, 0.75)",
     fontSize: typography.fontSize.base,
+    fontWeight: "500",
+  },
+  recoveryCodeLink: {
+    alignItems: "center",
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  recoveryCodeLinkText: {
+    color: "rgba(255, 255, 255, 0.55)",
+    fontSize: typography.fontSize.sm,
     fontWeight: "500",
   },
 });

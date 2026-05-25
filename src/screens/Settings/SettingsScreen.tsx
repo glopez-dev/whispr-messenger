@@ -1434,6 +1434,32 @@ export const SettingsScreen: React.FC = () => {
                 />
               }
             />
+            <SettingItem
+              label="[DEV] Recovery Codes Screen"
+              subtitle="Preview écran codes de backup (données mockées)"
+              onPress={() => navigation.navigate("RecoveryCodes")}
+              icon="shield-checkmark-outline"
+              rightComponent={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={themeColors.text.tertiary}
+                />
+              }
+            />
+            <SettingItem
+              label="[DEV] Recovery Code Entry"
+              subtitle="Preview saisie code de récupération"
+              onPress={() => navigation.navigate("RecoveryCodeEntry")}
+              icon="key-outline"
+              rightComponent={
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={themeColors.text.tertiary}
+                />
+              }
+            />
           </SettingSection>
         )}
       </ScrollView>

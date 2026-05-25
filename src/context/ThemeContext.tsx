@@ -762,6 +762,20 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.skip": "Passer",
     "auth.linkedAccount": "Compte associé :",
     "auth.loginViaQR": "Se connecter via QR code",
+    "auth.yourRecoveryCodes": "Vos codes de récupération",
+    "auth.recoveryCodesWarning":
+      "Ces codes ne seront affichés qu'une seule fois. Conservez-les dans un endroit sûr (gestionnaire de mots de passe, impression papier).",
+    "auth.copyAllCodes": "Copier tous les codes",
+    "auth.codeCopied": "Codes copiés !",
+    "auth.iSavedMyCodes": "J'ai sauvegardé mes codes en lieu sûr",
+    "auth.continueToApp": "Continuer",
+    "auth.useRecoveryCode": "J'ai un code de récupération",
+    "auth.enterRecoveryCode": "Entrez votre code de récupération",
+    "auth.recoveryCodePlaceholder": "XXXX-XXXX-XXXX",
+    "auth.redeemCode": "Utiliser ce code",
+    "auth.invalidRecoveryCode": "Code invalide ou déjà utilisé",
+    "auth.recoveryCodeRateLimit": "Trop de tentatives. Réessayez plus tard.",
+    "auth.recoveryCodeSuccess": "Compte récupéré avec succès",
 
     // Profile
     "profile.title": "Profil",
@@ -1117,6 +1131,20 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.skip": "Skip",
     "auth.linkedAccount": "Linked account:",
     "auth.loginViaQR": "Sign in with QR code",
+    "auth.yourRecoveryCodes": "Your recovery codes",
+    "auth.recoveryCodesWarning":
+      "These codes will only be shown once. Keep them in a safe place (password manager, printed copy).",
+    "auth.copyAllCodes": "Copy all codes",
+    "auth.codeCopied": "Codes copied!",
+    "auth.iSavedMyCodes": "I've saved my codes in a safe place",
+    "auth.continueToApp": "Continue",
+    "auth.useRecoveryCode": "I have a recovery code",
+    "auth.enterRecoveryCode": "Enter your recovery code",
+    "auth.recoveryCodePlaceholder": "XXXX-XXXX-XXXX",
+    "auth.redeemCode": "Use this code",
+    "auth.invalidRecoveryCode": "Invalid or already used code",
+    "auth.recoveryCodeRateLimit": "Too many attempts. Please try again later.",
+    "auth.recoveryCodeSuccess": "Account successfully recovered",
 
     // Profile
     "profile.title": "Profile",
