@@ -114,7 +114,7 @@ export type AuthStackParamList = {
     deviceInfo: import("../types/auth").DeviceInfo;
     signalKeyBundle: import("../types/auth").SignalKeyBundleDto;
   };
-  RecoveryCodes: undefined;
+  RecoveryCodes: { mode?: "resume" } | undefined;
   RecoveryCodeEntry: undefined;
   ConversationsList: undefined;
   ArchivedConversations: undefined;

@@ -218,12 +218,23 @@ export const OtpScreen: React.FC = () => {
         generateAndUploadSignalKeys();
 
         if (purpose === "register") {
+          // Flow register : toujours passer par RecoveryCodes (mode normal)
           navigation.reset({ index: 0, routes: [{ name: "RecoveryCodes" }] });
         } else {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "ConversationsList" }],
-          });
+          // Login : si l'user n'a jamais validé ses codes → résume flow
+          // Champ absent (vieux backend) = défaut true pour compat
+          const acknowledged = tokens.recovery_codes_acknowledged ?? true;
+          if (!acknowledged) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "RecoveryCodes", params: { mode: "resume" } }],
+            });
+          } else {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "ConversationsList" }],
+            });
+          }
         }
       } catch (err: unknown) {
         console.error("[OtpScreen] Registration/login failed:", err);
