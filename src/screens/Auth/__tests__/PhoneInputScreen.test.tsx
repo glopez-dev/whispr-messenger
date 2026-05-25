@@ -5,14 +5,17 @@ import { AuthService } from "../../../services/AuthService";
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
+const mockReplace = jest.fn();
+
+let mockMode = "login";
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({
     navigate: mockNavigate,
     goBack: mockGoBack,
-    replace: jest.fn(),
+    replace: mockReplace,
   }),
-  useRoute: () => ({ params: { mode: "login" } }),
+  useRoute: () => ({ params: { mode: mockMode } }),
 }));
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
@@ -71,8 +74,11 @@ jest.mock("./assets/images/logo-icon.png", () => 1, { virtual: true });
 
 const mockedAuthService = AuthService as jest.Mocked<typeof AuthService>;
 
-describe("PhoneInputScreen", () => {
-  beforeEach(() => jest.clearAllMocks());
+describe("PhoneInputScreen – login mode", () => {
+  beforeEach(() => {
+    mockMode = "login";
+    jest.clearAllMocks();
+  });
 
   it("renders phone input field", () => {
     const { getByPlaceholderText } = render(<PhoneInputScreen />);
@@ -107,5 +113,101 @@ describe("PhoneInputScreen", () => {
     const { getByText } = render(<PhoneInputScreen />);
     fireEvent.press(getByText("auth.continue"));
     expect(mockedAuthService.requestVerification).not.toHaveBeenCalled();
+  });
+
+  it("shows recovery link", () => {
+    const { getByText } = render(<PhoneInputScreen />);
+    expect(getByText("auth.recoveryLink")).toBeTruthy();
+  });
+
+  it("navigates to recovery mode when recovery link is pressed", () => {
+    const { getByText } = render(<PhoneInputScreen />);
+    fireEvent.press(getByText("auth.recoveryLink"));
+    expect(mockReplace).toHaveBeenCalledWith("PhoneInput", {
+      mode: "recovery",
+    });
+  });
+
+  it("shows register suggestion on 400 error in login mode", async () => {
+    mockedAuthService.requestVerification.mockRejectedValue({ status: 400 });
+    const { getByPlaceholderText, getByText } = render(<PhoneInputScreen />);
+    fireEvent.changeText(getByPlaceholderText("07 12 34 56 78"), "0612345678");
+    fireEvent.press(getByText("auth.continue"));
+    await waitFor(() => {
+      expect(getByText("auth.noAccountFound")).toBeTruthy();
+    });
+  });
+});
+
+describe("PhoneInputScreen – register mode", () => {
+  beforeEach(() => {
+    mockMode = "register";
+    jest.clearAllMocks();
+  });
+
+  it("does not show recovery link in register mode", () => {
+    const { queryByText } = render(<PhoneInputScreen />);
+    expect(queryByText("auth.recoveryLink")).toBeNull();
+  });
+
+  it("shows register-specific title", () => {
+    const { getByText } = render(<PhoneInputScreen />);
+    expect(getByText("auth.creerCompte")).toBeTruthy();
+  });
+
+  it("shows login suggestion on 409 conflict error", async () => {
+    mockedAuthService.requestVerification.mockRejectedValue({ status: 409 });
+    const { getByPlaceholderText, getByText } = render(<PhoneInputScreen />);
+    fireEvent.changeText(getByPlaceholderText("07 12 34 56 78"), "0612345678");
+    fireEvent.press(getByText("auth.continue"));
+    await waitFor(() => {
+      expect(getByText("auth.accountAlreadyExists")).toBeTruthy();
+    });
+  });
+});
+
+describe("PhoneInputScreen – recovery mode", () => {
+  beforeEach(() => {
+    mockMode = "recovery";
+    jest.clearAllMocks();
+  });
+
+  it("does not show recovery link in recovery mode", () => {
+    const { queryByText } = render(<PhoneInputScreen />);
+    expect(queryByText("auth.recoveryLink")).toBeNull();
+  });
+
+  it("shows recovery-specific title", () => {
+    const { getByText } = render(<PhoneInputScreen />);
+    expect(getByText("auth.recovery")).toBeTruthy();
+  });
+
+  it("shows noAccountFound error on 400 in recovery mode", async () => {
+    mockedAuthService.requestVerification.mockRejectedValue({ status: 400 });
+    const { getByPlaceholderText, getByText } = render(<PhoneInputScreen />);
+    fireEvent.changeText(getByPlaceholderText("07 12 34 56 78"), "0612345678");
+    fireEvent.press(getByText("auth.continue"));
+    await waitFor(() => {
+      expect(getByText("auth.noAccountFound")).toBeTruthy();
+    });
+  });
+
+  it("navigates to Otp with recovery purpose on success", async () => {
+    mockedAuthService.requestVerification.mockResolvedValue({
+      verificationId: "vid-recovery",
+      code: "654321",
+    });
+    const { getByPlaceholderText, getByText } = render(<PhoneInputScreen />);
+    fireEvent.changeText(getByPlaceholderText("07 12 34 56 78"), "0698765432");
+    fireEvent.press(getByText("auth.continue"));
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(
+        "Otp",
+        expect.objectContaining({
+          verificationId: "vid-recovery",
+          purpose: "recovery",
+        }),
+      );
+    });
   });
 });

@@ -447,22 +447,24 @@ export const PhoneInputScreen: React.FC = () => {
                           {getLocalizedText("auth.loginViaQR")}
                         </Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.recoveryLink}
-                        onPress={() =>
-                          navigation.replace("PhoneInput", { mode: "recovery" })
-                        }
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.recoveryLinkText}>
-                          {getLocalizedText("auth.recoveryLink")}
-                        </Text>
-                      </TouchableOpacity>
                     </>
                   )}
                 </>
               )}
             </View>
+            {mode === "login" && (
+              <TouchableOpacity
+                style={styles.recoveryLink}
+                onPress={() =>
+                  navigation.replace("PhoneInput", { mode: "recovery" })
+                }
+                activeOpacity={0.7}
+              >
+                <Text style={styles.recoveryLinkText}>
+                  {getLocalizedText("auth.recoveryLink")}
+                </Text>
+              </TouchableOpacity>
+            )}
           </Animated.View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -648,7 +650,7 @@ const styles = StyleSheet.create({
   recoveryLink: {
     alignItems: "center",
     paddingVertical: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: "auto",
   },
   recoveryLinkText: {
     color: "rgba(255, 255, 255, 0.5)",
