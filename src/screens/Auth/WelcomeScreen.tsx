@@ -18,7 +18,7 @@ import { colors, spacing, typography } from "../../theme";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { AuthLanguageSwitcher } from "./AuthLanguageSwitcher";
 
-const WAITLIST_URL = "https://whispr-preprod.roadmvn.com/waitlist.html#pricing";
+const WAITLIST_URL = "https://whispr-preprod.roadmvn.com/waitlist";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "Welcome">;
 
