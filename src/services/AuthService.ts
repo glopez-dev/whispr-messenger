@@ -354,34 +354,38 @@ export const AuthService = {
   },
 
   async fetchRecoveryCodes(): Promise<string[]> {
-    if (__DEV__) {
-      return new Promise((res) =>
-        setTimeout(
-          () =>
-            res([
-              "A1B2-C3D4-E5F6",
-              "G7H8-I9J0-K1L2",
-              "M3N4-O5P6-Q7R8",
-              "S9T0-U1V2-W3X4",
-              "Y5Z6-A7B8-C9D0",
-              "E1F2-G3H4-I5J6",
-              "K7L8-M9N0-O1P2",
-              "Q3R4-S5T6-U7V8",
-            ]),
-          800,
-        ),
-      );
-    }
     const token = await TokenService.getAccessToken();
     if (!token) {
       const err = new Error("NO_ACCESS_TOKEN") as Error & { status: number };
       err.status = 401;
       throw err;
     }
-    return apiFetch<string[]>("/recovery-codes", {
-      method: "GET",
-      token,
-    });
+
+    try {
+      return await apiFetch<string[]>("/recovery-codes", {
+        method: "GET",
+        token,
+      });
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      // En dev : fallback mock si l'endpoint n'existe pas encore (404)
+      // ou si le backend est injoignable (undefined = network error).
+      // En prod : on laisse l'erreur remonter pour que l'UI affiche
+      // un message "Service indisponible".
+      if (__DEV__ && (status === 404 || status === undefined)) {
+        return [
+          "A1B2-C3D4-E5F6",
+          "G7H8-I9J0-K1L2",
+          "M3N4-O5P6-Q7R8",
+          "S9T0-U1V2-W3X4",
+          "Y5Z6-A7B8-C9D0",
+          "E1F2-G3H4-I5J6",
+          "K7L8-M9N0-O1P2",
+          "Q3R4-S5T6-U7V8",
+        ];
+      }
+      throw err;
+    }
   },
 
   // Appelé depuis TwoFactorVerifyLoginScreen après validation TOTP ou backup code.
