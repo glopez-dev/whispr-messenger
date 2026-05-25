@@ -6,6 +6,7 @@
 
 import { create } from "zustand";
 import { inboxApi } from "../services/inboxApi";
+import { cacheService } from "../services/messaging/cache";
 import type { InboxItem } from "../types/inbox";
 
 const INBOX_PAGE_SIZE = 20;
@@ -33,6 +34,10 @@ export const useInboxStore = create<InboxState>((set, get) => ({
 
   async hydrate() {
     if (get().loading) return;
+    const cached = await cacheService.getInbox();
+    if (cached && get().items.length === 0) {
+      set({ items: cached.items, unread_count: cached.unread_count });
+    }
     set({ loading: true });
     try {
       const data = await inboxApi.fetchInbox({ limit: INBOX_PAGE_SIZE });
@@ -43,6 +48,7 @@ export const useInboxStore = create<InboxState>((set, get) => ({
         next_cursor: data.next_cursor,
         loading: false,
       });
+      cacheService.saveInbox(data.items, data.unread_count).catch(() => {});
     } catch {
       set({ loading: false });
     }

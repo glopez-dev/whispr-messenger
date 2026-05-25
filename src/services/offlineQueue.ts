@@ -9,6 +9,7 @@ import * as ExpoCrypto from "expo-crypto";
 import { storage } from "./storage";
 
 const QUEUE_KEY = "whispr.offline.message.queue";
+const QUEUE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — messages older than this are dropped on drain
 
 // WHISPR-1359 — migration douce AsyncStorage → SecureStore. Sur Android
 // rooté ou backup ADB non chiffré, lire les messages texte en clair depuis
@@ -98,6 +99,8 @@ let drainPromise: Promise<{ sent: number; failed: number }> | null = null;
 export interface DrainResult {
   sent: number;
   failed: number;
+  /** client_random values of messages dropped because they exceeded QUEUE_TTL_MS. */
+  expired: number[];
   /** True iff another drainAll() was already in flight when this one started. */
   skipped?: boolean;
 }
@@ -177,13 +180,20 @@ export const offlineQueue = {
     sendFn: (message: QueuedMessage) => Promise<unknown>,
   ): Promise<DrainResult> {
     if (drainPromise) {
-      return { sent: 0, failed: 0, skipped: true };
+      return { sent: 0, failed: 0, expired: [], skipped: true };
     }
     drainPromise = (async () => {
       const pending = await this.getAll();
       let sent = 0;
       let failed = 0;
+      const expired: number[] = [];
+      const now = Date.now();
       for (const queued of pending) {
+        if (now - new Date(queued.queued_at).getTime() > QUEUE_TTL_MS) {
+          await this.remove(queued.client_random);
+          expired.push(queued.client_random);
+          continue;
+        }
         try {
           await sendFn(queued);
           await this.remove(queued.client_random);
@@ -192,7 +202,7 @@ export const offlineQueue = {
           failed += 1;
         }
       }
-      return { sent, failed };
+      return { sent, failed, expired };
     })();
     try {
       return await drainPromise;
@@ -201,3 +211,5 @@ export const offlineQueue = {
     }
   },
 };
+
+export const OFFLINE_QUEUE_TTL_MS = QUEUE_TTL_MS;

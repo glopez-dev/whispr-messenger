@@ -449,6 +449,29 @@ export class SocketConnection {
     }, delay);
   }
 
+  /**
+   * Nudge the socket to reconnect immediately, bypassing the backoff timer.
+   * Called by useNetworkMonitor when the OS reports network reachability
+   * has been restored. Resets the attempt counter so the next connect
+   * attempt starts from the base delay rather than an inflated one.
+   * No-op if already connected or if there are no saved credentials.
+   */
+  nudge(): void {
+    if (
+      this._connectionState === "connected" ||
+      this.connecting ||
+      !this.shouldReconnect ||
+      !this.lastUserId
+    )
+      return;
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnectAttempt = 0;
+    this.scheduleReconnect();
+  }
+
   disconnect(): void {
     this.shouldReconnect = false;
     if (this.reconnectTimer) {

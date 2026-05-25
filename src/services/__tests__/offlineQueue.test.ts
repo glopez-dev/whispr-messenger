@@ -46,7 +46,7 @@ const makeMessage = (
   content: "hello",
   message_type: "text",
   client_random: overrides.client_random ?? 1,
-  queued_at: "2026-04-22T00:00:00.000Z",
+  queued_at: new Date().toISOString(),
   ...overrides,
 });
 
@@ -68,7 +68,7 @@ describe("offlineQueue.drainAll (WHISPR-1060)", () => {
 
     const result = await offlineQueue.drainAll(sendFn);
 
-    expect(result).toEqual({ sent: 0, failed: 0 });
+    expect(result).toEqual({ sent: 0, failed: 0, expired: [] });
     expect(sendFn).not.toHaveBeenCalled();
   });
 
@@ -81,7 +81,7 @@ describe("offlineQueue.drainAll (WHISPR-1060)", () => {
     const result = await offlineQueue.drainAll(sendFn);
 
     expect(sendFn).toHaveBeenCalledTimes(3);
-    expect(result).toEqual({ sent: 3, failed: 0 });
+    expect(result).toEqual({ sent: 3, failed: 0, expired: [] });
     expect(await offlineQueue.getAll()).toEqual([]);
   });
 
@@ -101,7 +101,7 @@ describe("offlineQueue.drainAll (WHISPR-1060)", () => {
 
     const result = await offlineQueue.drainAll(sendFn);
 
-    expect(result).toEqual({ sent: 2, failed: 1 });
+    expect(result).toEqual({ sent: 2, failed: 1, expired: [] });
     const remaining = await offlineQueue.getAll();
     expect(remaining.map((m) => m.client_random)).toEqual([22]);
   });
@@ -133,6 +133,25 @@ describe("offlineQueue.drainAll (WHISPR-1060)", () => {
   });
 });
 
+describe("offlineQueue.drainAll TTL eviction", () => {
+  it("drops messages older than 24 h and reports them as expired", async () => {
+    const staleAt = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+    await offlineQueue.enqueue(
+      makeMessage({ client_random: 501, queued_at: staleAt }),
+    );
+    await offlineQueue.enqueue(makeMessage({ client_random: 502 }));
+    const sendFn = jest.fn().mockResolvedValue(undefined);
+
+    const result = await offlineQueue.drainAll(sendFn);
+
+    expect(result.expired).toEqual([501]);
+    expect(result.sent).toBe(1);
+    expect(result.failed).toBe(0);
+    expect(sendFn).toHaveBeenCalledTimes(1);
+    expect(await offlineQueue.getAll()).toEqual([]);
+  });
+});
+
 describe("offlineQueue.drainAll concurrency lock (WHISPR-1219)", () => {
   it("rejects a concurrent invocation with skipped=true and only sends each message once", async () => {
     await offlineQueue.enqueue(makeMessage({ client_random: 51 }));
@@ -154,7 +173,7 @@ describe("offlineQueue.drainAll concurrency lock (WHISPR-1219)", () => {
 
     // Second drain fires while the first is in flight. It must short-circuit.
     const second = await offlineQueue.drainAll(sendFn);
-    expect(second).toEqual({ sent: 0, failed: 0, skipped: true });
+    expect(second).toEqual({ sent: 0, failed: 0, expired: [], skipped: true });
 
     // Now let the first drain finish.
     resolveFirst();
@@ -162,7 +181,7 @@ describe("offlineQueue.drainAll concurrency lock (WHISPR-1219)", () => {
     sendFn.mockImplementation(() => Promise.resolve());
     const firstResult = await first;
 
-    expect(firstResult).toEqual({ sent: 2, failed: 0 });
+    expect(firstResult).toEqual({ sent: 2, failed: 0, expired: [] });
     // sendFn was called for each of the 2 messages — never doubled by the
     // concurrent call.
     expect(sendFn).toHaveBeenCalledTimes(2);
@@ -173,7 +192,7 @@ describe("offlineQueue.drainAll concurrency lock (WHISPR-1219)", () => {
     const sendFn = jest.fn().mockResolvedValue(undefined);
 
     const first = await offlineQueue.drainAll(sendFn);
-    expect(first).toEqual({ sent: 1, failed: 0 });
+    expect(first).toEqual({ sent: 1, failed: 0, expired: [] });
 
     // Re-enqueue and drain again — second call must NOT report skipped.
     await offlineQueue.enqueue(makeMessage({ client_random: 62 }));
