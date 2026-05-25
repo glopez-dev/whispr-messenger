@@ -3222,13 +3222,6 @@ export const ChatScreen: React.FC = () => {
                       ? styles.webFlatListAbsolute
                       : undefined
                   }
-                  ListEmptyComponent={
-                    !loading ? (
-                      <View style={{ transform: [{ scaleY: -1 }], flex: 1 }}>
-                        <EmptyChatState />
-                      </View>
-                    ) : null
-                  }
                   ListFooterComponent={
                     loadingMore ? (
                       <View
@@ -3263,6 +3256,14 @@ export const ChatScreen: React.FC = () => {
                     {...dismissKeyboardResponderProps}
                   >
                     {messageList}
+                    {messages.length === 0 && !loading && (
+                      <View
+                        style={styles.emptyChatOverlay}
+                        pointerEvents="box-none"
+                      >
+                        <EmptyChatState />
+                      </View>
+                    )}
                     {pendingNewCount > 0 && (
                       <View style={styles.newMessagesPillContainer}>
                         <TouchableOpacity
@@ -3292,6 +3293,14 @@ export const ChatScreen: React.FC = () => {
                       {...dismissKeyboardResponderProps}
                     >
                       {messageList}
+                      {messages.length === 0 && !loading && (
+                        <View
+                          style={styles.emptyChatOverlay}
+                          pointerEvents="box-none"
+                        >
+                          <EmptyChatState />
+                        </View>
+                      )}
                       {pendingNewCount > 0 && (
                         <View style={styles.newMessagesPillContainer}>
                           <TouchableOpacity
@@ -3751,6 +3760,15 @@ const styles = StyleSheet.create({
   typingContainer: {
     paddingHorizontal: 16,
     paddingBottom: 8,
+  },
+  emptyChatOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
   },
   newMessagesPillContainer: {
     position: "absolute",
