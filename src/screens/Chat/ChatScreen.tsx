@@ -3007,6 +3007,26 @@ export const ChatScreen: React.FC = () => {
               messageTempId: m.id,
             });
           }}
+          onRetry={async (m) => {
+            const queued: QueuedMessage = {
+              id: m.id,
+              conversation_id: m.conversation_id,
+              content: m.content,
+              message_type: m.message_type as "text" | "media" | "system",
+              client_random: (m.client_random as number) ?? Date.now(),
+              reply_to_id: m.reply_to_id ?? undefined,
+              queued_at: new Date().toISOString(),
+            };
+            await offlineQueue.enqueue(queued);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === m.id ? { ...msg, status: "queued" as const } : msg,
+              ),
+            );
+          }}
+          onCancel={(m) => {
+            setMessages((prev) => prev.filter((msg) => msg.id !== m.id));
+          }}
         />
       );
     },

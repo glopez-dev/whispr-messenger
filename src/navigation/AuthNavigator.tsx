@@ -56,6 +56,7 @@ import { AppState } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useAuth } from "../context/AuthContext";
 import { useOfflineQueueDrainer } from "../hooks/useOfflineQueueDrainer";
+import { useNetworkMonitor } from "../hooks/useNetworkMonitor";
 import { useModerationStore } from "../store/moderationStore";
 import { useConversationsStore } from "../store/conversationsStore";
 import { profileSetupFlag } from "../services/profileSetupFlag";
@@ -200,6 +201,7 @@ export const AuthNavigator: React.FC = () => {
   // a no-op when the queue is empty, so calling it unconditionally is
   // cheap.
   useOfflineQueueDrainer();
+  useNetworkMonitor();
 
   useEffect(() => {
     const t = setTimeout(() => setSplashMinElapsed(true), SPLASH_MIN_MS);
