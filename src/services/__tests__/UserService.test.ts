@@ -70,7 +70,7 @@ describe("UserService.getProfile", () => {
     expect(result.success).toBe(true);
     expect(result.profile?.firstName).toBe("Ada");
     expect(result.profile?.profilePicture).toBe("https://cdn/avatar.png");
-    expect(result.profile?.isOnline).toBe(true);
+    expect(result.profile?.isOnline).toBe(false); // no isOnline field in API response → defaults false
   });
 
   it("returns an error message on a non-OK response", async () => {

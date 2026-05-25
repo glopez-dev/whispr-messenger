@@ -226,9 +226,9 @@ export const SettingsScreen: React.FC = () => {
    */
   const notificationToApi = useCallback(
     (local: typeof notificationSettings): Partial<NotificationSettings> => ({
-      push_enabled: local.notifications,
-      sound_enabled: local.sound,
-      vibration_enabled: local.mentions,
+      message_push_enabled: local.notifications,
+      system_push_enabled: local.sound,
+      mentions_only: local.mentions,
     }),
     [],
   );
@@ -238,9 +238,9 @@ export const SettingsScreen: React.FC = () => {
    */
   const apiToNotification = useCallback(
     (api: NotificationSettings) => ({
-      notifications: api.push_enabled,
-      sound: api.sound_enabled,
-      mentions: api.vibration_enabled,
+      notifications: api.message_push_enabled,
+      sound: api.system_push_enabled,
+      mentions: api.mentions_only,
     }),
     [],
   );
@@ -249,7 +249,7 @@ export const SettingsScreen: React.FC = () => {
    * Sync notification settings to the notification-service backend.
    * Uses a PATCH-style merge: reads current backend settings first, then
    * updates only the fields we manage locally, preserving backend-only
-   * fields (message_previews, show_sender_name, quiet_hours_*).
+   * fields (marketing_push_enabled, message_email_enabled, quiet_hours_*).
    * Si le backend refuse, rollback vers previous et alerte l'utilisateur.
    */
   const syncNotificationsToBackend = useCallback(
