@@ -94,7 +94,11 @@ function generateUUID(): string {
 // the same message twice. Second invocation now short-circuits and
 // returns `skipped: true` so callers can tell apart "drained nothing"
 // from "another drain is already in flight".
-let drainPromise: Promise<{ sent: number; failed: number }> | null = null;
+let drainPromise: Promise<{
+  sent: number;
+  failed: number;
+  expired: number[];
+}> | null = null;
 
 export interface DrainResult {
   sent: number;
