@@ -418,6 +418,24 @@ export const AuthService = {
     return tokens;
   },
 
+  // POST /auth/v1/recovery-codes/acknowledge — marque que l'user a sauvegardé ses codes.
+  // Tolère un 404 (backend pas encore déployé) : swallow silencieux.
+  async acknowledgeRecoveryCodes(): Promise<void> {
+    const token = await TokenService.getAccessToken();
+    if (!token) return;
+    try {
+      await apiFetch<void>("/recovery-codes/acknowledge", {
+        method: "POST",
+        token,
+      });
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      // 404 = endpoint pas encore déployé côté backend, on ignore.
+      if (status === 404) return;
+      throw err;
+    }
+  },
+
   async redeemRecoveryCode(code: string): Promise<TokenPair> {
     const [deviceInfo, signalKeyBundle] = await Promise.all([
       DeviceService.getDeviceInfo(),

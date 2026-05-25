@@ -4,9 +4,11 @@ import { RecoveryCodesScreen } from "../RecoveryCodesScreen";
 import { AuthService } from "../../../services/AuthService";
 
 const mockReset = jest.fn();
+let mockRouteParams: { mode?: string } = {};
 
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ reset: mockReset }),
+  useRoute: () => ({ params: mockRouteParams }),
 }));
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
@@ -40,6 +42,7 @@ jest.mock("../../../components", () => ({
 jest.mock("../../../services/AuthService", () => ({
   AuthService: {
     fetchRecoveryCodes: jest.fn(),
+    acknowledgeRecoveryCodes: jest.fn().mockResolvedValue(undefined),
   },
 }));
 jest.mock("../../../services/profileSetupFlag", () => ({
@@ -74,7 +77,10 @@ const CODES = [
 ];
 
 describe("RecoveryCodesScreen", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRouteParams = {};
+  });
 
   it("shows skeletons while loading", () => {
     mockedAuthService.fetchRecoveryCodes.mockReturnValue(new Promise(() => {}));
@@ -162,6 +168,83 @@ describe("RecoveryCodesScreen", () => {
     const { getByText } = render(<RecoveryCodesScreen />);
     await waitFor(() => {
       expect(getByText("auth.yourRecoveryCodes")).toBeTruthy();
+    });
+  });
+});
+
+describe("RecoveryCodesScreen — mode resume", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRouteParams = { mode: "resume" };
+    mockedAuthService.fetchRecoveryCodes.mockResolvedValue(CODES);
+  });
+
+  it("affiche le banner d'avertissement fort en mode resume", async () => {
+    const { getByText } = render(<RecoveryCodesScreen />);
+    await waitFor(() => {
+      expect(
+        getByText(/Tu n'as pas encore sauvegardé tes codes/),
+      ).toBeTruthy();
+    });
+  });
+
+  it("n'affiche PAS le banner resume en mode normal", async () => {
+    mockRouteParams = {};
+    const { queryByText, getByText: getByTextLocal } = render(<RecoveryCodesScreen />);
+    await waitFor(() => getByTextLocal("auth.yourRecoveryCodes"));
+    expect(
+      queryByText(/Tu n'as pas encore sauvegardé tes codes/),
+    ).toBeNull();
+  });
+
+  it("navigue vers ConversationsList en mode resume après confirmation", async () => {
+    const { getByText } = render(<RecoveryCodesScreen />);
+    await waitFor(() => getByText("auth.iSavedMyCodes"));
+    await act(async () => {
+      fireEvent.press(getByText("auth.iSavedMyCodes"));
+    });
+    await act(async () => {
+      fireEvent.press(getByText("auth.continueToApp"));
+    });
+    await waitFor(() => {
+      expect(mockReset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [{ name: "ConversationsList" }],
+      });
+    });
+  });
+
+  it("appelle acknowledgeRecoveryCodes en mode resume", async () => {
+    const { getByText } = render(<RecoveryCodesScreen />);
+    await waitFor(() => getByText("auth.iSavedMyCodes"));
+    await act(async () => {
+      fireEvent.press(getByText("auth.iSavedMyCodes"));
+    });
+    await act(async () => {
+      fireEvent.press(getByText("auth.continueToApp"));
+    });
+    await waitFor(() => {
+      expect(mockedAuthService.acknowledgeRecoveryCodes).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("navigue quand même si acknowledgeRecoveryCodes échoue (erreur non-bloquante)", async () => {
+    mockedAuthService.acknowledgeRecoveryCodes.mockRejectedValueOnce(
+      new Error("network"),
+    );
+    const { getByText } = render(<RecoveryCodesScreen />);
+    await waitFor(() => getByText("auth.iSavedMyCodes"));
+    await act(async () => {
+      fireEvent.press(getByText("auth.iSavedMyCodes"));
+    });
+    await act(async () => {
+      fireEvent.press(getByText("auth.continueToApp"));
+    });
+    await waitFor(() => {
+      expect(mockReset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [{ name: "ConversationsList" }],
+      });
     });
   });
 });

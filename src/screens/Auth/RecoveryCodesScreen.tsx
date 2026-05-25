@@ -11,7 +11,8 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Button } from "../../components";
 import { useTheme } from "../../context/ThemeContext";
@@ -21,9 +22,13 @@ import { colors, spacing, typography } from "../../theme";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "RecoveryCodes">;
+type RecoveryCodesRouteProp = RouteProp<AuthStackParamList, "RecoveryCodes">;
 
 export const RecoveryCodesScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RecoveryCodesRouteProp>();
+  // mode "resume" = user connecté qui n'a pas encore validé ses codes
+  const isResumeMode = route.params?.mode === "resume";
   const insets = useSafeAreaInsets();
   const { getThemeColors, getFontSize, getLocalizedText } = useTheme();
   const themeColors = getThemeColors();
@@ -67,8 +72,15 @@ export const RecoveryCodesScreen: React.FC = () => {
 
   const handleContinue = async () => {
     setProceeding(true);
-    await profileSetupFlag.markPending();
-    navigation.reset({ index: 0, routes: [{ name: "ProfileSetup" }] });
+    if (isResumeMode) {
+      // Notifie le backend que l'user a bien sauvegardé ses codes.
+      // Erreur non-bloquante : on navigue quand même vers l'app.
+      await AuthService.acknowledgeRecoveryCodes().catch(() => {});
+      navigation.reset({ index: 0, routes: [{ name: "ConversationsList" }] });
+    } else {
+      await profileSetupFlag.markPending();
+      navigation.reset({ index: 0, routes: [{ name: "ProfileSetup" }] });
+    }
   };
 
   return (
@@ -105,6 +117,20 @@ export const RecoveryCodesScreen: React.FC = () => {
           <Text style={[styles.title, { fontSize: getFontSize("xxl") }]}>
             {getLocalizedText("auth.yourRecoveryCodes")}
           </Text>
+
+          {isResumeMode && (
+            <View style={styles.resumeBanner}>
+              <Ionicons
+                name="alert-circle"
+                size={20}
+                color="#ef4444"
+                style={styles.warningIcon}
+              />
+              <Text style={[styles.resumeBannerText, { fontSize: getFontSize("sm") }]}>
+                {"Tu n'as pas encore sauvegardé tes codes de récupération.\nNe perds pas cette clé secrète : elle permet de recouvrer l'accès à ton compte si tu changes de téléphone ou perds ton appareil."}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.warningCard}>
             <Ionicons
@@ -230,6 +256,23 @@ const styles = StyleSheet.create({
     color: colors.text.light,
     textAlign: "center",
     marginBottom: spacing.lg,
+  },
+  resumeBanner: {
+    flexDirection: "row",
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "rgba(239, 68, 68, 0.5)",
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+    width: "100%",
+  },
+  resumeBannerText: {
+    color: "#fca5a5",
+    flex: 1,
+    lineHeight: 20,
+    fontWeight: "600",
   },
   warningCard: {
     flexDirection: "row",
