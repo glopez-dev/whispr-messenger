@@ -168,3 +168,33 @@ describe("TwoFactorService response handling", () => {
     expect(init.headers.Authorization).toBeUndefined();
   });
 });
+
+
+describe("TwoFactorService.useBackupCode", () => {
+  it("POST /2fa/backup-codes/use avec verificationId et recoveryCode", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { accessToken: "at", refreshToken: "rt" } }),
+    );
+
+    const result = await TwoFactorService.useBackupCode("ABCD-EFGH", "vid123");
+
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://api.test/auth/v1/2fa/backup-codes/use");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({
+      verificationId: "vid123",
+      recoveryCode: "ABCD-EFGH",
+    });
+    expect(result).toEqual({ accessToken: "at", refreshToken: "rt" });
+  });
+
+  it("lève une erreur 400 si le code est invalide", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ status: 400, body: { message: "invalid backup code" } }),
+    );
+
+    await expect(
+      TwoFactorService.useBackupCode("INVALID", "vid"),
+    ).rejects.toMatchObject({ status: 400, message: "invalid backup code" });
+  });
+});
