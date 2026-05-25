@@ -648,5 +648,6 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.55)",
     fontSize: typography.fontSize.sm,
     fontWeight: "500",
+    textDecorationLine: "underline",
   },
 });
