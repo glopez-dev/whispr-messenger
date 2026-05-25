@@ -142,7 +142,7 @@ export const AuthService = {
   async login(verificationId: string): Promise<TokenPair> {
     const [deviceInfo, signalKeyBundle] = await Promise.all([
       DeviceService.getDeviceInfo(),
-      SignalKeyService.generateKeyBundle(),
+      SignalKeyService.generateKeyBundle("login"),
     ]);
 
     const tokens = await apiFetch<TokenPair>("/login", {
@@ -384,10 +384,40 @@ export const AuthService = {
     });
   },
 
+  // Appelé depuis TwoFactorVerifyLoginScreen après validation TOTP ou backup code.
+  // verificationId + signalKeyBundle + deviceInfo sont préparés dans OtpScreen
+  // et transmis via les paramètres de navigation pour éviter de les recalculer.
+  async loginAfter2FA(
+    verificationId: string,
+    twoFactorToken: string,
+    deviceInfo: import("../types/auth").DeviceInfo,
+    signalKeyBundle: import("../types/auth").SignalKeyBundleDto,
+  ): Promise<TokenPair> {
+    const tokens = await apiFetch<TokenPair>("/login/2fa", {
+      method: "POST",
+      body: JSON.stringify({
+        verificationId,
+        twoFactorToken,
+        ...deviceInfo,
+        signalKeyBundle,
+      }),
+    });
+
+    await TokenService.saveTokens(tokens);
+    resetSessionState();
+    const userId = TokenService.decodeAccessToken(tokens.accessToken)?.sub;
+    if (userId) {
+      notificationService()
+        .initPushRegistration(userId)
+        .catch(() => {});
+    }
+    return tokens;
+  },
+
   async redeemRecoveryCode(code: string): Promise<TokenPair> {
     const [deviceInfo, signalKeyBundle] = await Promise.all([
       DeviceService.getDeviceInfo(),
-      SignalKeyService.generateKeyBundle(),
+      SignalKeyService.generateKeyBundle("recovery"),
     ]);
 
     const tokens = await apiFetch<TokenPair>("/recovery-codes/redeem", {

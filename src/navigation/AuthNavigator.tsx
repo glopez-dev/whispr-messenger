@@ -108,6 +108,11 @@ export type AuthStackParamList = {
   TwoFactorSetup: undefined;
   TwoFactorVerify: { secret: string };
   TwoFactorBackupCodes: { codes: string[] };
+  TwoFactorVerifyLogin: {
+    verificationId: string;
+    deviceInfo: import("../types/auth").DeviceInfo;
+    signalKeyBundle: import("../types/auth").SignalKeyBundleDto;
+  };
   RecoveryCodes: undefined;
   RecoveryCodeEntry: undefined;
   ConversationsList: undefined;
@@ -456,6 +461,14 @@ export const AuthNavigator: React.FC = () => {
         <Stack.Screen
           name="TwoFactorBackupCodes"
           component={TwoFactorBackupCodesScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="TwoFactorVerifyLogin"
+          getComponent={() =>
+            require("../screens/Auth/TwoFactorVerifyLoginScreen")
+              .TwoFactorVerifyLoginScreen
+          }
           options={{ gestureEnabled: false }}
         />
         <Stack.Screen

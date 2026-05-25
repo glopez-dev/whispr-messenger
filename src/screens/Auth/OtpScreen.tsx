@@ -22,6 +22,7 @@ import { AuthService } from "../../services/AuthService";
 import { TokenService } from "../../services/TokenService";
 import { SignalKeyService } from "../../services/SignalKeyService";
 import { SignalKeysService } from "../../services/SecurityService";
+import { DeviceService } from "../../services/DeviceService";
 import { UserService } from "../../services/UserService";
 import { colors, spacing, typography } from "../../theme";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
@@ -171,6 +172,23 @@ export const OtpScreen: React.FC = () => {
         if (!confirmResult.verified) {
           setError(getLocalizedText("auth.codeIncorrect"));
           shake();
+          setLoading(false);
+          submittingRef.current = false;
+          return;
+        }
+
+        // Si le compte a la 2FA activée, préparer les clés et rediriger
+        // vers l'écran de vérification TOTP / backup code avant le login.
+        if (confirmResult.requires2FA) {
+          const [deviceInfo, signalKeyBundle] = await Promise.all([
+            DeviceService.getDeviceInfo(),
+            SignalKeyService.generateKeyBundle("login"),
+          ]);
+          navigation.navigate("TwoFactorVerifyLogin", {
+            verificationId,
+            deviceInfo,
+            signalKeyBundle,
+          });
           setLoading(false);
           submittingRef.current = false;
           return;

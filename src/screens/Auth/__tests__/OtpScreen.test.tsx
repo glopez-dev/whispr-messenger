@@ -84,6 +84,18 @@ jest.mock("../../../services/SignalKeyService", () => ({
     }),
   },
 }));
+jest.mock("../../../services/DeviceService", () => ({
+  DeviceService: {
+    getDeviceInfo: jest.fn().mockResolvedValue({
+      deviceId: "dev1",
+      deviceName: "iPhone",
+      deviceType: "mobile",
+      model: "iPhone14",
+      osVersion: "17.0",
+      appVersion: "1.0.0",
+    }),
+  },
+}));
 jest.mock("../../../services/SecurityService", () => ({
   SignalKeysService: {
     uploadSignedPrekey: jest.fn().mockResolvedValue({}),
@@ -168,5 +180,60 @@ describe("OtpScreen", () => {
       },
       { timeout: 8000 },
     );
+  }, 10000);
+
+
+  it("navigue vers TwoFactorVerifyLogin quand requires2FA est true", async () => {
+    mockedAuthService.confirmVerification.mockResolvedValue({
+      verified: true,
+      requires2FA: true,
+    });
+
+    const { getAllByDisplayValue } = render(<OtpScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getAllByDisplayValue("")[0], "123456");
+    });
+
+    await waitFor(
+      () => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          "TwoFactorVerifyLogin",
+          expect.objectContaining({ verificationId: "vid123" }),
+        );
+      },
+      { timeout: 8000 },
+    );
+    // login ne doit PAS être appelé
+    expect(mockedAuthService.login).not.toHaveBeenCalled();
+  }, 10000);
+
+  it("flow normal login quand requires2FA est absent", async () => {
+    mockedAuthService.confirmVerification.mockResolvedValue({ verified: true });
+    mockedAuthService.login.mockResolvedValue({
+      accessToken: "tok",
+      refreshToken: "ref",
+    });
+    mockedTokenService.decodeAccessToken.mockReturnValue({
+      sub: "user1",
+      deviceId: "dev1",
+    } as any);
+
+    const { getAllByDisplayValue } = render(<OtpScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getAllByDisplayValue("")[0], "123456");
+    });
+
+    await waitFor(
+      () => {
+        expect(mockReset).toHaveBeenCalledWith({
+          index: 0,
+          routes: [{ name: "ConversationsList" }],
+        });
+      },
+      { timeout: 8000 },
+    );
+    expect(mockNavigate).not.toHaveBeenCalledWith("TwoFactorVerifyLogin", expect.anything());
   }, 10000);
 });
