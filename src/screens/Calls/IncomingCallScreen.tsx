@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -29,6 +29,9 @@ const showAcceptError = (message: string) => {
  * Full-screen incoming call UI. Shown as a modal over the current stack
  * when a WS `incoming_call` event arrives. Accept connects to LiveKit and
  * transitions to InCall; decline closes the screen.
+ *
+ * Sur web : joue une sonnerie via l'API Audio navigateur et vibre si disponible.
+ * Sur natif : la sonnerie est gérée par react-native-call-keeper (systemCallProvider).
  */
 export const IncomingCallScreen: React.FC = () => {
   const incoming = useCallsStore((s) => s.incoming);
@@ -36,6 +39,58 @@ export const IncomingCallScreen: React.FC = () => {
   const declineIncoming = useCallsStore((s) => s.declineIncoming);
   const setIncoming = useCallsStore((s) => s.setIncoming);
   const navigation = useNavigation<Nav>();
+
+  // Sonnerie web : démarrer/arrêter selon la présence d'un appel entrant.
+  useEffect(() => {
+    if (Platform.OS !== "web" || !incoming) return;
+
+    // Vibration navigateur si disponible (Android Chrome, Firefox).
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      // Pattern 400ms ON / 400ms OFF, répété.
+      navigator.vibrate([400, 400, 400, 400, 400]);
+    }
+
+    // Sonnerie via oscillateur AudioContext — pas de fichier externe requis.
+    let audioCtx: AudioContext | null = null;
+    let ringInterval: ReturnType<typeof setInterval> | null = null;
+
+    const playRingTone = () => {
+      try {
+        const AudioContextCtor =
+          (window as any).AudioContext ?? (window as any).webkitAudioContext;
+        if (!AudioContextCtor) return;
+
+        audioCtx = new AudioContextCtor() as AudioContext;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        osc.start();
+        // Bip de 800ms puis silence — simuler une sonnerie.
+        setTimeout(() => {
+          osc.stop();
+          audioCtx?.close();
+          audioCtx = null;
+        }, 800);
+      } catch {
+        // AudioContext bloqué (politique autoplay) — pas bloquant.
+      }
+    };
+
+    playRingTone();
+    ringInterval = setInterval(playRingTone, 2000);
+
+    return () => {
+      if (ringInterval) clearInterval(ringInterval);
+      if (audioCtx) audioCtx.close();
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(0);
+      }
+    };
+  }, [incoming]);
 
   const onAccept = async () => {
     const callId = incoming?.callId;
