@@ -501,3 +501,44 @@ describe("AuthService.getWsToken (WHISPR-1214)", () => {
     });
   });
 });
+
+describe("AuthService.fetchRecoveryCodes", () => {
+  beforeEach(() => {
+    mockFetch = installFetchMock();
+  });
+
+  it("throws 401 when no access token is stored", async () => {
+    mockedToken.getAccessToken.mockResolvedValueOnce(null);
+
+    await expect(AuthService.fetchRecoveryCodes()).rejects.toMatchObject({
+      message: "NO_ACCESS_TOKEN",
+      status: 401,
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("calls GET /recovery-codes with Bearer token and returns codes", async () => {
+    const codes = ["A1B2-XXXX", "C3D4-YYYY"];
+    mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
+    mockFetch.mockResolvedValueOnce(mockResponse({ body: codes }));
+
+    const result = await AuthService.fetchRecoveryCodes();
+
+    expect(result).toEqual(codes);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://api.test/auth/v1/recovery-codes");
+    expect(init.method).toBe("GET");
+    expect(init.headers.Authorization).toBe("Bearer access-tok");
+  });
+
+  it("propagates non-404 errors without fallback", async () => {
+    mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ status: 500, body: { message: "server error" } }),
+    );
+
+    await expect(AuthService.fetchRecoveryCodes()).rejects.toMatchObject({
+      status: 500,
+    });
+  });
+});
