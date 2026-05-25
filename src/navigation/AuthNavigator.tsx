@@ -18,6 +18,8 @@ import { TwoFactorAuthScreen } from "../screens/Security/TwoFactorAuthScreen";
 import { TwoFactorSetupScreen } from "../screens/Security/TwoFactorSetupScreen";
 import { TwoFactorVerifyScreen } from "../screens/Security/TwoFactorVerifyScreen";
 import { TwoFactorBackupCodesScreen } from "../screens/Security/TwoFactorBackupCodesScreen";
+import { RecoveryCodesScreen } from "../screens/Auth/RecoveryCodesScreen";
+import { RecoveryCodeEntryScreen } from "../screens/Auth/RecoveryCodeEntryScreen";
 import { ConversationsListScreen } from "../screens/Chat/ConversationsListScreen";
 import { ArchivedConversationsScreen } from "../screens/Chat/ArchivedConversationsScreen";
 import { ChatScreen } from "../screens/Chat/ChatScreen";
@@ -106,6 +108,8 @@ export type AuthStackParamList = {
   TwoFactorSetup: undefined;
   TwoFactorVerify: { secret: string };
   TwoFactorBackupCodes: { codes: string[] };
+  RecoveryCodes: undefined;
+  RecoveryCodeEntry: undefined;
   ConversationsList: undefined;
   ArchivedConversations: undefined;
   Chat: { conversationId: string; openSearch?: boolean };
@@ -453,6 +457,15 @@ export const AuthNavigator: React.FC = () => {
           name="TwoFactorBackupCodes"
           component={TwoFactorBackupCodesScreen}
           options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="RecoveryCodes"
+          component={RecoveryCodesScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="RecoveryCodeEntry"
+          component={RecoveryCodeEntryScreen}
         />
         <Stack.Screen
           name="ConversationsList"

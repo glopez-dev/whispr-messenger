@@ -352,6 +352,41 @@ export const AuthService = {
     if (!payload) return null;
     return { userId: payload.sub, deviceId: payload.deviceId };
   },
+
+  async fetchRecoveryCodes(): Promise<string[]> {
+    const token = await TokenService.getAccessToken();
+    if (!token) {
+      const err = new Error("NO_ACCESS_TOKEN") as Error & { status: number };
+      err.status = 401;
+      throw err;
+    }
+    return apiFetch<string[]>("/recovery-codes", {
+      method: "GET",
+      token,
+    });
+  },
+
+  async redeemRecoveryCode(code: string): Promise<TokenPair> {
+    const [deviceInfo, signalKeyBundle] = await Promise.all([
+      DeviceService.getDeviceInfo(),
+      SignalKeyService.generateKeyBundle(),
+    ]);
+
+    const tokens = await apiFetch<TokenPair>("/recovery-codes/redeem", {
+      method: "POST",
+      body: JSON.stringify({ code, ...deviceInfo, signalKeyBundle }),
+    });
+
+    await TokenService.saveTokens(tokens);
+    resetSessionState();
+    const userId = TokenService.decodeAccessToken(tokens.accessToken)?.sub;
+    if (userId) {
+      notificationService()
+        .initPushRegistration(userId)
+        .catch(() => {});
+    }
+    return tokens;
+  },
 };
 
 export default AuthService;
