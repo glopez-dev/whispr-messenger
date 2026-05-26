@@ -247,7 +247,7 @@ describe("MyProfileScreen — save flow", () => {
     // mais phoneNumber absent. normalizeProfile convertit phoneNumber absent
     // en "" ce qui ecrasait l'etat precedent et faisait disparaitre le numero
     // dans l'UI.
-    const services = require("./src/services") as {
+    const services = require("../../../services") as {
       UserService: {
         getInstance: () => {
           updateProfile: jest.Mock;
