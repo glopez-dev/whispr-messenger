@@ -225,11 +225,9 @@ describe("ThemeProvider — clearCustomBackground", () => {
     expect(mockUpdateProfileBackground).toHaveBeenCalledWith(null, null);
   });
 
-  it("swallows updateProfileBackground rejection silently", async () => {
+  it("propagates updateProfileBackground rejection to caller", async () => {
     mockUpdateProfileBackground.mockRejectedValueOnce(new Error("server down"));
     await mountProvider();
-    // The error from clearCustomBackground propagates because there is no
-    // try/catch wrap around it — verify behaviour matches the source.
     await expect(capturedTheme!.clearCustomBackground()).rejects.toThrow(
       /server down/,
     );

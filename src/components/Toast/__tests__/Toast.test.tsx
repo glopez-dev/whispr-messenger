@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { act, render } from "@testing-library/react-native";
+import { Animated } from "react-native";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("../../../context/ThemeContext", () => ({
@@ -39,16 +40,25 @@ describe("Toast", () => {
     },
   );
 
-  it("auto-hides after duration via animated timer", async () => {
+  it("auto-hides after duration and invokes onHide once the close animation finishes", async () => {
+    // Drive Animated.parallel's completion callback synchronously so onHide
+    // is observable. Without this, the JS Animated timing relies on native
+    // scheduling that does not always fire under jest fake timers.
+    const parallelSpy = jest.spyOn(Animated, "parallel").mockImplementation(
+      () =>
+        ({
+          start: (cb?: (info: { finished: boolean }) => void) =>
+            cb?.({ finished: true }),
+        }) as any,
+    );
     jest.useFakeTimers();
     const onHide = jest.fn();
     render(<Toast visible message="x" duration={100} onHide={onHide} />);
     await act(async () => {
-      jest.advanceTimersByTime(500);
+      jest.advanceTimersByTime(150);
     });
     jest.useRealTimers();
-    // The animation calls onHide via Animated.timing — accept any number of
-    // calls (possibly zero in some platforms), we just want the code path.
-    expect(onHide.mock.calls.length).toBeGreaterThanOrEqual(0);
+    parallelSpy.mockRestore();
+    expect(onHide).toHaveBeenCalledTimes(1);
   });
 });

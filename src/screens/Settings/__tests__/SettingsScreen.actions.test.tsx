@@ -179,7 +179,7 @@ describe("SettingsScreen — actions multi-pass", () => {
     alertSpy.mockRestore();
   });
 
-  it("calls signOut when logout confirmed", async () => {
+  it("does not crash when destructive Alert buttons are pressed", async () => {
     const alertSpy = jest
       .spyOn(Alert, "alert")
       .mockImplementation((_t, _m, buttons) => {
@@ -197,8 +197,6 @@ describe("SettingsScreen — actions multi-pass", () => {
         }
       }
     });
-    // signOut may or may not be called depending on which destructive button
-    // landed in the Alert; either way nothing should crash.
     expect(tree.toJSON()).toBeTruthy();
     alertSpy.mockRestore();
   });
