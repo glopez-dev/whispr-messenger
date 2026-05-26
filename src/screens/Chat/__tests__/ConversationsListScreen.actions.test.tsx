@@ -7,6 +7,7 @@ jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ navigate: mockNavigate, goBack: jest.fn() }),
   useRoute: () => ({ params: {} }),
   useFocusEffect: jest.fn(),
+  useIsFocused: jest.fn(() => true),
 }));
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,

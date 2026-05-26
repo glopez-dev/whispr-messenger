@@ -18,6 +18,7 @@ const mockGoBack = jest.fn();
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
   useRoute: () => ({ params: { conversationId: "conv1" } }),
+  useIsFocused: jest.fn(() => true),
 }));
 
 jest.mock("expo-linear-gradient", () => ({
@@ -25,6 +26,7 @@ jest.mock("expo-linear-gradient", () => ({
 }));
 jest.mock("react-native-safe-area-context", () => ({
   SafeAreaView: ({ children }: any) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 
@@ -120,7 +122,10 @@ jest.mock("../../../hooks/useWebSocket", () => ({
   }),
 }));
 jest.mock("../../../services/TokenService", () => ({
-  TokenService: { getAccessToken: jest.fn().mockResolvedValue("tok") },
+  TokenService: {
+    getAccessToken: jest.fn().mockResolvedValue("tok"),
+    decodeAccessToken: jest.fn(() => ({ deviceId: "dev1", sub: "user1" })),
+  },
 }));
 
 // API surface

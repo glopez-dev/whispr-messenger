@@ -6,9 +6,24 @@ const mockGoBack = jest.fn();
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ goBack: mockGoBack, navigate: jest.fn() }),
   useRoute: () => ({ params: {} }),
+  useIsFocused: jest.fn(() => true),
 }));
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
+}));
+jest.mock("react-native-safe-area-context", () => ({
+  SafeAreaView: ({ children }: any) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+jest.mock("../../../context/AuthContext", () => ({
+  useAuth: () => ({
+    isAuthenticated: true,
+    isLoading: false,
+    userId: "user1",
+    deviceId: "dev1",
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+  }),
 }));
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("expo-haptics", () => ({
@@ -36,6 +51,18 @@ jest.mock("../../../context/ThemeContext", () => ({
 jest.mock("../../../components/Toast/Toast", () => () => null);
 jest.mock("../../../utils/clipboard", () => ({
   copyToClipboard: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock("../../../services/SecurityService", () => ({
+  DeviceManagerService: {
+    listDevices: jest.fn().mockResolvedValue([]),
+    revokeDevice: jest.fn().mockResolvedValue(undefined),
+    generateQRChallenge: jest
+      .fn()
+      .mockResolvedValue({ challenge: "chal", expiresIn: 300 }),
+  },
+  SignalKeysService: {
+    getKeyBundle: jest.fn().mockResolvedValue(null),
+  },
 }));
 
 import { SecurityKeysScreen } from "../SecurityKeysScreen";
