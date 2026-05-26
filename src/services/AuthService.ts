@@ -97,10 +97,14 @@ export const AuthService = {
     phoneNumber: string,
     purpose: AuthPurpose,
   ): Promise<VerificationRequestResponse> {
-    return apiFetch<VerificationRequestResponse>(`/verify/${purpose}/request`, {
-      method: "POST",
-      body: JSON.stringify({ phoneNumber }),
-    });
+    const apiPurpose = purpose === "recovery" ? "login" : purpose;
+    return apiFetch<VerificationRequestResponse>(
+      `/verify/${apiPurpose}/request`,
+      {
+        method: "POST",
+        body: JSON.stringify({ phoneNumber }),
+      },
+    );
   },
 
   async confirmVerification(
@@ -108,10 +112,14 @@ export const AuthService = {
     code: string,
     purpose: AuthPurpose,
   ): Promise<VerificationConfirmResponse> {
-    return apiFetch<VerificationConfirmResponse>(`/verify/${purpose}/confirm`, {
-      method: "POST",
-      body: JSON.stringify({ verificationId, code }),
-    });
+    const apiPurpose = purpose === "recovery" ? "login" : purpose;
+    return apiFetch<VerificationConfirmResponse>(
+      `/verify/${apiPurpose}/confirm`,
+      {
+        method: "POST",
+        body: JSON.stringify({ verificationId, code }),
+      },
+    );
   },
 
   async register(verificationId: string): Promise<TokenPair> {
