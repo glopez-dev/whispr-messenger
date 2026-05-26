@@ -2,7 +2,8 @@
  * WHISPR-1039: garantit que la compression ne déforme jamais une image.
  * Test unitaire pur sur la fonction de décision `buildResizeAction`.
  *
- * WHISPR-1197: garantit que GIF/HEIC ne sont jamais re-encodés.
+ * WHISPR-1197: garantit que GIF/HEIC ne sont jamais re-encodés dans compressImage.
+ * convertHeicToJpeg: conversion HEIC→JPEG dédiée compat web (Chrome/Firefox).
  */
 
 // Mock expo-image-manipulator AVANT l'import du module testé : ainsi on peut
@@ -28,6 +29,7 @@ jest.mock("react-native", () => ({
 import {
   buildResizeAction,
   compressImage,
+  convertHeicToJpeg,
   detectImageFormatFromUri,
 } from "../imageCompression";
 
@@ -155,5 +157,76 @@ describe("compressImage format short-circuit (WHISPR-1197)", () => {
     const result = await compressImage("file:///tmp/photo");
     expect(mockManipulateAsync).toHaveBeenCalledTimes(2);
     expect(result).toBe("file:///tmp/compressed.jpg");
+  });
+});
+
+describe("convertHeicToJpeg (compat web)", () => {
+  beforeEach(() => {
+    mockManipulateAsync.mockReset();
+  });
+
+  it("convertit un .heic en JPEG et renomme le fichier", async () => {
+    mockManipulateAsync.mockResolvedValueOnce({
+      uri: "file:///tmp/IMG_1234.jpg",
+    });
+    const result = await convertHeicToJpeg(
+      "file:///tmp/IMG_1234.heic",
+      "IMG_1234.heic",
+    );
+    expect(result).not.toBeNull();
+    expect(result!.uri).toBe("file:///tmp/IMG_1234.jpg");
+    expect(result!.mimeType).toBe("image/jpeg");
+    expect(result!.filename).toBe("IMG_1234.jpg");
+  });
+
+  it("convertit un .heif en JPEG et renomme le fichier", async () => {
+    mockManipulateAsync.mockResolvedValueOnce({
+      uri: "file:///tmp/IMG_5678.jpg",
+    });
+    const result = await convertHeicToJpeg(
+      "file:///tmp/IMG_5678.heif",
+      "IMG_5678.heif",
+    );
+    expect(result).not.toBeNull();
+    expect(result!.mimeType).toBe("image/jpeg");
+    expect(result!.filename).toBe("IMG_5678.jpg");
+  });
+
+  it("appelle manipulateAsync avec compress 0.92 et format JPEG", async () => {
+    mockManipulateAsync.mockResolvedValueOnce({ uri: "file:///tmp/out.jpg" });
+    await convertHeicToJpeg("file:///tmp/photo.heic", "photo.heic");
+    expect(mockManipulateAsync).toHaveBeenCalledWith(
+      "file:///tmp/photo.heic",
+      [],
+      { compress: 0.92, format: "jpeg" },
+    );
+  });
+
+  it("retourne null pour une URI non-HEIC (JPEG) sans appeler manipulateAsync", async () => {
+    const result = await convertHeicToJpeg(
+      "file:///tmp/photo.jpg",
+      "photo.jpg",
+    );
+    expect(result).toBeNull();
+    expect(mockManipulateAsync).not.toHaveBeenCalled();
+  });
+
+  it("retourne null si manipulateAsync échoue (fallback safe)", async () => {
+    mockManipulateAsync.mockRejectedValueOnce(new Error("manipulate failed"));
+    const result = await convertHeicToJpeg(
+      "file:///tmp/IMG_1234.heic",
+      "IMG_1234.heic",
+    );
+    expect(result).toBeNull();
+  });
+
+  it("conserve le casing .HEIC dans la détection mais produit .jpg en minuscule", async () => {
+    mockManipulateAsync.mockResolvedValueOnce({ uri: "file:///tmp/out.jpg" });
+    const result = await convertHeicToJpeg(
+      "file:///tmp/PHOTO.HEIC",
+      "PHOTO.HEIC",
+    );
+    expect(result).not.toBeNull();
+    expect(result!.filename).toBe("PHOTO.jpg");
   });
 });
