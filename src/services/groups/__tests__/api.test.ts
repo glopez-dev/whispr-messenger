@@ -322,21 +322,89 @@ describe("groupsAPI.getGroupStats", () => {
   });
 });
 
-// ---------------- getGroupLogs (stub) ----------------
+// ---------------- getGroupLogs ----------------
 
 describe("groupsAPI.getGroupLogs", () => {
-  it("returns an empty list until the backend endpoint exists", async () => {
+  it("GETs /user/v1/groups/:groupId/logs and returns parsed response", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({
+        body: {
+          logs: [
+            {
+              id: "log-1",
+              action_type: "settings_updated",
+              actor_id: "owner-1",
+              actor_name: "Alice",
+              timestamp: "2026-01-01T00:00:00Z",
+            },
+          ],
+          total: 1,
+        },
+      }),
+    );
+
     const result = await groupsAPI.getGroupLogs("grp-1");
-    expect(result).toEqual({ logs: [], total: 0 });
-    expect(mockFetch).not.toHaveBeenCalled();
+
+    expect(mockFetch.mock.calls[0][0]).toBe(`${USER_BASE}/groups/grp-1/logs`);
+    expect(result.total).toBe(1);
+    expect(result.logs[0].action_type).toBe("settings_updated");
+  });
+
+  it("appends query parameters when provided", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { logs: [], total: 0 } }),
+    );
+
+    await groupsAPI.getGroupLogs("grp-1", {
+      page: 2,
+      limit: 10,
+      actionType: "member_added",
+    });
+
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain("page=2");
+    expect(url).toContain("limit=10");
+    expect(url).toContain("actionType=member_added");
+  });
+
+  it("throws when the endpoint returns a non-OK status", async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse({ status: 403 }));
+
+    await expect(groupsAPI.getGroupLogs("grp-1")).rejects.toThrow(
+      /Impossible de charger les logs \(403\)/,
+    );
   });
 });
 
 // ---------------- getGroupSettings ----------------
 
 describe("groupsAPI.getGroupSettings", () => {
-  it("returns defaults when the conversation cannot be fetched", async () => {
-    mockFetch.mockResolvedValueOnce(mockResponse({ status: 500 }));
+  it("GETs /user/v1/groups/:groupId/settings and returns parsed settings", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({
+        body: {
+          message_permission: "moderators_plus",
+          media_permission: "admins_only",
+          mention_permission: "all_members",
+          add_members_permission: "admins_only",
+          moderation_level: "strict",
+          content_filter_enabled: true,
+          join_approval_required: true,
+        },
+      }),
+    );
+
+    const settings = await groupsAPI.getGroupSettings("grp-1");
+
+    expect(mockFetch.mock.calls[0][0]).toBe(
+      `${USER_BASE}/groups/grp-1/settings`,
+    );
+    expect(settings.message_permission).toBe("moderators_plus");
+    expect(settings.moderation_level).toBe("strict");
+  });
+
+  it("returns defaults when the backend returns a non-OK status", async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse({ status: 404 }));
 
     const settings = await groupsAPI.getGroupSettings("grp-1");
     expect(settings).toEqual({
@@ -350,108 +418,33 @@ describe("groupsAPI.getGroupSettings", () => {
     });
   });
 
-  it("normalizes settings nested under metadata.group_settings", async () => {
+  it("ignores the conversationId param (no longer used)", async () => {
     mockFetch.mockResolvedValueOnce(
-      mockResponse({
-        body: {
-          data: {
-            metadata: {
-              group_settings: {
-                message_permission: "moderators_plus",
-                media_permission: "admins_only",
-                moderation_level: "strict",
-                content_filter_enabled: true,
-                join_approval_required: true,
-              },
-            },
-          },
-        },
-      }),
+      mockResponse({ body: { message_permission: "all_members" } }),
     );
 
-    const settings = await groupsAPI.getGroupSettings("grp-1");
-    expect(settings.message_permission).toBe("moderators_plus");
-    expect(settings.media_permission).toBe("admins_only");
-    expect(settings.moderation_level).toBe("strict");
-    expect(settings.content_filter_enabled).toBe(true);
-    expect(settings.join_approval_required).toBe(true);
-  });
+    await groupsAPI.getGroupSettings("grp-1", { conversationId: "conv-X" });
 
-  it("accepts camelCase variants from metadata", async () => {
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({
-        body: {
-          data: {
-            metadata: {
-              messagePermission: "moderators_plus",
-              moderationLevel: "medium",
-            },
-          },
-        },
-      }),
+    expect(mockFetch.mock.calls[0][0]).toBe(
+      `${USER_BASE}/groups/grp-1/settings`,
     );
-
-    const settings = await groupsAPI.getGroupSettings("grp-1");
-    expect(settings.message_permission).toBe("moderators_plus");
-    expect(settings.moderation_level).toBe("medium");
-  });
-
-  it("ignores unknown permission values and falls back to defaults", async () => {
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({
-        body: {
-          data: {
-            metadata: {
-              group_settings: {
-                message_permission: "garbage",
-                moderation_level: "yolo",
-              },
-            },
-          },
-        },
-      }),
-    );
-
-    const settings = await groupsAPI.getGroupSettings("grp-1");
-    expect(settings.message_permission).toBe("all_members");
-    expect(settings.moderation_level).toBe("light");
   });
 });
 
 // ---------------- updateGroupSettings ----------------
 
 describe("groupsAPI.updateGroupSettings", () => {
-  it("PUTs merged settings into conversation metadata and returns refreshed settings", async () => {
-    // 1. initial GET /conversations/:id (extract current settings)
+  it("PATCHes /user/v1/groups/:groupId/settings and returns updated settings", async () => {
     mockFetch.mockResolvedValueOnce(
       mockResponse({
         body: {
-          data: {
-            metadata: {
-              group_settings: {
-                message_permission: "all_members",
-                media_permission: "all_members",
-              },
-              description: "preserve me",
-            },
-          },
-        },
-      }),
-    );
-    // 2. PUT /conversations/:id
-    mockFetch.mockResolvedValueOnce(mockResponse({ body: { ok: true } }));
-    // 3. refetch /conversations/:id
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({
-        body: {
-          data: {
-            metadata: {
-              group_settings: {
-                message_permission: "admins_only",
-                media_permission: "all_members",
-              },
-            },
-          },
+          message_permission: "admins_only",
+          media_permission: "all_members",
+          mention_permission: "all_members",
+          add_members_permission: "admins_only",
+          moderation_level: "light",
+          content_filter_enabled: false,
+          join_approval_required: false,
         },
       }),
     );
@@ -460,27 +453,16 @@ describe("groupsAPI.updateGroupSettings", () => {
       message_permission: "admins_only",
     });
 
+    const call = mockFetch.mock.calls[0];
+    expect(call[0]).toBe(`${USER_BASE}/groups/grp-1/settings`);
+    expect(call[1].method).toBe("PATCH");
+    expect(JSON.parse(call[1].body)).toEqual({
+      message_permission: "admins_only",
+    });
     expect(result.message_permission).toBe("admins_only");
-    // PUT call (call 2) — body must merge updates and preserve metadata
-    const putCall = mockFetch.mock.calls[1];
-    expect(putCall[1].method).toBe("PUT");
-    const body = JSON.parse(putCall[1].body);
-    expect(body.metadata.description).toBe("preserve me");
-    expect(body.metadata.group_settings.message_permission).toBe("admins_only");
   });
 
-  it("throws when the initial conversation fetch returns no payload", async () => {
-    mockFetch.mockResolvedValueOnce(mockResponse({ status: 500 }));
-
-    await expect(
-      groupsAPI.updateGroupSettings("grp-1", { moderation_level: "strict" }),
-    ).rejects.toThrow(/Impossible de charger la conversation/);
-  });
-
-  it("throws when the PUT fails", async () => {
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({ body: { data: { metadata: {} } } }),
-    );
+  it("throws when the PATCH fails", async () => {
     mockFetch.mockResolvedValueOnce(
       mockResponse({ status: 403, textBody: "forbidden" }),
     );
@@ -488,6 +470,22 @@ describe("groupsAPI.updateGroupSettings", () => {
     await expect(
       groupsAPI.updateGroupSettings("grp-1", { moderation_level: "strict" }),
     ).rejects.toThrow(/Impossible de mettre a jour les parametres \(403\)/);
+  });
+
+  it("ignores the conversationId param (no longer used)", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { message_permission: "all_members" } }),
+    );
+
+    await groupsAPI.updateGroupSettings(
+      "grp-1",
+      {},
+      { conversationId: "conv-X" },
+    );
+
+    expect(mockFetch.mock.calls[0][0]).toBe(
+      `${USER_BASE}/groups/grp-1/settings`,
+    );
   });
 });
 
