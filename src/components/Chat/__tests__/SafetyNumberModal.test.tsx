@@ -122,6 +122,21 @@ describe("SafetyNumberModal", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("falls back to next device when first device has invalid bundle", async () => {
+    mockListDevices.mockResolvedValue({
+      userId: "user-b",
+      deviceIds: ["device-b-bad", "device-b-good"],
+    });
+    mockGetKeyBundle.mockImplementation((userId: string, deviceId: string) => {
+      if (userId === "user-a") return Promise.resolve(MY_BUNDLE);
+      if (deviceId === "device-b-bad")
+        return Promise.reject(new Error("INVALID_SIGNAL_BUNDLE"));
+      return Promise.resolve(THEIR_BUNDLE);
+    });
+    const { findByText } = render(<SafetyNumberModal {...defaultProps} />);
+    expect(await findByText("12345")).toBeTruthy();
+  });
+
   it("marks contact as verified and calls onVerified", async () => {
     const onVerified = jest.fn();
     const onClose = jest.fn();

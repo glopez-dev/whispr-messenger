@@ -59,14 +59,21 @@ export const SafetyNumberModal: React.FC<SafetyNumberModalProps> = ({
       .catch(() => {
         throw new Error("NO_DEVICE");
       })
-      .then((r) => {
-        const firstDevice = r.deviceIds[0];
-        if (!firstDevice) throw new Error("NO_DEVICE");
-        return SignalKeysService.getKeyBundle(contactUserId, firstDevice).catch(
-          () => {
-            throw new Error("NO_THEIR_KEYS");
-          },
-        );
+      .then(async (r) => {
+        if (!r.deviceIds.length) throw new Error("NO_DEVICE");
+        // Certains appareils enregistrés ont une identityKey vide ("") —
+        // on parcourt la liste jusqu'au premier appareil avec un bundle valide.
+        for (const deviceId of r.deviceIds) {
+          try {
+            return await SignalKeysService.getKeyBundle(
+              contactUserId,
+              deviceId,
+            );
+          } catch {
+            // bundle invalide ou absent pour cet appareil, on essaie le suivant
+          }
+        }
+        throw new Error("NO_THEIR_KEYS");
       });
 
     Promise.all([
