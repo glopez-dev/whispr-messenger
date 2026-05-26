@@ -335,10 +335,18 @@ export const useConversationsStore = create<
       }
 
       const data = await messagingAPI.getConversations();
+      const decryptedPreviews = await Promise.all(
+        data.map(async (conv) => ({
+          ...conv,
+          last_message: conv.last_message
+            ? await tryDecryptMessage(conv.last_message)
+            : conv.last_message,
+        })),
+      );
       const userId = await getCurrentUserId();
       const enriched = userId
-        ? await enrichWithDisplayNames(data, userId)
-        : data;
+        ? await enrichWithDisplayNames(decryptedPreviews, userId)
+        : decryptedPreviews;
       await cacheService.saveConversations(enriched);
       _setConversations(enriched);
     } catch (err) {
@@ -357,10 +365,18 @@ export const useConversationsStore = create<
     const { _setConversations } = get();
     try {
       const data = await messagingAPI.getConversations();
+      const decryptedPreviews = await Promise.all(
+        data.map(async (conv) => ({
+          ...conv,
+          last_message: conv.last_message
+            ? await tryDecryptMessage(conv.last_message)
+            : conv.last_message,
+        })),
+      );
       const userId = await getCurrentUserId();
       const enriched = userId
-        ? await enrichWithDisplayNames(data, userId)
-        : data;
+        ? await enrichWithDisplayNames(decryptedPreviews, userId)
+        : decryptedPreviews;
       await cacheService.saveConversations(enriched);
       _setConversations(enriched, true);
     } catch (err) {
