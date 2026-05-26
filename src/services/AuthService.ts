@@ -1,6 +1,7 @@
 import { TokenService } from "./TokenService";
 import { DeviceService } from "./DeviceService";
 import { SignalKeyService } from "./SignalKeyService";
+import { E2EEService } from "./E2EEService";
 import { getApiBaseUrl } from "./apiBase";
 import { emitSessionExpired } from "./sessionEvents";
 import { logger } from "../utils/logger";
@@ -296,6 +297,12 @@ export const AuthService = {
       // Best-effort: clear local tokens even if server call fails
     });
     await TokenService.clearTokens();
+    // Drop the in-memory E2EE identity cache so the next login (which
+    // regenerates the identity keypair) is not shadowed by the cached
+    // pre-logout keys. Without this the same JS process keeps using the
+    // previous identity until killed, and counterparts can't decrypt the
+    // user's messages.
+    E2EEService.resetIdentityCache();
   },
 
   async validateSession(): Promise<{
