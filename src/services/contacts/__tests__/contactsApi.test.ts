@@ -61,7 +61,7 @@ describe("contactsAPI.getContacts", () => {
 
     const result = await contactsAPI.getContacts();
 
-    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE}/contacts`);
+    expect(mockFetch.mock.calls[0][0]).toBe(`${BASE}/contacts?limit=100`);
     expect(result.total).toBe(1);
     expect(result.contacts[0]).toMatchObject({
       id: "c-1",

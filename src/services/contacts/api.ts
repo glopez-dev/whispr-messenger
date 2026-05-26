@@ -293,7 +293,10 @@ export const contactsAPI = {
       contacts: Contact[];
       total: number;
     }> => {
-      const url = `${API_BASE_URL}/contacts`;
+      // limit=100 : le max autorise par user-service (CursorPaginationDto @Max(100)).
+      // Sans param le service retourne 50 par defaut, ce qui tronque silencieusement
+      // les carnets d adresses > 50 contacts.
+      const url = `${API_BASE_URL}/contacts?limit=100`;
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
