@@ -49,6 +49,21 @@ jest.mock("../../hooks/useOfflineQueueDrainer", () => ({
   useOfflineQueueDrainer: jest.fn(),
 }));
 
+jest.mock("../../hooks/useNetworkMonitor", () => ({
+  useNetworkMonitor: jest.fn(),
+}));
+
+jest.mock("@react-native-community/netinfo", () => ({
+  __esModule: true,
+  default: {
+    addEventListener: jest.fn(() => jest.fn()),
+    fetch: jest.fn().mockResolvedValue({
+      isConnected: true,
+      isInternetReachable: true,
+    }),
+  },
+}));
+
 const mockFetchMyRole = jest.fn();
 jest.mock("../../store/moderationStore", () => ({
   useModerationStore: (selector: any) =>

@@ -498,13 +498,18 @@ export const ChatScreen: React.FC = () => {
   const { userId: rawUserId } = useAuth();
   const userId = rawUserId ?? "";
   const [token, setToken] = useState<string>("");
+  const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!userId) {
       setToken("");
+      setDeviceId(undefined);
       return;
     }
-    TokenService.getAccessToken().then((t) => setToken(t ?? ""));
+    TokenService.getAccessToken().then((t) => {
+      setToken(t ?? "");
+      if (t) setDeviceId(TokenService.decodeAccessToken(t)?.deviceId);
+    });
   }, [userId]);
 
   // WebSocket connection
@@ -516,6 +521,7 @@ export const ChatScreen: React.FC = () => {
     sendTyping,
   } = useWebSocket({
     userId,
+    deviceId,
     token,
     onPresenceUpdate: (presenceUserId: string, isOnline: boolean) => {
       setOnlineUsers((prev) => {
@@ -900,8 +906,6 @@ export const ChatScreen: React.FC = () => {
         for (const queued of pending) {
           try {
             let outgoingContent = queued.content;
-            let signature: string | undefined;
-            let sender_public_key: string | undefined;
             if (
               e2eeEnabledRef.current &&
               queued.message_type === "text" &&
@@ -923,8 +927,6 @@ export const ChatScreen: React.FC = () => {
                   recipientUserId: otherUserId,
                 });
                 outgoingContent = enc.content;
-                signature = enc.signature;
-                sender_public_key = enc.sender_public_key;
               }
             }
             const sent = await messagingAPI.sendMessage(conversationId, {
@@ -933,8 +935,6 @@ export const ChatScreen: React.FC = () => {
               client_random: queued.client_random,
               metadata: {},
               reply_to_id: queued.reply_to_id,
-              signature,
-              sender_public_key,
             });
             // Replace queued message with sent one
             setMessages((prev) =>
@@ -1459,15 +1459,19 @@ export const ChatScreen: React.FC = () => {
           });
           setHasMore(messagesWithRelations.length === MESSAGES_PAGE_SIZE);
         } else {
-          // Initial load — merge with any messages already received via WS
+          // Initial load — merge with any messages already received via WS.
+          // API versions take priority over cache so decrypted content
+          // replaces any encrypted placeholders loaded from cache.
           setMessages((prev) => {
-            const existingIds = new Set(prev.map((m) => m.id));
-            const newcomers = messagesWithRelations.filter(
-              (m) => !existingIds.has(m.id),
+            const apiById = new Map(
+              messagesWithRelations.map((m) => [m.id, m]),
             );
-            const withReplies = resolveReplies(newcomers, prev);
-            const merged = [...prev, ...withReplies];
-            return merged.sort(
+            const wsOnly = prev.filter((m) => !apiById.has(m.id));
+            const withReplies = resolveReplies(
+              [...messagesWithRelations, ...wsOnly],
+              [...messagesWithRelations, ...wsOnly],
+            );
+            return withReplies.sort(
               (a, b) =>
                 new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime(),
             );
@@ -1629,8 +1633,6 @@ export const ChatScreen: React.FC = () => {
 
         try {
           let outgoingContent = content;
-          let signature: string | undefined;
-          let sender_public_key: string | undefined;
 
           // Blind the server: always use E2EE for direct chats if possible,
           // or if explicitly enabled via metadata (for groups).
@@ -1655,8 +1657,6 @@ export const ChatScreen: React.FC = () => {
                   recipientUserIds: otherUserIds,
                 });
                 outgoingContent = enc.content;
-                signature = enc.signature;
-                sender_public_key = enc.sender_public_key;
               } catch (encErr: any) {
                 logger.warn(
                   "ChatScreen",
@@ -1679,8 +1679,6 @@ export const ChatScreen: React.FC = () => {
                 // Otherwise (auto-e2ee for 1v1), we fallback to cleartext
                 // if the recipient is not E2EE-ready yet.
                 outgoingContent = content;
-                signature = undefined;
-                sender_public_key = undefined;
               }
             }
           }
@@ -1691,8 +1689,6 @@ export const ChatScreen: React.FC = () => {
             client_random: tempMessage.client_random as number,
             metadata: {},
             reply_to_id: replyToId,
-            signature,
-            sender_public_key,
           });
 
           setMessages((prev) => {
@@ -1718,8 +1714,11 @@ export const ChatScreen: React.FC = () => {
             .applyNewMessage({ ...(sent as any), content } as any, userId)
             .catch(() => {});
           useConversationsStore.getState().resetUnreadCount(conversationId);
-        } catch (error) {
+        } catch (error: any) {
           logger.error("ChatScreen", "Error sending message", error);
+          if (error?.body) {
+            logger.error("ChatScreen", "Send 422 body", error.body);
+          }
           setMessages((prev) => {
             return prev.map((m) => {
               if (m.id === tempMessage.id) {
@@ -1927,6 +1926,7 @@ export const ChatScreen: React.FC = () => {
         // E2EE for media: blind the server
         const shouldEncrypt = e2eeEnabled || conversation?.type === "direct";
         let finalUploadUri = uploadUri;
+        let uploadMimeType = mimeType;
         let e2eeMediaMeta: { key: string; nonce: string } | undefined;
 
         if (shouldEncrypt) {
@@ -1934,6 +1934,12 @@ export const ChatScreen: React.FC = () => {
             const encMedia = await E2EEService.encryptMediaFile(uploadUri);
             finalUploadUri = encMedia.encryptedUri;
             e2eeMediaMeta = { key: encMedia.key, nonce: encMedia.nonce };
+            // The ciphertext no longer matches the original image/video magic
+            // bytes, so the server-side magic-bytes validator rejects it as 415
+            // when declared as image/jpeg etc. Upload as opaque octet-stream;
+            // the real MIME stays in the message attachment metadata for the
+            // recipient to decode after decryption.
+            uploadMimeType = "application/octet-stream";
           } catch (encErr) {
             logger.warn(
               "ChatScreen",
@@ -1946,7 +1952,7 @@ export const ChatScreen: React.FC = () => {
 
         // 1. Upload file to media-service (encrypted or plain)
         const uploadResult = await MediaService.uploadMedia(
-          { uri: finalUploadUri, name: filename, type: mimeType },
+          { uri: finalUploadUri, name: filename, type: uploadMimeType },
           (percent) => {
             patchTempUploadMeta({
               uploadPhase: "uploading",
@@ -2107,8 +2113,6 @@ export const ChatScreen: React.FC = () => {
 
         // 3. Send message via messaging-service with remote media URLs
         let finalContent = messageContent;
-        let signature: string | undefined;
-        let sender_public_key: string | undefined;
 
         if (e2eeMediaMeta) {
           const memberIdsForEnc =
@@ -2131,8 +2135,6 @@ export const ChatScreen: React.FC = () => {
                 recipientUserIds: otherUserIds,
               });
               finalContent = enc.content;
-              signature = enc.signature;
-              sender_public_key = enc.sender_public_key;
             } catch (encErr) {
               logger.warn(
                 "ChatScreen",
@@ -2153,8 +2155,6 @@ export const ChatScreen: React.FC = () => {
             e2ee: !!e2eeMediaMeta,
           },
           reply_to_id: replyToId,
-          signature,
-          sender_public_key,
         });
 
         // 4. Attach media record to the message (non-blocking — message already has metadata)
@@ -3007,6 +3007,26 @@ export const ChatScreen: React.FC = () => {
               messageTempId: m.id,
             });
           }}
+          onRetry={async (m) => {
+            const queued: QueuedMessage = {
+              id: m.id,
+              conversation_id: m.conversation_id,
+              content: m.content,
+              message_type: m.message_type as "text" | "media" | "system",
+              client_random: (m.client_random as number) ?? Date.now(),
+              reply_to_id: m.reply_to_id ?? undefined,
+              queued_at: new Date().toISOString(),
+            };
+            await offlineQueue.enqueue(queued);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === m.id ? { ...msg, status: "queued" as const } : msg,
+              ),
+            );
+          }}
+          onCancel={(m) => {
+            setMessages((prev) => prev.filter((msg) => msg.id !== m.id));
+          }}
         />
       );
     },
@@ -3222,13 +3242,6 @@ export const ChatScreen: React.FC = () => {
                       ? styles.webFlatListAbsolute
                       : undefined
                   }
-                  ListEmptyComponent={
-                    !loading ? (
-                      <View style={{ transform: [{ scaleY: -1 }], flex: 1 }}>
-                        <EmptyChatState />
-                      </View>
-                    ) : null
-                  }
                   ListFooterComponent={
                     loadingMore ? (
                       <View
@@ -3263,6 +3276,14 @@ export const ChatScreen: React.FC = () => {
                     {...dismissKeyboardResponderProps}
                   >
                     {messageList}
+                    {messages.length === 0 && !loading && (
+                      <View
+                        style={styles.emptyChatOverlay}
+                        pointerEvents="box-none"
+                      >
+                        <EmptyChatState />
+                      </View>
+                    )}
                     {pendingNewCount > 0 && (
                       <View style={styles.newMessagesPillContainer}>
                         <TouchableOpacity
@@ -3292,6 +3313,14 @@ export const ChatScreen: React.FC = () => {
                       {...dismissKeyboardResponderProps}
                     >
                       {messageList}
+                      {messages.length === 0 && !loading && (
+                        <View
+                          style={styles.emptyChatOverlay}
+                          pointerEvents="box-none"
+                        >
+                          <EmptyChatState />
+                        </View>
+                      )}
                       {pendingNewCount > 0 && (
                         <View style={styles.newMessagesPillContainer}>
                           <TouchableOpacity
@@ -3751,6 +3780,15 @@ const styles = StyleSheet.create({
   typingContainer: {
     paddingHorizontal: 16,
     paddingBottom: 8,
+  },
+  emptyChatOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
   },
   newMessagesPillContainer: {
     position: "absolute",

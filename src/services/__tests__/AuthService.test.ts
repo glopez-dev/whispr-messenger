@@ -521,3 +521,91 @@ describe("AuthService.getWsToken (WHISPR-1214)", () => {
     });
   });
 });
+
+describe("AuthService.fetchRecoveryCodes", () => {
+  beforeEach(() => {
+    mockFetch = installFetchMock();
+  });
+
+  it("throws 401 when no access token is stored", async () => {
+    mockedToken.getAccessToken.mockResolvedValueOnce(null);
+
+    await expect(AuthService.fetchRecoveryCodes()).rejects.toMatchObject({
+      message: "NO_ACCESS_TOKEN",
+      status: 401,
+    });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("calls GET /recovery-codes with Bearer token and returns codes", async () => {
+    const codes = ["A1B2-XXXX", "C3D4-YYYY"];
+    mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
+    mockFetch.mockResolvedValueOnce(mockResponse({ body: codes }));
+
+    const result = await AuthService.fetchRecoveryCodes();
+
+    expect(result).toEqual(codes);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://api.test/auth/v1/recovery-codes");
+    expect(init.method).toBe("GET");
+    expect(init.headers.Authorization).toBe("Bearer access-tok");
+  });
+
+  it("propagates non-404 errors without fallback", async () => {
+    mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ status: 500, body: { message: "server error" } }),
+    );
+
+    await expect(AuthService.fetchRecoveryCodes()).rejects.toMatchObject({
+      status: 500,
+    });
+  });
+});
+
+describe("AuthService.acknowledgeRecoveryCodes", () => {
+  it("POSTs /recovery-codes/acknowledge avec le Bearer token et retourne void sur 204", async () => {
+    mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
+    mockFetch.mockResolvedValueOnce(mockResponse({ status: 204 }));
+
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
+
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://api.test/auth/v1/recovery-codes/acknowledge");
+    expect(init.method).toBe("POST");
+    expect(init.headers.Authorization).toBe("Bearer access-tok");
+  });
+
+  it("swallow 404 silencieusement (backend pas encore deployé)", async () => {
+    mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ status: 404, body: { message: "Not Found" } }),
+    );
+
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
+  });
+
+  it("retourne void sans appel réseau si pas de token", async () => {
+    mockedToken.getAccessToken.mockResolvedValueOnce(null);
+
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("propage les erreurs non-404 (ex: 500)", async () => {
+    mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ status: 500, body: { message: "server error" } }),
+    );
+
+    await expect(AuthService.acknowledgeRecoveryCodes()).rejects.toMatchObject({
+      status: 500,
+    });
+  });
+});

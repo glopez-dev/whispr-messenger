@@ -2,15 +2,13 @@
  * AboutContentScreen — contenu, securite, liens legaux et CTA signalement (WHISPR).
  */
 
-import React, { useCallback } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
-  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -25,18 +23,6 @@ export const AboutContentScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { getThemeColors, getFontSize, getLocalizedText } = useTheme();
   const themeColors = getThemeColors();
-
-  const onReportPress = useCallback(() => {
-    if (Platform.OS === "web") {
-      window.alert(getLocalizedText("about.reportComingSoon"));
-      return;
-    }
-    Alert.alert(
-      getLocalizedText("about.reportContent"),
-      getLocalizedText("about.reportComingSoon"),
-      [{ text: getLocalizedText("common.ok") }],
-    );
-  }, [getLocalizedText]);
 
   const bodyStyle = [
     styles.bodyText,
@@ -247,11 +233,13 @@ export const AboutContentScreen: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.reportButton,
-              { backgroundColor: themeColors.primary },
+              { backgroundColor: themeColors.primary, opacity: 0.45 },
             ]}
-            onPress={onReportPress}
+            disabled={true}
             accessibilityRole="button"
+            accessibilityState={{ disabled: true }}
             accessibilityHint={getLocalizedText("about.reportComingSoon")}
+            testID="btn-report-content"
           >
             <Ionicons name="flag-outline" size={22} color="#FFFFFF" />
             <Text
@@ -262,6 +250,11 @@ export const AboutContentScreen: React.FC = () => {
             >
               {getLocalizedText("about.reportContent")}
             </Text>
+            <View style={styles.reportComingSoonBadge}>
+              <Text style={styles.reportComingSoonText}>
+                {getLocalizedText("common.soon")}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -324,6 +317,19 @@ const styles = StyleSheet.create({
   reportButtonLabel: {
     color: "#FFFFFF",
     fontWeight: "700",
+  },
+  reportComingSoonBadge: {
+    position: "absolute",
+    right: 14,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  reportComingSoonText: {
+    color: "rgba(255,255,255,0.85)",
+    fontSize: 11,
+    fontWeight: "600",
   },
 });
 

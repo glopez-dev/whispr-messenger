@@ -18,6 +18,8 @@ import { TwoFactorAuthScreen } from "../screens/Security/TwoFactorAuthScreen";
 import { TwoFactorSetupScreen } from "../screens/Security/TwoFactorSetupScreen";
 import { TwoFactorVerifyScreen } from "../screens/Security/TwoFactorVerifyScreen";
 import { TwoFactorBackupCodesScreen } from "../screens/Security/TwoFactorBackupCodesScreen";
+import { RecoveryCodesScreen } from "../screens/Auth/RecoveryCodesScreen";
+import { RecoveryCodeEntryScreen } from "../screens/Auth/RecoveryCodeEntryScreen";
 import { ConversationsListScreen } from "../screens/Chat/ConversationsListScreen";
 import { ArchivedConversationsScreen } from "../screens/Chat/ArchivedConversationsScreen";
 import { ChatScreen } from "../screens/Chat/ChatScreen";
@@ -54,6 +56,7 @@ import { AppState } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useAuth } from "../context/AuthContext";
 import { useOfflineQueueDrainer } from "../hooks/useOfflineQueueDrainer";
+import { useNetworkMonitor } from "../hooks/useNetworkMonitor";
 import { useModerationStore } from "../store/moderationStore";
 import { useConversationsStore } from "../store/conversationsStore";
 import { profileSetupFlag } from "../services/profileSetupFlag";
@@ -106,6 +109,13 @@ export type AuthStackParamList = {
   TwoFactorSetup: undefined;
   TwoFactorVerify: { secret: string };
   TwoFactorBackupCodes: { codes: string[] };
+  TwoFactorVerifyLogin: {
+    verificationId: string;
+    deviceInfo: import("../types/auth").DeviceInfo;
+    signalKeyBundle: import("../types/auth").SignalKeyBundleDto;
+  };
+  RecoveryCodes: { mode?: "resume" } | undefined;
+  RecoveryCodeEntry: undefined;
   ConversationsList: undefined;
   ArchivedConversations: undefined;
   Chat: { conversationId: string; openSearch?: boolean };
@@ -191,6 +201,7 @@ export const AuthNavigator: React.FC = () => {
   // a no-op when the queue is empty, so calling it unconditionally is
   // cheap.
   useOfflineQueueDrainer();
+  useNetworkMonitor();
 
   useEffect(() => {
     const t = setTimeout(() => setSplashMinElapsed(true), SPLASH_MIN_MS);
@@ -240,13 +251,6 @@ export const AuthNavigator: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // TODO: remove before ship — forces onboarding on every launch in dev
-    if (__DEV__) {
-      AsyncStorage.removeItem(ONBOARDING_KEY)
-        .then(() => setOnboardingDone(false))
-        .catch(() => setOnboardingDone(false));
-      return;
-    }
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then((v) => setOnboardingDone(v === "1"))
       .catch(() => setOnboardingDone(false));
@@ -453,6 +457,23 @@ export const AuthNavigator: React.FC = () => {
           name="TwoFactorBackupCodes"
           component={TwoFactorBackupCodesScreen}
           options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="TwoFactorVerifyLogin"
+          getComponent={() =>
+            require("../screens/Auth/TwoFactorVerifyLoginScreen")
+              .TwoFactorVerifyLoginScreen
+          }
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="RecoveryCodes"
+          component={RecoveryCodesScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="RecoveryCodeEntry"
+          component={RecoveryCodeEntryScreen}
         />
         <Stack.Screen
           name="ConversationsList"

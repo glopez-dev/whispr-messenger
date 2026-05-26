@@ -143,7 +143,7 @@ export const AuthService = {
   async login(verificationId: string): Promise<TokenPair> {
     const [deviceInfo, signalKeyBundle] = await Promise.all([
       DeviceService.getDeviceInfo(),
-      SignalKeyService.generateKeyBundle(),
+      SignalKeyService.generateKeyBundle("login"),
     ]);
 
     const tokens = await apiFetch<TokenPair>("/login", {
@@ -358,6 +358,111 @@ export const AuthService = {
     const payload = TokenService.decodeAccessToken(token);
     if (!payload) return null;
     return { userId: payload.sub, deviceId: payload.deviceId };
+  },
+
+  async fetchRecoveryCodes(): Promise<string[]> {
+    const token = await TokenService.getAccessToken();
+    if (!token) {
+      const err = new Error("NO_ACCESS_TOKEN") as Error & { status: number };
+      err.status = 401;
+      throw err;
+    }
+
+    try {
+      return await apiFetch<string[]>("/recovery-codes", {
+        method: "GET",
+        token,
+      });
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      // En dev : fallback mock si l'endpoint n'existe pas encore (404)
+      // ou si le backend est injoignable (undefined = network error).
+      // En prod : on laisse l'erreur remonter pour que l'UI affiche
+      // un message "Service indisponible".
+      if (__DEV__ && (status === 404 || status === undefined)) {
+        return [
+          "A1B2-C3D4-E5F6",
+          "G7H8-I9J0-K1L2",
+          "M3N4-O5P6-Q7R8",
+          "S9T0-U1V2-W3X4",
+          "Y5Z6-A7B8-C9D0",
+          "E1F2-G3H4-I5J6",
+          "K7L8-M9N0-O1P2",
+          "Q3R4-S5T6-U7V8",
+        ];
+      }
+      throw err;
+    }
+  },
+
+  // Appelé depuis TwoFactorVerifyLoginScreen après validation TOTP ou backup code.
+  // verificationId + signalKeyBundle + deviceInfo sont préparés dans OtpScreen
+  // et transmis via les paramètres de navigation pour éviter de les recalculer.
+  async loginAfter2FA(
+    verificationId: string,
+    twoFactorToken: string,
+    deviceInfo: import("../types/auth").DeviceInfo,
+    signalKeyBundle: import("../types/auth").SignalKeyBundleDto,
+  ): Promise<TokenPair> {
+    const tokens = await apiFetch<TokenPair>("/login/2fa", {
+      method: "POST",
+      body: JSON.stringify({
+        verificationId,
+        twoFactorToken,
+        ...deviceInfo,
+        signalKeyBundle,
+      }),
+    });
+
+    await TokenService.saveTokens(tokens);
+    resetSessionState();
+    const userId = TokenService.decodeAccessToken(tokens.accessToken)?.sub;
+    if (userId) {
+      notificationService()
+        .initPushRegistration(userId)
+        .catch(() => {});
+    }
+    return tokens;
+  },
+
+  // POST /auth/v1/recovery-codes/acknowledge — marque que l'user a sauvegardé ses codes.
+  // Tolère un 404 (backend pas encore déployé) : swallow silencieux.
+  async acknowledgeRecoveryCodes(): Promise<void> {
+    const token = await TokenService.getAccessToken();
+    if (!token) return;
+    try {
+      await apiFetch<void>("/recovery-codes/acknowledge", {
+        method: "POST",
+        token,
+      });
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      // 404 = endpoint pas encore déployé côté backend, on ignore.
+      if (status === 404) return;
+      throw err;
+    }
+  },
+
+  async redeemRecoveryCode(code: string): Promise<TokenPair> {
+    const [deviceInfo, signalKeyBundle] = await Promise.all([
+      DeviceService.getDeviceInfo(),
+      SignalKeyService.generateKeyBundle("recovery"),
+    ]);
+
+    const tokens = await apiFetch<TokenPair>("/recovery-codes/redeem", {
+      method: "POST",
+      body: JSON.stringify({ code, ...deviceInfo, signalKeyBundle }),
+    });
+
+    await TokenService.saveTokens(tokens);
+    resetSessionState();
+    const userId = TokenService.decodeAccessToken(tokens.accessToken)?.sub;
+    if (userId) {
+      notificationService()
+        .initPushRegistration(userId)
+        .catch(() => {});
+    }
+    return tokens;
   },
 };
 

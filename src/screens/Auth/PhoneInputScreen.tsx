@@ -446,6 +446,17 @@ export const PhoneInputScreen: React.FC = () => {
                 </>
               )}
             </View>
+            {mode === "login" && (
+              <TouchableOpacity
+                style={styles.recoveryCodeLink}
+                onPress={() => navigation.navigate("RecoveryCodeEntry")}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.recoveryCodeLinkText}>
+                  {getLocalizedText("auth.useRecoveryCode")}
+                </Text>
+              </TouchableOpacity>
+            )}
           </Animated.View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -627,5 +638,16 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.75)",
     fontSize: typography.fontSize.base,
     fontWeight: "500",
+  },
+  recoveryCodeLink: {
+    alignItems: "center",
+    paddingVertical: spacing.sm,
+    marginTop: "auto",
+  },
+  recoveryCodeLinkText: {
+    color: "rgba(255, 255, 255, 0.55)",
+    fontSize: typography.fontSize.sm,
+    fontWeight: "500",
+    textDecorationLine: "underline",
   },
 });

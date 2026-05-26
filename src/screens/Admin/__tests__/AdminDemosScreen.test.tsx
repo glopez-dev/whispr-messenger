@@ -28,12 +28,10 @@ jest.mock("../../../theme/colors", () => ({
   },
 }));
 
-// Mock moderationStore : isStaff = true pour le cas admin
 jest.mock("../../../store/moderationStore", () => ({
   useIsStaff: jest.fn(() => true),
 }));
 
-// Mock AdminGate : rend les enfants directement quand isStaff = true
 jest.mock("../../../components/Moderation", () => ({
   AdminGate: ({ children }: any) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -60,11 +58,28 @@ describe("AdminDemosScreen", () => {
     });
   });
 
-  it("affiche les boutons placeholder pour chaque modele", async () => {
+  it("affiche les boutons desactives pour chaque modele", async () => {
+    const { getAllByTestId } = render(<AdminDemosScreen />);
+    await waitFor(() => {
+      const imageButtons = getAllByTestId(/^btn-image-/);
+      const textButtons = getAllByTestId(/^btn-text-/);
+      expect(imageButtons).toHaveLength(2);
+      expect(textButtons).toHaveLength(2);
+      // les boutons doivent etre desactives - pas encore integres backend
+      imageButtons.forEach((btn) => {
+        expect(btn.props.accessibilityState?.disabled).toBe(true);
+      });
+      textButtons.forEach((btn) => {
+        expect(btn.props.accessibilityState?.disabled).toBe(true);
+      });
+    });
+  });
+
+  it("affiche le badge Bientot sur chaque card", async () => {
     const { getAllByText } = render(<AdminDemosScreen />);
     await waitFor(() => {
-      expect(getAllByText("Tester sur image")).toHaveLength(2);
-      expect(getAllByText("Tester sur texte")).toHaveLength(2);
+      const badges = getAllByText("Bientôt");
+      expect(badges).toHaveLength(2);
     });
   });
 

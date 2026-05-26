@@ -78,8 +78,8 @@ export const UserProfileScreen: React.FC = () => {
     lastName: "",
     username: "",
     biography: "",
-    isOnline: true,
-    lastSeen: "Maintenant",
+    isOnline: false,
+    lastSeen: undefined,
     createdAt: "",
   });
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -112,6 +112,29 @@ export const UserProfileScreen: React.FC = () => {
       const res = await service.getUserProfile(userId);
       if (res.success && res.profile) {
         const p = res.profile;
+
+        // Dérive isOnline depuis lastSeen : actif si vu il y a < 5 min
+        const rawLastSeen = (p as any).lastSeen ?? null;
+        let isOnline = false;
+        let lastSeenLabel: string | undefined;
+        if (rawLastSeen) {
+          const seenDate = new Date(rawLastSeen);
+          const diffMs = Date.now() - seenDate.getTime();
+          const diffMin = diffMs / 60_000;
+          if (diffMin < 5) {
+            isOnline = true;
+          } else if (diffMin < 60) {
+            lastSeenLabel = `il y a ${Math.round(diffMin)} min`;
+          } else if (diffMin < 1440) {
+            lastSeenLabel = `il y a ${Math.round(diffMin / 60)}h`;
+          } else {
+            lastSeenLabel = seenDate.toLocaleDateString("fr-FR", {
+              day: "2-digit",
+              month: "short",
+            });
+          }
+        }
+
         setProfile((prev) => ({
           ...prev,
           id: p.id || prev.id,
@@ -121,6 +144,8 @@ export const UserProfileScreen: React.FC = () => {
           biography: p.biography || "",
           profilePicture: p.profilePicture || prev.profilePicture,
           createdAt: p.createdAt || prev.createdAt,
+          isOnline,
+          lastSeen: lastSeenLabel,
         }));
         lastLoadAt.current = Date.now();
         setProfileLoaded(true);

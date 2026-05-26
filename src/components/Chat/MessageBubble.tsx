@@ -221,6 +221,10 @@ interface MessageBubbleProps {
   };
   /** Called when the user taps "Contester" on a locally blocked image */
   onContest?: (message: MessageWithRelations) => void;
+  /** Called when the user taps "Réessayer" on a failed (non-moderation) message */
+  onRetry?: (message: MessageWithRelations) => void;
+  /** Called when the user taps "Annuler" on a failed message */
+  onCancel?: (message: MessageWithRelations) => void;
   /** When true, renders a textual delivery status under the bubble (only the
    * latest message sent by the current user should set this). */
   isLastSentByMe?: boolean;
@@ -250,6 +254,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   searchQuery,
   pendingAppeal,
   onContest,
+  onRetry,
+  onCancel,
   isLastSentByMe = false,
   isGroupConversation = false,
   otherMembersCount = 0,
@@ -545,7 +551,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   </View>
                 ) : null}
               </View>
-            ) : null}
+            ) : (
+              <View style={styles.failedActionRow}>
+                <TouchableOpacity
+                  style={styles.failedRetryBtn}
+                  onPress={() => onRetry?.(message)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.failedRetryText}>Réessayer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.failedCancelBtn}
+                  onPress={() => onCancel?.(message)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.failedCancelText}>Annuler</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </MaskedBubbleSurface>
         </View>
       );
@@ -994,6 +1017,37 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  failedActionRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 4,
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
+  failedRetryBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+  },
+  failedRetryText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  failedCancelBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "rgba(240,72,72,0.18)",
+    alignItems: "center",
+  },
+  failedCancelText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#F04848",
   },
 });
 
