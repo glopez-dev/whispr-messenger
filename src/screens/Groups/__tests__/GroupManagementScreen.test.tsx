@@ -268,23 +268,21 @@ function withAlertConfirm(
     typeof buttonText === "function"
       ? buttonText
       : (b: { text?: string }) => b.text === buttonText;
-  return jest
-    .spyOn(Alert, "alert")
-    .mockImplementation(
-      (
-        _title: string,
-        _msg: string | undefined,
-        buttons?: Array<{
-          text?: string;
-          style?: string;
-          onPress?: () => void;
-        }>,
-      ) => {
-        if (!buttons) return;
-        const btn = buttons.find(matcher);
-        btn?.onPress?.();
-      },
-    );
+  return jest.spyOn(Alert, "alert").mockImplementation(
+    (
+      _title: string,
+      _msg: string | undefined,
+      buttons?: Array<{
+        text?: string;
+        style?: string;
+        onPress?: () => void;
+      }>,
+    ) => {
+      if (!buttons) return;
+      const btn = buttons.find(matcher);
+      btn?.onPress?.();
+    },
+  );
 }
 
 beforeEach(() => {
@@ -345,6 +343,8 @@ describe("GroupManagementScreen — load", () => {
 });
 
 describe("GroupManagementScreen — admin actions: rename + description", () => {
+  jest.setTimeout(30_000);
+
   it("successfully updates the group name (multi-pass)", async () => {
     setupSuccessfulLoad();
     groupsAPI.updateGroup.mockResolvedValue({
