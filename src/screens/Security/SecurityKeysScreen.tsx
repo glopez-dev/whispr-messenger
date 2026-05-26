@@ -3,7 +3,7 @@
  * Security keys and connected devices management
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,17 +16,33 @@ import {
   Animated,
   Platform,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
+import { useAuth } from "../../context/AuthContext";
 import * as Haptics from "expo-haptics";
 import Toast from "../../components/Toast/Toast";
+import QRCodeStyled from "react-native-qrcode-styled";
+
+import * as Crypto from "expo-crypto";
 
 import { copyToClipboard } from "../../utils/clipboard";
+import {
+  DeviceManagerService,
+  SignalKeysService,
+  type DeviceInfo,
+} from "../../services/SecurityService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+const formatCountdown = (seconds: number): string => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+};
 
 interface ConnectedDevice {
   id: string;
@@ -43,13 +59,322 @@ interface SecurityKey {
   deviceId: string;
   deviceName: string;
   fingerprint: string;
-  createdAt: string;
   verified: boolean;
 }
+
+function formatFingerprint(hex: string): string {
+  const truncated = hex.slice(0, 32);
+  return truncated.match(/.{1,4}/g)?.join(" ") ?? hex;
+}
+
+// Module-level cache — survives re-renders and component remounts
+export const _qrCache: {
+  challenge: string | null;
+  deviceId: string;
+  generatedAt: number;
+  inFlight: Promise<string> | null;
+} = { challenge: null, deviceId: "", generatedAt: 0, inFlight: null };
+
+const QRCodeModal: React.FC<{
+  visible: boolean;
+  onClose: () => void;
+  deviceId: string;
+  themeColors: ReturnType<ReturnType<typeof useTheme>["getThemeColors"]>;
+  accentColor: string;
+  getFontSize: ReturnType<typeof useTheme>["getFontSize"];
+  getLocalizedText: ReturnType<typeof useTheme>["getLocalizedText"];
+}> = ({
+  visible,
+  onClose,
+  deviceId,
+  themeColors,
+  accentColor,
+  getFontSize,
+  getLocalizedText,
+}) => {
+  const qrModalScale = useRef(new Animated.Value(0.9)).current;
+  const qrModalOpacity = useRef(new Animated.Value(0)).current;
+  const [qrChallenge, setQrChallenge] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrCountdown, setQrCountdown] = useState(300);
+
+  const fetchChallenge = useCallback(
+    async (force = false) => {
+      if (!deviceId) return;
+      const now = Date.now();
+
+      // Cache hit — serve immediately without any loading state
+      if (!force && _qrCache.deviceId === deviceId && _qrCache.challenge) {
+        const age = now - _qrCache.generatedAt;
+        if (age < 270_000) {
+          setQrChallenge(_qrCache.challenge);
+          setQrCountdown(Math.max(1, 300 - Math.floor(age / 1000)));
+          setQrLoading(false);
+          return;
+        }
+      }
+
+      // Join in-flight request for the same device instead of firing a duplicate
+      if (!force && _qrCache.inFlight && _qrCache.deviceId === deviceId) {
+        setQrLoading(true);
+        try {
+          const challenge = await _qrCache.inFlight;
+          const age = Date.now() - _qrCache.generatedAt;
+          setQrChallenge(challenge);
+          setQrCountdown(Math.max(1, 300 - Math.floor(age / 1000)));
+        } finally {
+          setQrLoading(false);
+        }
+        return;
+      }
+
+      // Fresh fetch (either forced refresh or no usable cache)
+      _qrCache.deviceId = deviceId;
+      if (force) {
+        _qrCache.challenge = null;
+        setQrChallenge(null);
+      }
+      setQrLoading(true);
+      setQrCountdown(300);
+
+      const promise = DeviceManagerService.generateQRChallenge(deviceId);
+      _qrCache.inFlight = promise;
+      try {
+        const challenge = await promise;
+        _qrCache.challenge = challenge;
+        _qrCache.generatedAt = Date.now();
+        _qrCache.inFlight = null;
+        setQrChallenge(challenge);
+        setQrCountdown(300);
+      } catch (err) {
+        _qrCache.inFlight = null;
+        throw err;
+      } finally {
+        setQrLoading(false);
+      }
+    },
+    [deviceId],
+  );
+
+  // Pre-fetch as soon as deviceId is available (modal is always mounted)
+  useEffect(() => {
+    if (deviceId) {
+      fetchChallenge().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deviceId]);
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(qrModalScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+        Animated.timing(qrModalOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      // Re-fetch only if cache is stale and nothing is already in-flight
+      const isFresh =
+        _qrCache.deviceId === deviceId &&
+        !!_qrCache.challenge &&
+        Date.now() - _qrCache.generatedAt < 270_000;
+      if (!isFresh && !_qrCache.inFlight) {
+        fetchChallenge().catch(() => {});
+      } else if (isFresh) {
+        // Sync countdown with remaining cache age
+        const elapsed = Math.floor((Date.now() - _qrCache.generatedAt) / 1000);
+        setQrCountdown(Math.max(1, 300 - elapsed));
+      }
+    } else {
+      Animated.parallel([
+        Animated.timing(qrModalScale, {
+          toValue: 0.9,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(qrModalOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible || !qrChallenge) return;
+    const id = setInterval(() => {
+      setQrCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [visible, qrChallenge]);
+
+  useEffect(() => {
+    if (qrCountdown === 0 && visible) setQrChallenge(null);
+  }, [qrCountdown, visible]);
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <Animated.View
+          style={[styles.modalBackdrop, { opacity: qrModalOpacity }]}
+        >
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={onClose}
+          />
+        </Animated.View>
+        <Animated.View
+          style={[
+            styles.modalContent,
+            {
+              backgroundColor: themeColors.background.primary,
+              opacity: qrModalOpacity,
+              transform: [{ scale: qrModalScale }],
+              ...Platform.select({
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: -4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 20,
+                },
+                android: { elevation: 24 },
+              }),
+            },
+          ]}
+        >
+          <View style={styles.modalHeader}>
+            <Text
+              style={[
+                styles.modalTitle,
+                {
+                  color: themeColors.text.primary,
+                  fontSize: getFontSize("xl"),
+                },
+              ]}
+            >
+              {getLocalizedText("security.scanQRCode")}
+            </Text>
+            <TouchableOpacity
+              onPress={onClose}
+              style={[
+                styles.modalCloseButton,
+                { backgroundColor: themeColors.background.secondary },
+              ]}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="close"
+                size={20}
+                color={themeColors.text.primary}
+              />
+            </TouchableOpacity>
+          </View>
+          <Text
+            style={[
+              styles.modalSubtitle,
+              {
+                color: themeColors.text.secondary,
+                fontSize: getFontSize("sm"),
+              },
+            ]}
+          >
+            {getLocalizedText("security.qrInstructions") ||
+              "Scannez ce code avec l'appareil à connecter"}
+          </Text>
+          <View style={styles.qrContainer}>
+            {qrLoading ? (
+              <ActivityIndicator size="large" color={accentColor} />
+            ) : qrChallenge ? (
+              <QRCodeStyled
+                data={qrChallenge}
+                style={{ backgroundColor: "#FFFFFF" }}
+                padding={12}
+                width={200}
+              />
+            ) : (
+              <View style={styles.qrExpiredContainer}>
+                <Ionicons
+                  name="time-outline"
+                  size={48}
+                  color={themeColors.text.tertiary}
+                />
+                <Text
+                  style={[
+                    styles.qrExpiredText,
+                    {
+                      color: themeColors.text.secondary,
+                      fontSize: getFontSize("sm"),
+                    },
+                  ]}
+                >
+                  {getLocalizedText("security.qrExpired") || "QR code expiré"}
+                </Text>
+              </View>
+            )}
+          </View>
+          {qrChallenge && !qrLoading && (
+            <Text
+              style={[
+                styles.qrCountdownText,
+                {
+                  color: themeColors.text.secondary,
+                  fontSize: getFontSize("sm"),
+                },
+              ]}
+            >
+              {getLocalizedText("security.qrExpiresIn") || "Expire dans"}{" "}
+              {formatCountdown(qrCountdown)}
+            </Text>
+          )}
+          <TouchableOpacity
+            onPress={() => {
+              void fetchChallenge(true);
+            }}
+            disabled={qrLoading}
+            activeOpacity={0.8}
+            style={[
+              styles.qrRefreshButton,
+              {
+                backgroundColor: accentColor + "15",
+                borderColor: accentColor + "40",
+                opacity: qrLoading ? 0.5 : 1,
+              },
+            ]}
+          >
+            <Ionicons name="refresh" size={18} color={accentColor} />
+            <Text
+              style={[
+                styles.qrRefreshText,
+                { color: accentColor, fontSize: getFontSize("base") },
+              ]}
+            >
+              {getLocalizedText("security.qrRefresh") || "Actualiser"}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
 
 export const SecurityKeysScreen: React.FC = () => {
   const navigation = useNavigation();
   const { getThemeColors, getFontSize, getLocalizedText } = useTheme();
+  const { userId, deviceId: currentDeviceId } = useAuth();
   const themeColors = getThemeColors();
   const accentColor = "#9692AC";
   const accentColorDark = "#727596";
@@ -58,54 +383,10 @@ export const SecurityKeysScreen: React.FC = () => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const modalScale = useRef(new Animated.Value(0.9)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
+  const [devices, setDevices] = useState<ConnectedDevice[]>([]);
+  const [loadingDevices, setLoadingDevices] = useState(true);
 
-  const [devices, setDevices] = useState<ConnectedDevice[]>([
-    {
-      id: "1",
-      name: "iPhone 15 Pro",
-      type: "mobile",
-      lastActive: "Maintenant",
-      location: "Paris, France",
-      isCurrent: true,
-    },
-    {
-      id: "2",
-      name: "MacBook Pro",
-      type: "desktop",
-      lastActive: "Il y a 2 heures",
-      location: "Paris, France",
-      isCurrent: false,
-      securityCode: "ABC123-DEF456-GHI789",
-    },
-    {
-      id: "3",
-      name: "iPad Air",
-      type: "tablet",
-      lastActive: "Il y a 3 jours",
-      location: "Lyon, France",
-      isCurrent: false,
-      securityCode: "XYZ789-UVW456-RST123",
-    },
-  ]);
-
-  const [securityKeys, setSecurityKeys] = useState<SecurityKey[]>([
-    {
-      id: "1",
-      deviceId: "1",
-      deviceName: "iPhone 15 Pro",
-      fingerprint: "A1B2C3D4E5F6G7H8",
-      createdAt: "2024-01-15T10:30:00Z",
-      verified: true,
-    },
-    {
-      id: "2",
-      deviceId: "2",
-      deviceName: "MacBook Pro",
-      fingerprint: "I9J0K1L2M3N4O5P6",
-      createdAt: "2024-01-10T14:20:00Z",
-      verified: true,
-    },
-  ]);
+  const [securityKeys, setSecurityKeys] = useState<SecurityKey[]>([]);
 
   const [showSecurityCodeModal, setShowSecurityCodeModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<ConnectedDevice | null>(
@@ -113,6 +394,7 @@ export const SecurityKeysScreen: React.FC = () => {
   );
   const [verificationCode, setVerificationCode] = useState("");
   const [showSecurityKeys, setShowSecurityKeys] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
   const [toast, setToast] = useState<{
     visible: boolean;
     message: string;
@@ -122,6 +404,29 @@ export const SecurityKeysScreen: React.FC = () => {
     message: "",
     type: "info",
   });
+
+  const mapPlatformToType = (platform?: string): ConnectedDevice["type"] => {
+    const p = platform?.toLowerCase() ?? "";
+    if (p === "ios" || p === "android") return "mobile";
+    if (p === "web") return "web";
+    if (p === "tablet") return "tablet";
+    if (p === "desktop" || p === "macos" || p === "windows" || p === "linux")
+      return "desktop";
+    return "mobile";
+  };
+
+  const formatLastActive = (isoString: string): string => {
+    const diff = Date.now() - new Date(isoString).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 2) return getLocalizedText("security.now") || "Maintenant";
+    if (minutes < 60)
+      return `${getLocalizedText("security.minutesAgo") || "Il y a"} ${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24)
+      return `${getLocalizedText("security.hoursAgo") || "Il y a"} ${hours}h`;
+    const days = Math.floor(hours / 24);
+    return `${getLocalizedText("security.daysAgo") || "Il y a"} ${days}j`;
+  };
 
   useEffect(() => {
     Animated.parallel([
@@ -136,6 +441,55 @@ export const SecurityKeysScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    DeviceManagerService.listDevices()
+      .then(async (apiDevices: DeviceInfo[]) => {
+        const mapped: ConnectedDevice[] = apiDevices.map((d) => ({
+          id: d.id,
+          name: d.deviceName,
+          type: mapPlatformToType(d.deviceType),
+          lastActive: formatLastActive(d.lastActive?.toString() ?? ""),
+          isCurrent: d.id === currentDeviceId,
+        }));
+        setDevices(mapped);
+
+        const keys: SecurityKey[] = await Promise.all(
+          mapped.map(async (d, i) => {
+            let fingerprint = "—";
+            if (userId) {
+              try {
+                const bundle = await SignalKeysService.getKeyBundle(
+                  userId,
+                  d.id,
+                );
+                const raw = await Crypto.digestStringAsync(
+                  Crypto.CryptoDigestAlgorithm.SHA256,
+                  bundle.identity_key + d.id,
+                );
+                fingerprint = formatFingerprint(raw);
+              } catch {
+                // keep "—" if bundle unavailable
+              }
+            }
+            return {
+              id: String(i + 1),
+              deviceId: d.id,
+              deviceName: d.name,
+              fingerprint,
+              verified: d.isCurrent,
+            };
+          }),
+        );
+        setSecurityKeys(keys);
+      })
+      .catch(() => {
+        showToast(
+          getLocalizedText("security.loadDevicesError") ||
+            "Impossible de charger les appareils",
+          "error",
+        );
+      })
+      .finally(() => setLoadingDevices(false));
   }, []);
 
   useEffect(() => {
@@ -192,10 +546,20 @@ export const SecurityKeysScreen: React.FC = () => {
     setToast({ visible: true, message, type });
   };
 
-  const confirmDisconnectDevice = (device: ConnectedDevice) => {
+  const confirmDisconnectDevice = async (device: ConnectedDevice) => {
     triggerHaptic("medium");
-    setDevices((prev) => prev.filter((d) => d.id !== device.id));
-    showToast(getLocalizedText("security.deviceDisconnected"), "success");
+    try {
+      await DeviceManagerService.revokeDevice(device.id);
+      setDevices((prev) => prev.filter((d) => d.id !== device.id));
+      setSecurityKeys((prev) => prev.filter((k) => k.deviceId !== device.id));
+      showToast(getLocalizedText("security.deviceDisconnected"), "success");
+    } catch {
+      showToast(
+        getLocalizedText("security.disconnectError") ||
+          "Impossible de déconnecter cet appareil",
+        "error",
+      );
+    }
   };
 
   const handleDisconnectDevice = (device: ConnectedDevice) => {
@@ -254,15 +618,10 @@ export const SecurityKeysScreen: React.FC = () => {
     }
   };
 
-  const handleScanQRCode = () => {
+  const handleShowQRCode = useCallback(() => {
     triggerHaptic("light");
-    Alert.alert(
-      "",
-      getLocalizedText("security.qrScannerComingSoon"),
-      [{ text: getLocalizedText("common.ok") }],
-      { cancelable: true },
-    );
-  };
+    setShowQRModal(true);
+  }, []);
 
   const getDeviceIcon = (type: string): { name: any; color: string } => {
     const iconColor = accentColor;
@@ -278,15 +637,6 @@ export const SecurityKeysScreen: React.FC = () => {
       default:
         return { name: "device-desktop", color: iconColor };
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
   };
 
   const DeviceCard = ({
@@ -653,25 +1003,6 @@ export const SecurityKeysScreen: React.FC = () => {
                   />
                 </TouchableOpacity>
               </View>
-              <View style={styles.keyDateRow}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={12}
-                  color={themeColors.text.tertiary}
-                />
-                <Text
-                  style={[
-                    styles.keyDate,
-                    {
-                      color: themeColors.text.tertiary,
-                      fontSize: getFontSize("xs"),
-                    },
-                  ]}
-                >
-                  {getLocalizedText("security.createdOn")}{" "}
-                  {formatDate(securityKey.createdAt)}
-                </Text>
-              </View>
             </View>
           </View>
         </View>
@@ -806,9 +1137,34 @@ export const SecurityKeysScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-            {devices.map((device, index) => (
-              <DeviceCard key={device.id} device={device} index={index} />
-            ))}
+            {loadingDevices ? (
+              <View style={{ paddingVertical: 24, alignItems: "center" }}>
+                <Text
+                  style={{
+                    color: themeColors.text.secondary,
+                    fontSize: getFontSize("sm"),
+                  }}
+                >
+                  {getLocalizedText("common.loading") || "Chargement…"}
+                </Text>
+              </View>
+            ) : devices.length === 0 ? (
+              <View style={{ paddingVertical: 24, alignItems: "center" }}>
+                <Text
+                  style={{
+                    color: themeColors.text.secondary,
+                    fontSize: getFontSize("sm"),
+                  }}
+                >
+                  {getLocalizedText("security.noDevices") ||
+                    "Aucun appareil connecté"}
+                </Text>
+              </View>
+            ) : (
+              devices.map((device, index) => (
+                <DeviceCard key={device.id} device={device} index={index} />
+              ))
+            )}
           </View>
 
           <View style={styles.section}>
@@ -917,7 +1273,7 @@ export const SecurityKeysScreen: React.FC = () => {
 
           <View style={styles.actionsSection}>
             <TouchableOpacity
-              onPress={handleScanQRCode}
+              onPress={handleShowQRCode}
               activeOpacity={0.9}
               style={styles.actionButtonContainer}
             >
@@ -1148,6 +1504,16 @@ export const SecurityKeysScreen: React.FC = () => {
           </Animated.View>
         </Animated.View>
       </Modal>
+
+      <QRCodeModal
+        visible={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        deviceId={currentDeviceId ?? ""}
+        themeColors={themeColors}
+        accentColor={accentColor}
+        getFontSize={getFontSize}
+        getLocalizedText={getLocalizedText}
+      />
 
       <Toast
         visible={toast.visible}
@@ -1532,6 +1898,40 @@ const styles = StyleSheet.create({
   },
   hideKeysButtonText: {
     fontWeight: "500",
+    letterSpacing: 0.2,
+  },
+  qrContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 224,
+    paddingVertical: 16,
+  },
+  qrExpiredContainer: {
+    alignItems: "center",
+    gap: 12,
+  },
+  qrExpiredText: {
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  qrCountdownText: {
+    textAlign: "center",
+    fontWeight: "500",
+    marginBottom: 20,
+  },
+  qrRefreshButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+    marginTop: 8,
+  },
+  qrRefreshText: {
+    fontWeight: "600",
     letterSpacing: 0.2,
   },
 });

@@ -4,6 +4,7 @@ import {
   getCallsAvailability,
   getCallsUnavailableMessage,
 } from "../hooks/useCallsAvailable";
+import { requestWebMediaPermissions } from "../services/calls/webPermissions";
 import type { CallStatus, CallType } from "../types/calls";
 import type { Room } from "livekit-client";
 
@@ -39,9 +40,12 @@ export interface IncomingCallInfo {
   avatarUrl?: string;
 }
 
+export type CallEndReason = "declined" | "missed" | "network_error";
+
 interface CallsState {
   active: ActiveCall | null;
   incoming: IncomingCallInfo | null;
+  callEndReason: CallEndReason | null;
   initiate: (
     conversationId: string,
     type: CallType,
@@ -53,12 +57,14 @@ interface CallsState {
   declineIncoming: () => Promise<void>;
   end: () => Promise<void>;
   setIncoming: (incoming: IncomingCallInfo | null) => void;
+  setCallEndReason: (reason: CallEndReason | null) => void;
   reset: () => void;
 }
 
 export const useCallsStore = create<CallsState>((set, get) => ({
   active: null,
   incoming: null,
+  callEndReason: null,
 
   initiate: async (
     conversationId,
@@ -67,6 +73,13 @@ export const useCallsStore = create<CallsState>((set, get) => ({
     displayName,
     avatarUrl,
   ) => {
+    // Sur web, demander les permissions micro/caméra avant d'appeler le backend
+    // pour éviter une NotAllowedError après que la room LiveKit est créée.
+    const perm = await requestWebMediaPermissions(type === "video");
+    if (!perm.granted) {
+      throw new Error(perm.message ?? "Permission refusée");
+    }
+
     const resp = await callsApi.initiate(conversationId, type, participants);
     const provider = getCallsLiveKit();
     const room = await provider.connect({
@@ -103,6 +116,16 @@ export const useCallsStore = create<CallsState>((set, get) => ({
   acceptIncoming: async () => {
     const inc = get().incoming;
     if (!inc) return;
+
+    // Sur web, vérifier les permissions avant d'accepter pour éviter un état
+    // incohérent (call accepté côté serveur mais WebRTC bloqué navigateur).
+    const perm = await requestWebMediaPermissions(inc.type === "video");
+    if (!perm.granted) {
+      throw new Error(
+        `accept-permissions: ${perm.message ?? "Permission refusée"}`,
+      );
+    }
+
     // WHISPR-1200 : on tague chaque étape pour que la couche UI puisse
     // distinguer un échec API (call introuvable, droits, etc.) d'un échec
     // LiveKit (URL injoignable, token invalide, WebRTC non supporté).
@@ -162,6 +185,8 @@ export const useCallsStore = create<CallsState>((set, get) => ({
 
   setIncoming: (incoming) => set({ incoming }),
 
+  setCallEndReason: (reason) => set({ callEndReason: reason }),
+
   // WHISPR-1198: appelé par AuthContext.signOut pour empêcher l'état d'appel
   // (token LiveKit, callId, ringer fantôme) de fuir d'un compte vers le
   // suivant sur le même device. Best-effort sur la déconnexion LiveKit : la
@@ -175,6 +200,6 @@ export const useCallsStore = create<CallsState>((set, get) => ({
         // ignore — best-effort cleanup pendant le signOut
       }
     }
-    set({ active: null, incoming: null });
+    set({ active: null, incoming: null, callEndReason: null });
   },
 }));

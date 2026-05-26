@@ -124,6 +124,9 @@ const CONTEXT_MIME_ALLOWLIST: Record<
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/zip",
+    // E2EE-encrypted blobs upload as opaque octet-stream — see ChatScreen
+    // handleSendMedia for the encrypt-then-upload flow.
+    "application/octet-stream",
   ]),
   avatar: new Set<string>(COMMON_IMAGE_MIMES),
   group_icon: new Set<string>(COMMON_IMAGE_MIMES),
@@ -287,9 +290,12 @@ export const MediaService = {
       } as any);
     }
 
-    // Keep XHR progress path on web only.
-    // On iOS/Android we prefer fetch for multipart stability (voice upload 415).
-    if (onProgress && Platform.OS === "web") {
+    // XHR exposes upload progress. On native, keep fetch for audio (multipart 415
+    // history) but use XHR for image/video/file when progress is requested.
+    const useXhrUploadProgress =
+      !!onProgress &&
+      (Platform.OS === "web" || !normalizedFile.type.startsWith("audio/"));
+    if (useXhrUploadProgress) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `${getMediaBaseUrl()}/upload`);
@@ -313,7 +319,9 @@ export const MediaService = {
             } catch {
               // Keep default message when body is not JSON.
             }
-            reject(new Error(message));
+            const error = new Error(message) as ApiError;
+            error.status = xhr.status;
+            reject(error);
           }
         };
         xhr.onerror = () => reject(new Error("Network error during upload"));

@@ -5,6 +5,7 @@ import { messagingAPI } from "../services/messaging/api";
 import { cacheService } from "../services/messaging/cache";
 import { TokenService } from "../services/TokenService";
 import { NotificationService } from "../services/NotificationService";
+import { E2EEService } from "../services/E2EEService";
 import { logger } from "../utils/logger";
 
 // Short grace period: absorbs transient empty fetches (e.g. first WS payload
@@ -224,6 +225,40 @@ const initialArchivedState: ArchivedState = {
   loadingMore: false,
 };
 
+async function tryDecryptMessage(message: Message): Promise<Message> {
+  if (
+    message.is_deleted ||
+    typeof message.content !== "string" ||
+    !E2EEService.isEncryptedPayload(message.content)
+  ) {
+    return message;
+  }
+
+  try {
+    const decrypted = await E2EEService.decryptTextMessage({
+      conversationId: message.conversation_id,
+      content: message.content,
+    });
+    if (!decrypted) return message;
+
+    let finalContent = decrypted;
+    if (message.message_type === "media") {
+      try {
+        const parsed = JSON.parse(decrypted);
+        if (parsed.media_key && parsed.media_nonce) {
+          finalContent = parsed.caption || "[Média chiffré]";
+        }
+      } catch {
+        // Not JSON
+      }
+    }
+
+    return { ...message, content: finalContent };
+  } catch (err) {
+    return message;
+  }
+}
+
 export const useConversationsStore = create<
   ConversationsState & ConversationsActions
 >((set, get) => ({
@@ -300,10 +335,21 @@ export const useConversationsStore = create<
       }
 
       const data = await messagingAPI.getConversations();
+      const decryptedPreviews = await Promise.all(
+        data.map(async (conv) => ({
+          ...conv,
+          last_message: conv.last_message
+            ? await tryDecryptMessage({
+                ...conv.last_message,
+                conversation_id: conv.last_message.conversation_id || conv.id,
+              })
+            : conv.last_message,
+        })),
+      );
       const userId = await getCurrentUserId();
       const enriched = userId
-        ? await enrichWithDisplayNames(data, userId)
-        : data;
+        ? await enrichWithDisplayNames(decryptedPreviews, userId)
+        : decryptedPreviews;
       await cacheService.saveConversations(enriched);
       _setConversations(enriched);
     } catch (err) {
@@ -322,10 +368,21 @@ export const useConversationsStore = create<
     const { _setConversations } = get();
     try {
       const data = await messagingAPI.getConversations();
+      const decryptedPreviews = await Promise.all(
+        data.map(async (conv) => ({
+          ...conv,
+          last_message: conv.last_message
+            ? await tryDecryptMessage({
+                ...conv.last_message,
+                conversation_id: conv.last_message.conversation_id || conv.id,
+              })
+            : conv.last_message,
+        })),
+      );
       const userId = await getCurrentUserId();
       const enriched = userId
-        ? await enrichWithDisplayNames(data, userId)
-        : data;
+        ? await enrichWithDisplayNames(decryptedPreviews, userId)
+        : decryptedPreviews;
       await cacheService.saveConversations(enriched);
       _setConversations(enriched, true);
     } catch (err) {
@@ -426,7 +483,11 @@ export const useConversationsStore = create<
           last_message: conv.last_message || existing.last_message,
           is_pinned: conv.is_pinned || existing.is_pinned,
           is_muted: conv.is_muted || existing.is_muted,
-          is_archived: conv.is_archived || existing.is_archived,
+          // Le serveur est source de vérité pour is_archived : on prend
+          // toujours la valeur WS. L'ancien `|| existing.is_archived` causait
+          // un re-archivage silencieux après un unarchive optimiste (le WS
+          // summary suivant remettait true depuis l'état mémoire stale).
+          is_archived: conv.is_archived,
         };
       }
       return conv;
@@ -472,17 +533,22 @@ export const useConversationsStore = create<
 
   applyNewMessage: async (message, currentUserId) => {
     if (wasMessageSeen(message.conversation_id, message.id)) return;
+
+    // WHISPR-1456 : Decrypt last message for preview if it's E2EE
+    const displayMessage = await tryDecryptMessage(message);
+
     const { conversations, archived, _cancelGracePeriod } = get();
     const mainIndex = conversations.findIndex(
-      (conv) => conv.id === message.conversation_id,
+      (conv) => conv.id === displayMessage.conversation_id,
     );
     const archivedIndex = archived.items.findIndex(
-      (conv) => conv.id === message.conversation_id,
+      (conv) => conv.id === displayMessage.conversation_id,
     );
     // WHISPR-1050: a message echoed back from our own device still arrives over
     // the socket. We must not count it as unread, otherwise the badge flickers
     // on every send and stays >0 after closing the chat.
-    const isOwnMessage = !!currentUserId && message.sender_id === currentUserId;
+    const isOwnMessage =
+      !!currentUserId && displayMessage.sender_id === currentUserId;
 
     // Conv connue de la liste principale : update + bump au top.
     // Si elle s'avère archivée (cas multi-device : un autre device a archivé,
@@ -493,8 +559,8 @@ export const useConversationsStore = create<
       const previousUnread = conversations[mainIndex].unread_count || 0;
       const updated = {
         ...conversations[mainIndex],
-        last_message: message,
-        updated_at: message.sent_at,
+        last_message: displayMessage,
+        updated_at: displayMessage.sent_at,
         unread_count: isOwnMessage ? previousUnread : previousUnread + 1,
       };
       // Bug B fix: move the updated conversation to the top, sorted by recency
@@ -513,8 +579,8 @@ export const useConversationsStore = create<
       const previousUnread = archived.items[archivedIndex].unread_count || 0;
       const updated = {
         ...archived.items[archivedIndex],
-        last_message: message,
-        updated_at: message.sent_at,
+        last_message: displayMessage,
+        updated_at: displayMessage.sent_at,
         unread_count: isOwnMessage ? previousUnread : previousUnread + 1,
       };
       const nextItems = [
@@ -529,14 +595,14 @@ export const useConversationsStore = create<
     // selon son flag is_archived côté serveur.
     try {
       const fetched = await messagingAPI.getConversation(
-        message.conversation_id,
+        displayMessage.conversation_id,
       );
       if (!fetched) return;
 
       const newConv: Conversation = {
         ...fetched,
-        last_message: message,
-        updated_at: message.sent_at,
+        last_message: displayMessage,
+        updated_at: displayMessage.sent_at,
         unread_count: isOwnMessage ? 0 : 1,
       };
 

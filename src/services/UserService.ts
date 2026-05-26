@@ -228,7 +228,7 @@ export class UserService {
         ? String(backgroundMediaUrl)
         : undefined,
       visualPreferences,
-      isOnline: Boolean(raw.isOnline ?? raw.is_online ?? true),
+      isOnline: Boolean(raw.isOnline ?? raw.is_online ?? false),
       lastSeen: raw.lastSeen ?? raw.last_seen ?? undefined,
       createdAt: String(raw.createdAt ?? raw.created_at ?? ""),
       updatedAt: String(raw.updatedAt ?? raw.updated_at ?? ""),
@@ -570,7 +570,7 @@ export class UserService {
     message?: string;
   }> {
     try {
-      const response = await this.authFetch("/privacy/{userId}");
+      const response = await this.authFetch("/privacy");
 
       if (!response.ok) {
         return { success: false, message: `Erreur ${response.status}` };
@@ -651,7 +651,7 @@ export class UserService {
       if (settings.readReceipts !== undefined) {
         body.readReceipts = settings.readReceipts;
       }
-      const response = await this.authFetch("/privacy/{userId}", {
+      const response = await this.authFetch("/privacy", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

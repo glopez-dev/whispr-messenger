@@ -1,3 +1,4 @@
+export { AdminDemosScreen } from "./AdminDemosScreen";
 export { ModerationDashboardScreen } from "./ModerationDashboardScreen";
 export { ReportQueueScreen } from "./ReportQueueScreen";
 export { ReportReviewScreen } from "./ReportReviewScreen";

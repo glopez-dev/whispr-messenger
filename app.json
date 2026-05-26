@@ -5,11 +5,7 @@
     "scheme": "whispr",
     "version": "1.0.0",
     "extra": {
-      "apiBaseUrl": "https://whispr.devzeyu.com",
-      "appVersion": "1.0.0",
-      "eas": {
-        "projectId": "203ca2cd-9035-489b-9c0d-ca4a1bfb2d36"
-      }
+      "appVersion": "1.0.0"
     },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -30,7 +26,7 @@
         "NSMicrophoneUsageDescription": "Whispr a besoin du micro pour les appels voix et video.",
         "NSCameraUsageDescription": "Whispr a besoin de la camera pour les appels video.",
         "NSContactsUsageDescription": "Whispr accede aux contacts pour trouver vos amis sur l'application.",
-        "UIBackgroundModes": ["voip", "audio"]
+        "UIBackgroundModes": ["voip", "audio", "remote-notification"]
       }
     },
     "android": {

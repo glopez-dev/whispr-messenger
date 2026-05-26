@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -44,6 +45,7 @@ import { messagingAPI } from "../../services/messaging/api";
 import { cacheService } from "../../services/messaging/cache";
 import { contactsAPI } from "../../services/contacts/api";
 import { TokenService } from "../../services/TokenService";
+import { E2EEService } from "../../services/E2EEService";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import { MessageBubble } from "../../components/Chat/MessageBubble";
 import { MessageSwipeProvider } from "../../context/MessageSwipeContext";
@@ -53,6 +55,7 @@ import { useSharedValue, withSpring } from "react-native-reanimated";
 const MESSAGE_SWIPE_DISTANCE = 40;
 const MESSAGE_SWIPE_SPRING = { damping: 18, stiffness: 180 };
 const MESSAGES_PAGE_SIZE = 50;
+const NEAR_BOTTOM_OFFSET_PX = 120;
 import { MessageInput } from "../../components/Chat/MessageInput";
 import { TypingIndicator } from "../../components/Chat/TypingIndicator";
 import { Avatar } from "../../components/Chat/Avatar";
@@ -75,6 +78,55 @@ import { MessageSearch } from "../../components/Chat/MessageSearch";
 import { PinnedMessagesBar } from "../../components/Chat/PinnedMessagesBar";
 import { EmptyChatState } from "../../components/Chat/EmptyChatState";
 import { ChatHeader } from "./ChatHeader";
+import {
+  AttachStep as RNAttachStep,
+  SpotlightTourProvider as RNSpotlightTourProvider,
+  type TourStep,
+} from "react-native-spotlight-tour";
+import { TourTooltip } from "../../components/Tour/TourTooltip";
+import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+
+// Sur web, le SpotlightTour casse le layout du ChatScreen (le flex root
+// est squeeze a la largeur mobile). On garde le tour seulement en natif.
+const IS_WEB = Platform.OS === "web";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SpotlightTourProvider: any = IS_WEB
+  ? ({ children }: { children: unknown }) =>
+      typeof children === "function" ? children() : children
+  : RNSpotlightTourProvider;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AttachStep: any = IS_WEB
+  ? ({ children }: { children: React.ReactNode }) => <>{children}</>
+  : RNAttachStep;
+
+const CHAT_STEPS_COUNT = 2;
+
+const CHAT_TOUR_STEPS: TourStep[] = [
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Appels chiffrés"
+        description="Lance un appel audio ou vidéo sécurisé directement depuis cette conversation."
+        total={CHAT_STEPS_COUNT}
+      />
+    ),
+  },
+  {
+    placement: "top",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Messages E2E"
+        description="Écris ton message ici. Chaque mot est chiffré de bout en bout avant d'être envoyé."
+        total={CHAT_STEPS_COUNT}
+      />
+    ),
+  },
+];
 import { getConversationDisplayName } from "../../utils";
 import { generateClientRandom } from "../../utils/crypto";
 import { usePresenceStore } from "../../store/presenceStore";
@@ -83,6 +135,8 @@ import { colors, withOpacity } from "../../theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { logger } from "../../utils/logger";
 import { MediaService } from "../../services/MediaService";
+import type { MediaUploadPhase } from "../../types/mediaUpload";
+import { mapMediaUploadError } from "../../utils/mapMediaUploadError";
 import { resolveConversationMemberIds } from "../../utils/resolveMembers";
 import { SchedulingService } from "../../services/SchedulingService";
 import * as FileSystem from "expo-file-system/legacy";
@@ -253,6 +307,15 @@ export const ChatScreen: React.FC = () => {
       .conversations.find((c) => c.id === conversationId);
     return cached ?? null;
   });
+  const e2eeEnabled = useMemo(() => {
+    const meta = conversation?.metadata ?? {};
+    const e2ee = (meta as any).e2ee;
+    return !!e2ee && typeof e2ee === "object" && (e2ee as any).enabled === true;
+  }, [conversation]);
+  const e2eeEnabledRef = useRef<boolean>(false);
+  useEffect(() => {
+    e2eeEnabledRef.current = e2eeEnabled;
+  }, [e2eeEnabled]);
   const [messages, setMessages] = useState<MessageWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -284,6 +347,7 @@ export const ChatScreen: React.FC = () => {
   const [pinnedMessages, setPinnedMessages] = useState<PinnedMessage[]>([]);
   const [showPinnedBar, setShowPinnedBar] = useState(true);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [e2eeToggleBusy, setE2eeToggleBusy] = useState(false);
   const [conversationMembers, setConversationMembers] = useState<
     Array<{
       id: string;
@@ -360,7 +424,50 @@ export const ChatScreen: React.FC = () => {
   );
   const initialScrollDoneRef = useRef(false);
   const isNearBottomRef = useRef(true);
+  const isNearBottomStateRef = useRef(true);
+  const nearBottomByOffsetRef = useRef(true);
+  const nearBottomByViewabilityRef = useRef(true);
+  const [pendingNewCount, setPendingNewCount] = useState(0);
+  const pendingNewCountRef = useRef(0);
   const typingTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const recomputeNearBottom = useRef(() => {
+    const combined =
+      nearBottomByOffsetRef.current || nearBottomByViewabilityRef.current;
+    isNearBottomRef.current = combined;
+
+    if (combined !== isNearBottomStateRef.current) {
+      isNearBottomStateRef.current = combined;
+      if (combined && pendingNewCountRef.current > 0) {
+        pendingNewCountRef.current = 0;
+        setPendingNewCount(0);
+      }
+    }
+  }).current;
+  const handleScroll = useRef((e: any) => {
+    const offsetY =
+      typeof e?.nativeEvent?.contentOffset?.y === "number"
+        ? e.nativeEvent.contentOffset.y
+        : 0;
+    nearBottomByOffsetRef.current = offsetY <= NEAR_BOTTOM_OFFSET_PX;
+    recomputeNearBottom();
+  }).current;
+  const scrollToBottom = useCallback(() => {
+    pendingNewCountRef.current = 0;
+    setPendingNewCount(0);
+    nearBottomByOffsetRef.current = true;
+    nearBottomByViewabilityRef.current = true;
+    isNearBottomRef.current = true;
+    isNearBottomStateRef.current = true;
+    try {
+      flatListRef.current?.scrollToIndex({ index: 0, animated: true });
+    } catch {
+      try {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
   // `viewabilityConfig` and `onViewableItemsChanged` must be stable references —
   // FlatList throws if they change between renders. Using refs keeps the
   // underlying function identity constant while letting us read/write the
@@ -370,10 +477,10 @@ export const ChatScreen: React.FC = () => {
   }).current;
   const handleViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
-      // Inverted list: index 0 is the newest message (rendered at the bottom).
-      // If it is visible, the user is reading the latest section and we can
-      // safely auto-scroll when a new message arrives.
-      isNearBottomRef.current = viewableItems.some((v) => v.index === 0);
+      nearBottomByViewabilityRef.current = viewableItems.some(
+        (v) => v.index === 0,
+      );
+      recomputeNearBottom();
     },
   ).current;
   const {
@@ -391,13 +498,18 @@ export const ChatScreen: React.FC = () => {
   const { userId: rawUserId } = useAuth();
   const userId = rawUserId ?? "";
   const [token, setToken] = useState<string>("");
+  const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!userId) {
       setToken("");
+      setDeviceId(undefined);
       return;
     }
-    TokenService.getAccessToken().then((t) => setToken(t ?? ""));
+    TokenService.getAccessToken().then((t) => {
+      setToken(t ?? "");
+      if (t) setDeviceId(TokenService.decodeAccessToken(t)?.deviceId);
+    });
   }, [userId]);
 
   // WebSocket connection
@@ -409,6 +521,7 @@ export const ChatScreen: React.FC = () => {
     sendTyping,
   } = useWebSocket({
     userId,
+    deviceId,
     token,
     onPresenceUpdate: (presenceUserId: string, isOnline: boolean) => {
       setOnlineUsers((prev) => {
@@ -428,24 +541,43 @@ export const ChatScreen: React.FC = () => {
       // casts below. Missing fields stay undefined and the `||` fallbacks
       // still kick in, so behaviour is unchanged.
       const message = incoming as MessageWithRelations;
+      // Ne pas filtrer sur message_type: si un payload chiffré arrive sur un
+      // type inattendu (media sans caption, futur type), on doit toujours le
+      // masquer pour eviter de leak la JSON envelope dans la UI.
+      const isEncryptedIncoming =
+        typeof message.content === "string" &&
+        E2EEService.isEncryptedPayload(message.content);
+      const displayMessage: MessageWithRelations = isEncryptedIncoming
+        ? { ...message, content: "Message chiffré" }
+        : message;
       if (message.conversation_id === conversationId) {
+        if (!isNearBottomRef.current) {
+          const next = pendingNewCountRef.current + 1;
+          pendingNewCountRef.current = next;
+          setPendingNewCount(next);
+        }
         setMessages((prev) => {
           // Check if message already exists (avoid duplicates)
           if (prev.some((m) => m.id === message.id)) {
             return prev.map((m) =>
               m.id === message.id
                 ? {
-                    ...message,
+                    ...displayMessage,
+                    content:
+                      typeof message.content === "string" &&
+                      E2EEService.isEncryptedPayload(message.content)
+                        ? m.content
+                        : displayMessage.content,
                     // Preserve attachments from the optimistic message when the
                     // WebSocket echo doesn't carry them (server Message has no
                     // attachments array).
-                    attachments: message.attachments || m.attachments,
+                    attachments: displayMessage.attachments || m.attachments,
                     // Preserve the populated reply_to (full Message object) we
                     // built optimistically — the WS echo only ships reply_to_id
                     // so spreading it would erase the reply preview until the
                     // next full reload.
-                    reply_to: message.reply_to || m.reply_to,
-                    status: message.status || ("sent" as const),
+                    reply_to: displayMessage.reply_to || m.reply_to,
+                    status: displayMessage.status || ("sent" as const),
                   }
                 : m,
             );
@@ -481,48 +613,98 @@ export const ChatScreen: React.FC = () => {
             const existing = prev[optimisticMessageIndex];
             const newMessages = [...prev];
             newMessages[optimisticMessageIndex] = {
-              ...message,
+              ...displayMessage,
+              content:
+                typeof message.content === "string" &&
+                E2EEService.isEncryptedPayload(message.content)
+                  ? existing.content
+                  : displayMessage.content,
               // Preserve attachments from the optimistic message
-              attachments: message.attachments || existing.attachments,
+              attachments: displayMessage.attachments || existing.attachments,
               // Same as the duplicate-id branch above: keep the populated
               // reply_to object so the reply preview doesn't disappear when
               // the server echo arrives.
-              reply_to: message.reply_to || existing.reply_to,
-              status: message.status || ("sent" as const),
+              reply_to: displayMessage.reply_to || existing.reply_to,
+              status: displayMessage.status || ("sent" as const),
             };
             return newMessages;
           }
           return [
             {
-              ...message,
-              status: message.status || ("sent" as const),
+              ...displayMessage,
+              status: displayMessage.status || ("sent" as const),
             },
             ...prev,
           ];
         });
         useConversationsStore
           .getState()
-          .applyNewMessage(message as any, userId)
+          .applyNewMessage(displayMessage as any, userId)
           .catch(() => {});
         useConversationsStore.getState().resetUnreadCount(conversationId);
         // Mark as read if chat is open
         markAsRead(conversationId, message.id);
+        if (isEncryptedIncoming) {
+          void (async () => {
+            try {
+              const decrypted = await E2EEService.decryptTextMessage({
+                conversationId,
+                content: message.content as string,
+              });
+              if (decrypted === null) {
+                // If decryption fails, the content in displayMessage is already the raw JSON string
+                return;
+              }
+
+              let finalContent = decrypted;
+              let extraMeta = {};
+              if (message.message_type === "media") {
+                try {
+                  const parsed = JSON.parse(decrypted);
+                  if (parsed.media_key && parsed.media_nonce) {
+                    finalContent = parsed.caption || "";
+                    extraMeta = {
+                      media_key: parsed.media_key,
+                      media_nonce: parsed.media_nonce,
+                      e2ee: true,
+                    };
+                  }
+                } catch {
+                  /* Not JSON */
+                }
+              }
+
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === message.id
+                    ? {
+                        ...m,
+                        content: finalContent,
+                        metadata: { ...(m.metadata || {}), ...extraMeta },
+                      }
+                    : m,
+                ),
+              );
+              useConversationsStore.getState().applyMessageUpdated({
+                ...(message as any),
+                content: finalContent,
+                metadata: { ...(message.metadata || {}), ...extraMeta },
+              } as any);
+            } catch (err) {
+              logger.warn(
+                "ChatScreen",
+                "Failed to decrypt incoming message",
+                err,
+              );
+            }
+          })();
+        }
         // Auto-scroll to the new message only when the user was already
         // reading the bottom of the list — don't yank them down if they
         // were scrolled up browsing older messages.
         if (isNearBottomRef.current) {
           setTimeout(() => {
-            try {
-              flatListRef.current?.scrollToIndex({
-                index: 0,
-                animated: true,
-              });
-            } catch {
-              flatListRef.current?.scrollToOffset({
-                offset: 0,
-                animated: true,
-              });
-            }
+            scrollToBottom();
           }, 50);
         }
       }
@@ -537,6 +719,9 @@ export const ChatScreen: React.FC = () => {
       );
     },
     onMessageUpdated: (message: Message) => {
+      const isEncryptedUpdate =
+        typeof message.content === "string" &&
+        E2EEService.isEncryptedPayload(message.content);
       if (message.conversation_id === conversationId) {
         setMessages((prev) =>
           prev.map((msg) =>
@@ -544,6 +729,7 @@ export const ChatScreen: React.FC = () => {
               ? {
                   ...msg,
                   ...message,
+                  content: isEncryptedUpdate ? msg.content : message.content,
                   edited_at: message.edited_at,
                   // Edit echoes ship reply_to_id only — keep the populated
                   // reply_to from the existing message so the preview survives.
@@ -553,7 +739,31 @@ export const ChatScreen: React.FC = () => {
           ),
         );
       }
-      useConversationsStore.getState().applyMessageUpdated(message);
+      useConversationsStore
+        .getState()
+        .applyMessageUpdated(
+          isEncryptedUpdate
+            ? { ...message, content: "Message chiffré" }
+            : message,
+        );
+      if (isEncryptedUpdate) {
+        void (async () => {
+          const decrypted = await E2EEService.decryptTextMessage({
+            conversationId: message.conversation_id,
+            content: message.content as string,
+          });
+          if (decrypted === null) return;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === message.id ? { ...m, content: decrypted } : m,
+            ),
+          );
+          useConversationsStore.getState().applyMessageUpdated({
+            ...(message as any),
+            content: decrypted,
+          } as any);
+        })();
+      }
     },
     onMessageDeleted: (
       messageId: string,
@@ -585,10 +795,19 @@ export const ChatScreen: React.FC = () => {
     },
     onTyping: (typingUserId: string, typing: boolean) => {
       if (typingUserId !== userId) {
-        setTypingUsers((prev) => {
-          if (typing) {
-            if (prev.includes(typingUserId)) return prev;
-            // Fetch user name when user starts typing
+        if (typing) {
+          // Résoudre le nom depuis conversationMembers en priorité (synchrone,
+          // zéro latence). Fallback sur getUserInfo seulement si absent du
+          // cache local — évite le "Quelqu'un" affiché pendant le round-trip.
+          const memberName = conversationMembers.find(
+            (m) => m.id === typingUserId,
+          )?.display_name;
+          if (memberName) {
+            setTypingUsersNames((prev) => ({
+              ...prev,
+              [typingUserId]: memberName,
+            }));
+          } else {
             messagingAPI.getUserInfo(typingUserId).then((userInfo) => {
               if (userInfo) {
                 setTypingUsersNames((prevNames) => ({
@@ -597,18 +816,26 @@ export const ChatScreen: React.FC = () => {
                 }));
               }
             });
-            return [...prev, typingUserId];
-          } else {
-            return prev.filter((id) => id !== typingUserId);
           }
-        });
-
-        // Auto-clear typing after 5s if no follow-up event
-        if (typing) {
+          setTypingUsers((prev) =>
+            prev.includes(typingUserId) ? prev : [...prev, typingUserId],
+          );
+          // Annuler le timer précédent avant d'en créer un nouveau — sans ça,
+          // des typing_started répétés empilent des timers et le user disparaît
+          // prématurément (le premier timer expire avant les suivants).
+          if (typingTimeoutsRef.current[typingUserId]) {
+            clearTimeout(typingTimeoutsRef.current[typingUserId]);
+          }
           typingTimeoutsRef.current[typingUserId] = setTimeout(() => {
             setTypingUsers((prev) => prev.filter((id) => id !== typingUserId));
             delete typingTimeoutsRef.current[typingUserId];
           }, 5000);
+        } else {
+          setTypingUsers((prev) => prev.filter((id) => id !== typingUserId));
+          if (typingTimeoutsRef.current[typingUserId]) {
+            clearTimeout(typingTimeoutsRef.current[typingUserId]);
+            delete typingTimeoutsRef.current[typingUserId];
+          }
         }
       }
     },
@@ -616,7 +843,14 @@ export const ChatScreen: React.FC = () => {
       if (updatedConversation.id === conversationId) {
         setConversation((prev) => {
           if (!prev) return updatedConversation;
-          return { ...prev, ...updatedConversation };
+          // WHISPR-1456 : Preserve enriched display_name and avatar_url
+          // from the existing state if the update lacks them.
+          return {
+            ...prev,
+            ...updatedConversation,
+            display_name: updatedConversation.display_name || prev.display_name,
+            avatar_url: updatedConversation.avatar_url || prev.avatar_url,
+          };
         });
       }
     },
@@ -671,8 +905,32 @@ export const ChatScreen: React.FC = () => {
       offlineQueue.getForConversation(conversationId).then(async (pending) => {
         for (const queued of pending) {
           try {
+            let outgoingContent = queued.content;
+            if (
+              e2eeEnabledRef.current &&
+              queued.message_type === "text" &&
+              conversation?.type === "direct"
+            ) {
+              const memberIds =
+                conversation.member_user_ids ||
+                conversation.members?.map(
+                  (m: { user_id: string }) => m.user_id,
+                );
+              const otherUserId = memberIds?.find(
+                (id: string) => id !== userId,
+              );
+              if (otherUserId) {
+                const enc = await E2EEService.encryptDirectTextMessage({
+                  conversationId,
+                  plaintext: queued.content,
+                  clientRandom: queued.client_random,
+                  recipientUserId: otherUserId,
+                });
+                outgoingContent = enc.content;
+              }
+            }
             const sent = await messagingAPI.sendMessage(conversationId, {
-              content: queued.content,
+              content: outgoingContent,
               message_type: queued.message_type,
               client_random: queued.client_random,
               metadata: {},
@@ -684,6 +942,10 @@ export const ChatScreen: React.FC = () => {
                 m.client_random === queued.client_random
                   ? {
                       ...(sent as MessageWithRelations),
+                      content:
+                        queued.message_type === "text"
+                          ? queued.content
+                          : (sent as any).content,
                       status: "sent" as const,
                     }
                   : m,
@@ -698,7 +960,7 @@ export const ChatScreen: React.FC = () => {
     }
 
     prevConnectionStateRef.current = connectionState;
-  }, [connectionState, conversationId]);
+  }, [connectionState, conversationId, conversation, userId]);
 
   const loadPinnedMessages = useCallback(async () => {
     try {
@@ -755,6 +1017,45 @@ export const ChatScreen: React.FC = () => {
       logger.error("ChatScreen", "Error loading conversation", error);
     }
   }, [conversationId, userId]);
+
+  const handleToggleE2EE = useCallback(
+    (enabled: boolean) => {
+      if (!conversation || conversation.type !== "direct") return;
+      if (e2eeToggleBusy) return;
+      setE2eeToggleBusy(true);
+      void (async () => {
+        try {
+          const updated = await messagingAPI.updateConversation(
+            conversationId,
+            {
+              // WHISPR-1456: 'enabled' makes E2EE mandatory (will fail if recipient not ready).
+              // 'disabled' would force cleartext.
+              // If both are missing/false, it's 'opportunistic' (E2EE if possible, else cleartext).
+              metadata: { e2ee: { enabled, v: 1, disabled: !enabled } },
+            },
+          );
+
+          // WHISPR-1456 : Preserve enriched display_name and avatar_url after toggle
+          // The update API returns the raw conversation which might lack enrichment.
+          const enriched = {
+            ...updated,
+            display_name: conversation.display_name,
+            avatar_url: conversation.avatar_url,
+          };
+
+          setConversation(enriched);
+        } catch (error: any) {
+          Alert.alert(
+            getLocalizedText("notif.error"),
+            error?.message || "Impossible de mettre à jour le chiffrement",
+          );
+        } finally {
+          setE2eeToggleBusy(false);
+        }
+      })();
+    },
+    [conversationId, conversation, e2eeToggleBusy, getLocalizedText],
+  );
 
   // Mark messages as read when opening conversation and when new messages arrive
   useEffect(() => {
@@ -1048,6 +1349,18 @@ export const ChatScreen: React.FC = () => {
                   msg.message_type === "system"),
             ) // Include all message types
             .map(async (msg) => {
+              let displayContent = msg.content;
+              if (
+                typeof msg.content === "string" &&
+                E2EEService.isEncryptedPayload(msg.content)
+              ) {
+                const decrypted = await E2EEService.decryptTextMessage({
+                  conversationId,
+                  content: msg.content,
+                });
+                displayContent =
+                  decrypted === null ? "Message chiffré" : decrypted;
+              }
               // WHISPR-1074: the backend may ship the enriched shape
               // (delivery_statuses + status). Widen once instead of
               // per-field casts below.
@@ -1091,6 +1404,7 @@ export const ChatScreen: React.FC = () => {
               // kept here.
               return {
                 ...msg,
+                content: displayContent,
                 status,
                 reactions,
                 attachments,
@@ -1145,15 +1459,19 @@ export const ChatScreen: React.FC = () => {
           });
           setHasMore(messagesWithRelations.length === MESSAGES_PAGE_SIZE);
         } else {
-          // Initial load — merge with any messages already received via WS
+          // Initial load — merge with any messages already received via WS.
+          // API versions take priority over cache so decrypted content
+          // replaces any encrypted placeholders loaded from cache.
           setMessages((prev) => {
-            const existingIds = new Set(prev.map((m) => m.id));
-            const newcomers = messagesWithRelations.filter(
-              (m) => !existingIds.has(m.id),
+            const apiById = new Map(
+              messagesWithRelations.map((m) => [m.id, m]),
             );
-            const withReplies = resolveReplies(newcomers, prev);
-            const merged = [...prev, ...withReplies];
-            return merged.sort(
+            const wsOnly = prev.filter((m) => !apiById.has(m.id));
+            const withReplies = resolveReplies(
+              [...messagesWithRelations, ...wsOnly],
+              [...messagesWithRelations, ...wsOnly],
+            );
+            return withReplies.sort(
               (a, b) =>
                 new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime(),
             );
@@ -1200,22 +1518,50 @@ export const ChatScreen: React.FC = () => {
         // If editing, update the message
         if (editingMessage) {
           try {
+            let outgoingEditContent = content;
+            if (e2eeEnabledRef.current) {
+              const memberIds =
+                conversation?.member_user_ids ||
+                conversation?.members?.map(
+                  (m: { user_id: string }) => m.user_id,
+                );
+              const otherUserId = memberIds?.find(
+                (id: string) => id !== userId,
+              );
+              if (conversation?.type === "direct" && otherUserId) {
+                const enc = await E2EEService.encryptDirectTextMessage({
+                  conversationId,
+                  plaintext: content,
+                  clientRandom:
+                    typeof editingMessage.client_random === "number"
+                      ? editingMessage.client_random
+                      : generateClientRandom(),
+                  recipientUserId: otherUserId,
+                });
+                outgoingEditContent = enc.content;
+              }
+            }
             const updated = await messagingAPI.editMessage(
               editingMessage.id,
               conversationId,
-              content,
+              outgoingEditContent,
             );
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === editingMessage.id
-                  ? { ...msg, ...updated, edited_at: updated.edited_at }
+                  ? {
+                      ...msg,
+                      ...updated,
+                      content,
+                      edited_at: updated.edited_at,
+                    }
                   : msg,
               ),
             );
             setEditingMessage(null);
             useConversationsStore
               .getState()
-              .applyMessageUpdated(updated as any);
+              .applyMessageUpdated({ ...(updated as any), content } as any);
           } catch (error) {
             logger.error("ChatScreen", "Error editing message", error);
             Alert.alert(
@@ -1253,10 +1599,9 @@ export const ChatScreen: React.FC = () => {
         useConversationsStore.getState().resetUnreadCount(conversationId);
 
         // Scroll to bottom so the newly sent text message is visible
-        // (FlatList is inverted, so offset 0 is the bottom)
         setTimeout(() => {
-          flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-        }, 100);
+          scrollToBottom();
+        }, 50);
 
         // If offline, queue the message for later delivery
         if (connectionState !== "connected") {
@@ -1287,11 +1632,61 @@ export const ChatScreen: React.FC = () => {
         }
 
         try {
+          let outgoingContent = content;
+
+          // Blind the server: always use E2EE for direct chats if possible,
+          // or if explicitly enabled via metadata (for groups).
+          const shouldEncrypt =
+            conversation?.metadata?.e2ee?.enabled === true ||
+            (conversation?.type === "direct" &&
+              !conversation?.metadata?.e2ee?.disabled);
+
+          if (shouldEncrypt) {
+            const memberIds =
+              conversation?.member_user_ids ||
+              conversation?.members?.map((m: { user_id: string }) => m.user_id);
+            const otherUserIds =
+              memberIds?.filter((id: string) => id !== userId) || [];
+
+            if (otherUserIds.length > 0) {
+              try {
+                const enc = await E2EEService.encryptMessageForConversation({
+                  conversationId,
+                  plaintext: content,
+                  clientRandom: tempMessage.client_random as number,
+                  recipientUserIds: otherUserIds,
+                });
+                outgoingContent = enc.content;
+              } catch (encErr: any) {
+                logger.warn(
+                  "ChatScreen",
+                  "E2EE encryption failed, falling back to cleartext if not mandatory",
+                  encErr,
+                );
+                // If metadata explicitly REQUIRES E2EE, we must fail
+                if (conversation?.metadata?.e2ee?.enabled === true) {
+                  let userMsg = "Impossible de chiffrer le message.";
+                  if (encErr?.message === "RECIPIENT_NO_DEVICES") {
+                    userMsg =
+                      "Le destinataire n'a pas encore configuré le chiffrement E2E.";
+                  } else if (encErr?.message === "NO_IDENTITY_KEY") {
+                    userMsg =
+                      "Vos clés de chiffrement ne sont pas encore prêtes. Réessayez dans un instant.";
+                  }
+                  Alert.alert("Erreur E2EE", userMsg);
+                  throw encErr;
+                }
+                // Otherwise (auto-e2ee for 1v1), we fallback to cleartext
+                // if the recipient is not E2EE-ready yet.
+                outgoingContent = content;
+              }
+            }
+          }
+
           const sent = await messagingAPI.sendMessage(conversationId, {
-            content,
+            content: outgoingContent,
             message_type: "text",
             client_random: tempMessage.client_random as number,
-
             metadata: {},
             reply_to_id: replyToId,
           });
@@ -1304,6 +1699,7 @@ export const ChatScreen: React.FC = () => {
               ) {
                 const updated: MessageWithRelations = {
                   ...(sent as MessageWithRelations),
+                  content,
                   status: "sent" as const,
                   reply_to: tempMessage.reply_to,
                 };
@@ -1315,11 +1711,14 @@ export const ChatScreen: React.FC = () => {
           });
           useConversationsStore
             .getState()
-            .applyNewMessage(sent as any, userId)
+            .applyNewMessage({ ...(sent as any), content } as any, userId)
             .catch(() => {});
           useConversationsStore.getState().resetUnreadCount(conversationId);
-        } catch (error) {
+        } catch (error: any) {
           logger.error("ChatScreen", "Error sending message", error);
+          if (error?.body) {
+            logger.error("ChatScreen", "Send 422 body", error.body);
+          }
           setMessages((prev) => {
             return prev.map((m) => {
               if (m.id === tempMessage.id) {
@@ -1336,6 +1735,7 @@ export const ChatScreen: React.FC = () => {
     [
       conversationId,
       userId,
+      conversation,
       sendTyping,
       editingMessage,
       replyingTo,
@@ -1394,6 +1794,8 @@ export const ChatScreen: React.FC = () => {
           media_url: uploadUri,
           thumbnail_url: uploadUri,
           duration: audioDuration,
+          localUri: uploadUri,
+          uploadPhase: "moderation" as MediaUploadPhase,
         },
         // crypto random Uint32 pour eviter birthday collision sur dedup serveur
         client_random: generateClientRandom(),
@@ -1431,8 +1833,8 @@ export const ChatScreen: React.FC = () => {
 
       // Scroll to bottom so the newly sent media message is visible
       setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-      }, 100);
+        scrollToBottom();
+      }, 50);
 
       // Kick off the authoritative member fetch in parallel with the upload.
       // RLS on media-service requires the recipient to be in shared_with, so
@@ -1499,12 +1901,66 @@ export const ChatScreen: React.FC = () => {
           }
         }
 
-        // 1. Upload file to media-service
-        const uploadResult = await MediaService.uploadMedia({
-          uri: uploadUri,
-          name: filename,
-          type: mimeType,
+        const patchTempUploadMeta = (
+          meta: Record<string, unknown>,
+          extra?: Partial<MessageWithRelations>,
+        ) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempMessageId
+                ? {
+                    ...m,
+                    ...extra,
+                    metadata: { ...(m.metadata || {}), ...meta },
+                  }
+                : m,
+            ),
+          );
+        };
+
+        patchTempUploadMeta({
+          uploadPhase: "uploading",
+          uploadProgress: 0,
         });
+
+        // E2EE for media: blind the server
+        const shouldEncrypt = e2eeEnabled || conversation?.type === "direct";
+        let finalUploadUri = uploadUri;
+        let uploadMimeType = mimeType;
+        let e2eeMediaMeta: { key: string; nonce: string } | undefined;
+
+        if (shouldEncrypt) {
+          try {
+            const encMedia = await E2EEService.encryptMediaFile(uploadUri);
+            finalUploadUri = encMedia.encryptedUri;
+            e2eeMediaMeta = { key: encMedia.key, nonce: encMedia.nonce };
+            // The ciphertext no longer matches the original image/video magic
+            // bytes, so the server-side magic-bytes validator rejects it as 415
+            // when declared as image/jpeg etc. Upload as opaque octet-stream;
+            // the real MIME stays in the message attachment metadata for the
+            // recipient to decode after decryption.
+            uploadMimeType = "application/octet-stream";
+          } catch (encErr) {
+            logger.warn(
+              "ChatScreen",
+              "E2EE media encryption failed, falling back to cleartext unless mandatory",
+              encErr,
+            );
+            if (e2eeEnabled) throw encErr;
+          }
+        }
+
+        // 1. Upload file to media-service (encrypted or plain)
+        const uploadResult = await MediaService.uploadMedia(
+          { uri: finalUploadUri, name: filename, type: uploadMimeType },
+          (percent) => {
+            patchTempUploadMeta({
+              uploadPhase: "uploading",
+              uploadProgress: percent,
+            });
+          },
+          { context: "message", ownerId: userId },
+        );
 
         // Build metadata with the remote URLs from the upload result
         let resolvedDuration = audioDuration;
@@ -1566,6 +2022,11 @@ export const ChatScreen: React.FC = () => {
               : msg,
           ),
         );
+
+        patchTempUploadMeta({
+          uploadPhase: "sharing",
+          uploadProgress: undefined,
+        });
 
         // 2. Share media with all conversation participants so they can access it.
         // The fetch was started before upload (see membersFetchSettled above)
@@ -1645,13 +2106,54 @@ export const ChatScreen: React.FC = () => {
           }
         }
 
+        patchTempUploadMeta({
+          uploadPhase: "sending",
+          uploadProgress: undefined,
+        });
+
         // 3. Send message via messaging-service with remote media URLs
+        let finalContent = messageContent;
+
+        if (e2eeMediaMeta) {
+          const memberIdsForEnc =
+            conversation?.member_user_ids ||
+            conversation?.members?.map((m: { user_id: string }) => m.user_id);
+          const otherUserIds =
+            memberIdsForEnc?.filter((id: string) => id !== userId) || [];
+
+          if (otherUserIds.length > 0) {
+            try {
+              const mediaPayload = JSON.stringify({
+                caption: messageContent,
+                media_key: e2eeMediaMeta.key,
+                media_nonce: e2eeMediaMeta.nonce,
+              });
+              const enc = await E2EEService.encryptMessageForConversation({
+                conversationId,
+                plaintext: mediaPayload,
+                clientRandom: tempMessage.client_random as number,
+                recipientUserIds: otherUserIds,
+              });
+              finalContent = enc.content;
+            } catch (encErr) {
+              logger.warn(
+                "ChatScreen",
+                "E2EE media message encryption failed",
+                encErr,
+              );
+              if (e2eeEnabled) throw encErr;
+            }
+          }
+        }
+
         const sentMessage = await messagingAPI.sendMessage(conversationId, {
-          content: messageContent,
+          content: finalContent,
           message_type: "media",
           client_random: tempMessage.client_random as number,
-
-          metadata: mediaMetadata,
+          metadata: {
+            ...mediaMetadata,
+            e2ee: !!e2eeMediaMeta,
+          },
           reply_to_id: replyToId,
         });
 
@@ -1695,14 +2197,20 @@ export const ChatScreen: React.FC = () => {
         useConversationsStore.getState().resetUnreadCount(conversationId);
       } catch (error) {
         console.error("[ChatScreen] Error sending media:", error);
-        // Keep message in chat with failed status and error indication
+        const { userMessage } = mapMediaUploadError(error);
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === tempMessageId
               ? {
                   ...msg,
                   status: "failed" as const,
-                  content: "Échec de l'envoi — appuyez pour réessayer",
+                  content: userMessage,
+                  metadata: {
+                    ...(msg.metadata || {}),
+                    localUri: uploadUri,
+                    uploadPhase: undefined,
+                    uploadProgress: undefined,
+                  },
                 }
               : msg,
           ),
@@ -1814,7 +2322,11 @@ export const ChatScreen: React.FC = () => {
         }
         navigation.navigate("InCall");
       } catch (err) {
-        console.error("Failed to initiate call", err);
+        setCallsToast({
+          visible: true,
+          message: "Impossible de démarrer l'appel. Vérifiez votre connexion.",
+          type: "error",
+        });
       }
     },
     [
@@ -2211,12 +2723,12 @@ export const ChatScreen: React.FC = () => {
       }
 
       try {
-        // Try server-side search first
-        const apiResults = await messagingAPI.searchMessages(
-          conversationId,
-          query.trim(),
-          { limit: 50 },
-        );
+        const trimmed = query.trim();
+        const apiResults = e2eeEnabledRef.current
+          ? null
+          : await messagingAPI.searchMessages(conversationId, trimmed, {
+              limit: 50,
+            });
 
         let results: MessageWithRelations[];
 
@@ -2236,7 +2748,7 @@ export const ChatScreen: React.FC = () => {
           results = messages.filter((msg) => {
             if (msg.message_type === "system" || msg.is_deleted) return false;
             if (!msg.content) return false;
-            return msg.content.toLowerCase().includes(query.toLowerCase());
+            return msg.content.toLowerCase().includes(trimmed.toLowerCase());
           });
         }
 
@@ -2495,6 +3007,26 @@ export const ChatScreen: React.FC = () => {
               messageTempId: m.id,
             });
           }}
+          onRetry={async (m) => {
+            const queued: QueuedMessage = {
+              id: m.id,
+              conversation_id: m.conversation_id,
+              content: m.content,
+              message_type: m.message_type as "text" | "media" | "system",
+              client_random: (m.client_random as number) ?? Date.now(),
+              reply_to_id: m.reply_to_id ?? undefined,
+              queued_at: new Date().toISOString(),
+            };
+            await offlineQueue.enqueue(queued);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === m.id ? { ...msg, status: "queued" as const } : msg,
+              ),
+            );
+          }}
+          onCancel={(m) => {
+            setMessages((prev) => prev.filter((msg) => msg.id !== m.id));
+          }}
         />
       );
     },
@@ -2542,520 +3074,621 @@ export const ChatScreen: React.FC = () => {
   }, [conversation, conversationMembers, userId]);
 
   return (
-    <View
-      style={[
-        styles.screenRoot,
-        hasCustomBackground && styles.screenRootWithCustomBackground,
-        Platform.OS === "web" && { minHeight: 0, height: "100%" },
-      ]}
+    <SpotlightTourProvider
+      steps={CHAT_TOUR_STEPS}
+      overlayColor="#0B1124"
+      overlayOpacity={0.82}
+      placement="bottom"
+      offset={10}
     >
-      {hasCustomBackground && customBackgroundUri ? (
-        <ImageBackground
-          key={`${customBackgroundUri}:${customBackgroundVersion}`}
-          source={{ uri: customBackgroundUri }}
-          resizeMode="cover"
-          style={styles.customBackground}
-        />
-      ) : null}
-      {!hasCustomBackground ? (
-        <LinearGradient
-          colors={colors.background.gradient.app}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientBackground}
-        />
-      ) : null}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.backgroundScrim,
-          hasCustomBackground
-            ? styles.backgroundScrimWithCustomImage
-            : styles.backgroundScrimDefault,
-        ]}
-      />
-      <SafeAreaView
-        style={[
-          styles.container,
-          Platform.OS === "web" && { minHeight: 0, height: "100%" },
-        ]}
-        // bottom inset is consumed by MessageInput itself (applySafeAreaBottom)
-        // so the BlurView/overlay extends fully to the screen edge instead of
-        // leaving an empty band between the composer and the home indicator.
-        edges={["top"]}
-      >
-        <OfflineBanner connectionState={connectionState} />
-        <ChatHeader
-          conversationName={
-            conversation
-              ? getConversationDisplayName(conversation)
-              : "Conversation"
-          }
-          avatarUrl={headerAvatarUrl}
-          conversationType={conversation?.type || "direct"}
-          groupAvatars={
-            conversation?.type === "group"
-              ? conversationMembers
-                  .filter((m) => m.id && m.id !== userId)
-                  .slice(0, 2)
-                  .map((m) => ({
-                    uri: m.avatar_url,
-                    name: m.display_name || m.username || "Utilisateur",
-                  }))
-              : undefined
-          }
-          isOnline={isOtherOnline}
-          lastSeenAt={otherLastSeenAt}
-          onlineMemberCount={onlineMemberCount}
-          typingNames={typingUsers
-            .map((id) => typingUsersNames[id])
-            .filter(Boolean)}
-          onTitlePress={handleInfoPress}
-          onAudioCallPress={() => handleInitiateCall("audio")}
-          onVideoCallPress={() => handleInitiateCall("video")}
-          callsAvailable={callsAvailability.available}
-        />
-        {isOtherUserContact === false && (
-          <View style={styles.notContactBanner}>
-            <Ionicons
-              name="information-circle-outline"
-              size={16}
-              color={colors.text.light}
-              style={{ marginRight: 6 }}
-            />
-            <Text style={styles.notContactBannerText} numberOfLines={1}>
-              Cette personne n'est pas dans vos contacts
-            </Text>
-            <TouchableOpacity
-              onPress={handleAddContactFromChat}
-              disabled={addingContact}
-              style={styles.notContactBannerButton}
-            >
-              {addingContact ? (
-                // wrapper pour annoncer l'etat busy au screen reader
-                <View
-                  accessibilityState={{ busy: true }}
-                  accessibilityLiveRegion="polite"
-                >
-                  <ActivityIndicator size="small" color={colors.text.light} />
-                </View>
-              ) : (
-                <Text style={styles.notContactBannerButtonText}>Ajouter</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-        {showPinnedBar && pinnedMessages.length > 0 && (
-          <PinnedMessagesBar
-            pinnedMessages={pinnedMessages}
-            onMessagePress={handlePinnedMessagePress}
-            onClose={() => setShowPinnedBar(false)}
-          />
-        )}
-        {(() => {
-          // Contenu partagé web / natif — extrait pour que le wrapper soit
-          // branché conditionnellement sans dupliquer le JSX.
-          const messageList = (
-            <FlatList
-              ref={flatListRef}
-              data={messagesWithSeparators}
-              renderItem={renderItem}
-              keyExtractor={keyExtractor}
-              inverted
-              contentContainerStyle={styles.listContent}
-              removeClippedSubviews={true}
-              maxToRenderPerBatch={10}
-              updateCellsBatchingPeriod={50}
-              initialNumToRender={15}
-              windowSize={10}
-              onEndReached={loadMoreMessages}
-              onEndReachedThreshold={0.3}
-              maintainVisibleContentPosition={{
-                minIndexForVisible: 0,
-              }}
-              viewabilityConfig={viewabilityConfig}
-              onViewableItemsChanged={handleViewableItemsChanged}
-              keyboardShouldPersistTaps="handled"
-              // Dismiss the keyboard as the user drags the message list. iOS
-              // gets the interactive variant (clavier qui descend avec le doigt) ;
-              // Android n'a pas d'équivalent natif, on reste sur "on-drag".
-              keyboardDismissMode={
-                Platform.OS === "ios" ? "interactive" : "on-drag"
-              }
-              // Web : on absolute-positionne la FlatList à l'intérieur du
-              // wrapper `webListViewport` (qui est `position: relative`). Ça
-              // donne à la VirtualizedList une boîte de taille définie sans
-              // dépendre du flex layout, indispensable pour que Chrome accepte
-              // de scroller sur la molette quand `inverted` est actif.
-              style={
-                Platform.OS === "web" ? styles.webFlatListAbsolute : undefined
-              }
-              ListEmptyComponent={
-                !loading ? (
-                  <View style={{ transform: [{ scaleY: -1 }], flex: 1 }}>
-                    <EmptyChatState />
-                  </View>
-                ) : null
-              }
-              ListFooterComponent={
-                loadingMore ? (
-                  <View
-                    style={styles.loadingMore}
-                    accessibilityState={{ busy: true }}
-                    accessibilityLiveRegion="polite"
-                  >
-                    <ActivityIndicator
-                      size="small"
-                      color={themeColors.primary}
-                    />
-                  </View>
-                ) : null
-              }
-            />
-          );
-          // Sur web, on emballe la FlatList dans un viewport à overflow borné :
-          // ainsi Chrome garde le wheel sur la ScrollView interne (scrollable)
-          // sans qu'un overflow:hidden sur un ancêtre bloque l'event en amont.
-          // Tap on an empty area of the message list dismisses the keyboard.
-          // onStartShouldSetResponder only fires when no child grabs the touch
-          // first (message bubbles, action handlers, etc.), so this won't
-          // hijack interactions on actual content.
-          const dismissKeyboardResponderProps = {
-            onStartShouldSetResponder: () => true,
-            onResponderRelease: () => Keyboard.dismiss(),
-          };
-          const wrappedList =
-            Platform.OS === "web" ? (
-              <View
-                style={styles.webListViewport}
-                {...dismissKeyboardResponderProps}
-              >
-                {messageList}
-              </View>
-            ) : (
-              <GestureDetector gesture={swipeGesture}>
-                <View style={{ flex: 1 }} {...dismissKeyboardResponderProps}>
-                  {messageList}
-                </View>
-              </GestureDetector>
-            );
-          const chatBody = (
-            <>
-              <MessageSwipeProvider translateX={swipeTranslateX}>
-                {wrappedList}
-              </MessageSwipeProvider>
-
-              {typingUsers.length > 0 && (
-                <View style={styles.typingContainer}>
-                  <TypingIndicator
-                    userNames={typingUsers.map(
-                      (id) => typingUsersNames[id] || "Quelqu'un",
-                    )}
-                  />
-                </View>
-              )}
-              <MessageInput
-                onSend={handleSendMessage}
-                onSendMedia={handleSendMedia}
-                onScheduleSend={handleScheduleSend}
-                onTyping={(typing) => sendTyping(conversationId, typing)}
-                replyingTo={replyingTo}
-                onCancelReply={() => setReplyingTo(null)}
-                editingMessage={editingMessage}
-                onCancelEdit={() => setEditingMessage(null)}
-                conversationType={conversation?.type || "direct"}
-                members={conversationMembers}
-                applySafeAreaBottom
-              />
-            </>
-          );
-
-          // Web : KeyboardAvoidingView (behavior="height") recalcule la hauteur
-          // en fonction du clavier virtuel inexistant en navigateur, ce qui
-          // finit par réduire le container à 0 px → MessageInput invisible et
-          // chat non scrollable. On remplace par un simple View flex:1.
-          // Natif (iOS/Android) : comportement inchangé, KeyboardAvoidingView
-          // reste nécessaire pour le clavier physique.
-          if (Platform.OS === "web") {
-            // Web layout : on garde `overflow:hidden` sur un wrapper dédié
-            // autour de la FlatList (et plus sur le conteneur externe), pour
-            // borner le viewport de scroll sans capturer l'event wheel en
-            // amont. Mettre overflow:hidden sur le wrapper extérieur faisait
-            // que Chrome routait la molette vers cet élément non-scrollable,
-            // bloquant totalement le scroll sur l'inverted FlatList.
-            return (
-              <View
-                style={[
-                  styles.keyboardView,
-                  {
-                    minHeight: 0,
-                    flexDirection: "column",
-                  },
-                ]}
-              >
-                {chatBody}
-              </View>
-            );
-          }
-          return (
-            <KeyboardAvoidingView
-              style={styles.keyboardView}
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
-              keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-            >
-              {chatBody}
-            </KeyboardAvoidingView>
-          );
-        })()}
-        <MessageActionsMenu
-          visible={showActionsMenu}
-          message={selectedMessage}
-          isSent={selectedMessage?.sender_id === userId}
-          isPinned={pinnedMessages.some(
-            (m) => (m.messageId ?? m.message?.id) === selectedMessage?.id,
-          )}
-          onClose={() => {
-            setShowActionsMenu(false);
-            setSelectedMessage(null);
-          }}
-          onReply={handleStartReply}
-          onEdit={handleEditMessage}
-          onDelete={handleDeleteMessage}
-          onReact={handleStartReaction}
-          onPin={handlePinMessage}
-          onForward={handleForwardMessage}
-          onReport={handleOpenReportSheet}
-        />
-        <ReportMessageSheet
-          visible={showReportSheet}
-          message={reportSheetMessage}
-          conversationId={conversationId}
-          conversationTitle={
-            conversation
-              ? getConversationDisplayName(conversation)
-              : "Conversation"
-          }
-          onClose={() => {
-            setShowReportSheet(false);
-            setReportSheetMessage(null);
-          }}
-        />
-        <ForwardMessageModal
-          visible={showForwardModal}
-          conversations={allConversations}
-          currentConversationId={conversationId}
-          sending={forwardSending}
-          onClose={() => {
-            setShowForwardModal(false);
-            setForwardingMessage(null);
-          }}
-          onSelect={handleForwardSelect}
-        />
-        {showReactionPicker && (
-          <ReactionPicker
-            visible={showReactionPicker}
-            onClose={() => {
-              setShowReactionPicker(false);
-              setReactionPickerMessageId(null);
-            }}
-            onReactionSelect={handleReactionSelectFromPicker}
-          />
-        )}
-        <ReactionReactorsModal
-          visible={reactionReactorsModal !== null}
-          emoji={reactionReactorsModal?.emoji ?? ""}
-          reactors={reactionModalList}
-          resolveName={resolveReactorDisplayName}
-          onClose={() => setReactionReactorsModal(null)}
-        />
-        {appealModal ? (
-          <BlockedImageAppealModal
-            visible={appealModal.visible}
-            onClose={() =>
-              setAppealModal((prev) =>
-                prev ? { ...prev, visible: false } : prev,
-              )
-            }
-            imageUri={appealModal.imageUri}
-            blockReason={appealModal.blockReason}
-            scores={appealModal.scores}
-            messageTempId={appealModal.messageTempId}
-            conversationId={conversationId}
-            recipientId={
-              conversation?.type === "direct"
-                ? (
-                    conversation.member_user_ids ||
-                    conversation.members?.map(
-                      (m: { user_id: string }) => m.user_id,
-                    )
-                  )?.find((id: string) => id !== userId)
-                : undefined
-            }
-          />
-        ) : null}
-        <MessageSearch
-          visible={showSearch}
-          onClose={() => {
-            setShowSearch(false);
-            setSearchQuery("");
-            setSearchResults([]);
-          }}
-          onSearch={handleSearch}
-          resultsCount={searchResults.length}
-          currentIndex={currentSearchIndex}
-          onNext={handleSearchNext}
-          onPrevious={handleSearchPrevious}
-        />
-        <ScheduleDateTimePicker
-          visible={showSchedulePicker}
-          onClose={() => {
-            setShowSchedulePicker(false);
-            setScheduleMessageText("");
-          }}
-          onConfirm={handleScheduleConfirm}
-        />
-        <Modal
-          visible={showInfoModal && conversation?.type !== "group"}
-          transparent
-          animationType="slide"
-          statusBarTranslucent
-          onRequestClose={() => {
-            setShowInfoModal(false);
-          }}
+      {() => (
+        <View
+          style={[
+            styles.screenRoot,
+            hasCustomBackground && styles.screenRootWithCustomBackground,
+            Platform.OS === "web" && { minHeight: 0, height: "100%" },
+          ]}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <LinearGradient
-                colors={colors.background.gradient.app}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.modalGradient}
-              >
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>
-                    Informations de la conversation
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setShowInfoModal(false);
-                    }}
-                    style={styles.closeButton}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={24}
-                      color={colors.text.light}
-                    />
-                  </TouchableOpacity>
-                </View>
-                <ScrollView
-                  style={styles.modalBody}
-                  showsVerticalScrollIndicator={false}
+          <TourAutoStart />
+          {hasCustomBackground && customBackgroundUri ? (
+            <ImageBackground
+              key={`${customBackgroundUri}:${customBackgroundVersion}`}
+              source={{ uri: customBackgroundUri }}
+              resizeMode="cover"
+              style={styles.customBackground}
+            />
+          ) : null}
+          {!hasCustomBackground ? (
+            <LinearGradient
+              colors={colors.background.gradient.app}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.gradientBackground}
+            />
+          ) : null}
+          <View
+            pointerEvents="none"
+            style={[
+              styles.backgroundScrim,
+              hasCustomBackground
+                ? styles.backgroundScrimWithCustomImage
+                : styles.backgroundScrimDefault,
+            ]}
+          />
+          <SafeAreaView
+            style={[
+              styles.container,
+              Platform.OS === "web" && { minHeight: 0, height: "100%" },
+            ]}
+            // bottom inset is consumed by MessageInput itself (applySafeAreaBottom)
+            // so the BlurView/overlay extends fully to the screen edge instead of
+            // leaving an empty band between the composer and the home indicator.
+            edges={["top"]}
+          >
+            <OfflineBanner connectionState={connectionState} />
+            <AttachStep index={0} fill={Platform.OS !== "web"}>
+              <ChatHeader
+                conversationName={
+                  conversation
+                    ? getConversationDisplayName(conversation)
+                    : "Conversation"
+                }
+                avatarUrl={headerAvatarUrl}
+                conversationType={conversation?.type || "direct"}
+                groupAvatars={
+                  conversation?.type === "group"
+                    ? conversationMembers
+                        .filter((m) => m.id && m.id !== userId)
+                        .slice(0, 2)
+                        .map((m) => ({
+                          uri: m.avatar_url,
+                          name: m.display_name || m.username || "Utilisateur",
+                        }))
+                    : undefined
+                }
+                isOnline={isOtherOnline}
+                lastSeenAt={otherLastSeenAt}
+                onlineMemberCount={onlineMemberCount}
+                typingNames={typingUsers
+                  .map((id) => typingUsersNames[id])
+                  .filter(Boolean)}
+                onTitlePress={handleInfoPress}
+                onSearchPress={() => setShowSearch(true)}
+                onInfoPress={handleInfoPress}
+                onScheduledPress={handleScheduledPress}
+                onAudioCallPress={() => handleInitiateCall("audio")}
+                onVideoCallPress={() => handleInitiateCall("video")}
+                callsAvailable={callsAvailability.available}
+              />
+            </AttachStep>
+            {isOtherUserContact === false && (
+              <View style={styles.notContactBanner}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={16}
+                  color={colors.text.light}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={styles.notContactBannerText} numberOfLines={1}>
+                  Cette personne n'est pas dans vos contacts
+                </Text>
+                <TouchableOpacity
+                  onPress={handleAddContactFromChat}
+                  disabled={addingContact}
+                  style={styles.notContactBannerButton}
                 >
-                  <View style={styles.infoSectionMain}>
-                    <Avatar
-                      size={80}
-                      uri={conversation?.avatar_url}
-                      name={
-                        conversation
-                          ? getConversationDisplayName(conversation)
-                          : "Contact"
-                      }
-                      showOnlineBadge={conversation?.type === "direct"}
-                      isOnline={false}
-                    />
-                    <Text style={styles.infoName}>
-                      {conversation
-                        ? getConversationDisplayName(conversation)
-                        : "Contact"}
+                  {addingContact ? (
+                    // wrapper pour annoncer l'etat busy au screen reader
+                    <View
+                      accessibilityState={{ busy: true }}
+                      accessibilityLiveRegion="polite"
+                    >
+                      <ActivityIndicator
+                        size="small"
+                        color={colors.text.light}
+                      />
+                    </View>
+                  ) : (
+                    <Text style={styles.notContactBannerButtonText}>
+                      Ajouter
                     </Text>
-                    {conversation?.type === "direct" && (
-                      <Text style={styles.infoStatus}>Hors ligne</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+            {showPinnedBar && pinnedMessages.length > 0 && (
+              <PinnedMessagesBar
+                pinnedMessages={pinnedMessages}
+                onMessagePress={handlePinnedMessagePress}
+                onClose={() => setShowPinnedBar(false)}
+              />
+            )}
+            {(() => {
+              // Contenu partagé web / natif — extrait pour que le wrapper soit
+              // branché conditionnellement sans dupliquer le JSX.
+              const messageList = (
+                <FlatList
+                  ref={flatListRef}
+                  data={messagesWithSeparators}
+                  renderItem={renderItem}
+                  keyExtractor={keyExtractor}
+                  inverted
+                  contentContainerStyle={styles.listContent}
+                  removeClippedSubviews={Platform.OS === "android"}
+                  maxToRenderPerBatch={10}
+                  updateCellsBatchingPeriod={50}
+                  initialNumToRender={15}
+                  windowSize={10}
+                  onScroll={handleScroll}
+                  scrollEventThrottle={16}
+                  onEndReached={loadMoreMessages}
+                  onEndReachedThreshold={0.3}
+                  viewabilityConfig={viewabilityConfig}
+                  onViewableItemsChanged={handleViewableItemsChanged}
+                  keyboardShouldPersistTaps="handled"
+                  // Dismiss the keyboard as the user drags the message list. iOS
+                  // gets the interactive variant (clavier qui descend avec le doigt) ;
+                  // Android n'a pas d'équivalent natif, on reste sur "on-drag".
+                  keyboardDismissMode={
+                    Platform.OS === "ios" ? "interactive" : "on-drag"
+                  }
+                  // Web : on absolute-positionne la FlatList à l'intérieur du
+                  // wrapper `webListViewport` (qui est `position: relative`). Ça
+                  // donne à la VirtualizedList une boîte de taille définie sans
+                  // dépendre du flex layout, indispensable pour que Chrome accepte
+                  // de scroller sur la molette quand `inverted` est actif.
+                  style={
+                    Platform.OS === "web"
+                      ? styles.webFlatListAbsolute
+                      : undefined
+                  }
+                  ListFooterComponent={
+                    loadingMore ? (
+                      <View
+                        style={styles.loadingMore}
+                        accessibilityState={{ busy: true }}
+                        accessibilityLiveRegion="polite"
+                      >
+                        <ActivityIndicator
+                          size="small"
+                          color={themeColors.primary}
+                        />
+                      </View>
+                    ) : null
+                  }
+                />
+              );
+              // Sur web, on emballe la FlatList dans un viewport à overflow borné :
+              // ainsi Chrome garde le wheel sur la ScrollView interne (scrollable)
+              // sans qu'un overflow:hidden sur un ancêtre bloque l'event en amont.
+              // Tap on an empty area of the message list dismisses the keyboard.
+              // onStartShouldSetResponder only fires when no child grabs the touch
+              // first (message bubbles, action handlers, etc.), so this won't
+              // hijack interactions on actual content.
+              const dismissKeyboardResponderProps = {
+                onStartShouldSetResponder: () => true,
+                onResponderRelease: () => Keyboard.dismiss(),
+              };
+              const wrappedList =
+                Platform.OS === "web" ? (
+                  <View
+                    style={styles.webListViewport}
+                    {...dismissKeyboardResponderProps}
+                  >
+                    {messageList}
+                    {messages.length === 0 && !loading && (
+                      <View
+                        style={styles.emptyChatOverlay}
+                        pointerEvents="box-none"
+                      >
+                        <EmptyChatState />
+                      </View>
+                    )}
+                    {pendingNewCount > 0 && (
+                      <View style={styles.newMessagesPillContainer}>
+                        <TouchableOpacity
+                          onPress={scrollToBottom}
+                          activeOpacity={0.85}
+                          style={styles.newMessagesPill}
+                        >
+                          <Ionicons
+                            name="arrow-down"
+                            size={16}
+                            color="rgba(255, 255, 255, 0.92)"
+                            style={{ marginRight: 6 }}
+                          />
+                          <Text style={styles.newMessagesPillText}>
+                            {pendingNewCount} nouveau
+                            {pendingNewCount > 1 ? "x" : ""} message
+                            {pendingNewCount > 1 ? "s" : ""}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     )}
                   </View>
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoLabel}>TYPE</Text>
-                    <Text style={styles.infoValue}>
-                      {conversation?.type === "group"
-                        ? "Groupe"
-                        : "Conversation directe"}
-                    </Text>
-                  </View>
-                  <View style={styles.infoSection}>
-                    <Text style={styles.infoLabel}>MESSAGES</Text>
-                    <Text style={styles.infoValue}>
-                      {messages.length} message{messages.length > 1 ? "s" : ""}
-                    </Text>
-                  </View>
-                  <View style={styles.infoSectionActions}>
-                    <Text style={styles.infoLabel}>ACTIONS</Text>
-                    <TouchableOpacity
-                      style={styles.infoActionRow}
-                      onPress={() => {
-                        setShowInfoModal(false);
-                        setShowSearch(true);
-                      }}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      accessibilityLabel="Rechercher dans la conversation"
+                ) : (
+                  <GestureDetector gesture={swipeGesture}>
+                    <View
+                      style={{ flex: 1, position: "relative" }}
+                      {...dismissKeyboardResponderProps}
                     >
-                      <Ionicons
-                        name="search"
-                        size={20}
-                        color={colors.text.light}
-                        style={styles.infoActionIcon}
+                      {messageList}
+                      {messages.length === 0 && !loading && (
+                        <View
+                          style={styles.emptyChatOverlay}
+                          pointerEvents="box-none"
+                        >
+                          <EmptyChatState />
+                        </View>
+                      )}
+                      {pendingNewCount > 0 && (
+                        <View style={styles.newMessagesPillContainer}>
+                          <TouchableOpacity
+                            onPress={scrollToBottom}
+                            activeOpacity={0.85}
+                            style={styles.newMessagesPill}
+                          >
+                            <Ionicons
+                              name="arrow-down"
+                              size={16}
+                              color="rgba(255, 255, 255, 0.92)"
+                              style={{ marginRight: 6 }}
+                            />
+                            <Text style={styles.newMessagesPillText}>
+                              {pendingNewCount} nouveau
+                              {pendingNewCount > 1 ? "x" : ""} message
+                              {pendingNewCount > 1 ? "s" : ""}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+                  </GestureDetector>
+                );
+              const chatBody = (
+                <>
+                  <MessageSwipeProvider translateX={swipeTranslateX}>
+                    {wrappedList}
+                  </MessageSwipeProvider>
+
+                  {typingUsers.length > 0 && (
+                    <View style={styles.typingContainer}>
+                      <TypingIndicator
+                        userNames={typingUsers.map(
+                          (id) => typingUsersNames[id] || "Quelqu'un",
+                        )}
                       />
-                      <Text style={styles.infoActionLabel}>
-                        Rechercher des messages
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={withOpacity(colors.text.light, 0.4)}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.infoActionRow}
-                      onPress={() => {
-                        setShowInfoModal(false);
-                        handleScheduledPress();
-                      }}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      accessibilityLabel="Messages programmés"
-                    >
-                      <Ionicons
-                        name="timer-outline"
-                        size={20}
-                        color={colors.text.light}
-                        style={styles.infoActionIcon}
-                      />
-                      <Text style={styles.infoActionLabel}>
-                        Messages programmés
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={withOpacity(colors.text.light, 0.4)}
-                      />
-                    </TouchableOpacity>
+                    </View>
+                  )}
+                  <AttachStep index={1} fill={Platform.OS !== "web"}>
+                    <MessageInput
+                      onSend={handleSendMessage}
+                      onSendMedia={handleSendMedia}
+                      onScheduleSend={handleScheduleSend}
+                      onTyping={(typing) => sendTyping(conversationId, typing)}
+                      replyingTo={replyingTo}
+                      onCancelReply={() => setReplyingTo(null)}
+                      editingMessage={editingMessage}
+                      onCancelEdit={() => setEditingMessage(null)}
+                      conversationType={conversation?.type || "direct"}
+                      members={conversationMembers}
+                      applySafeAreaBottom
+                    />
+                  </AttachStep>
+                </>
+              );
+
+              // Web : KeyboardAvoidingView (behavior="height") recalcule la hauteur
+              // en fonction du clavier virtuel inexistant en navigateur, ce qui
+              // finit par réduire le container à 0 px → MessageInput invisible et
+              // chat non scrollable. On remplace par un simple View flex:1.
+              // Natif (iOS/Android) : comportement inchangé, KeyboardAvoidingView
+              // reste nécessaire pour le clavier physique.
+              if (Platform.OS === "web") {
+                // Web layout : on garde `overflow:hidden` sur un wrapper dédié
+                // autour de la FlatList (et plus sur le conteneur externe), pour
+                // borner le viewport de scroll sans capturer l'event wheel en
+                // amont. Mettre overflow:hidden sur le wrapper extérieur faisait
+                // que Chrome routait la molette vers cet élément non-scrollable,
+                // bloquant totalement le scroll sur l'inverted FlatList.
+                return (
+                  <View
+                    style={[
+                      styles.keyboardView,
+                      {
+                        minHeight: 0,
+                        flexDirection: "column",
+                      },
+                    ]}
+                  >
+                    {chatBody}
                   </View>
-                </ScrollView>
-              </LinearGradient>
-            </View>
-          </View>
-        </Modal>
-        <Toast
-          visible={callsToast.visible}
-          message={callsToast.message}
-          type={callsToast.type}
-          duration={4000}
-          onHide={() => setCallsToast((t) => ({ ...t, visible: false }))}
-        />
-      </SafeAreaView>
-    </View>
+                );
+              }
+              return (
+                <KeyboardAvoidingView
+                  style={styles.keyboardView}
+                  behavior={Platform.OS === "ios" ? "padding" : "height"}
+                  keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+                >
+                  {chatBody}
+                </KeyboardAvoidingView>
+              );
+            })()}
+            <MessageActionsMenu
+              visible={showActionsMenu}
+              message={selectedMessage}
+              isSent={selectedMessage?.sender_id === userId}
+              isPinned={pinnedMessages.some(
+                (m) => (m.messageId ?? m.message?.id) === selectedMessage?.id,
+              )}
+              onClose={() => {
+                setShowActionsMenu(false);
+                setSelectedMessage(null);
+              }}
+              onReply={handleStartReply}
+              onEdit={handleEditMessage}
+              onDelete={handleDeleteMessage}
+              onReact={handleStartReaction}
+              onPin={handlePinMessage}
+              onForward={handleForwardMessage}
+              onReport={handleOpenReportSheet}
+            />
+            <ReportMessageSheet
+              visible={showReportSheet}
+              message={reportSheetMessage}
+              conversationId={conversationId}
+              conversationTitle={
+                conversation
+                  ? getConversationDisplayName(conversation)
+                  : "Conversation"
+              }
+              onClose={() => {
+                setShowReportSheet(false);
+                setReportSheetMessage(null);
+              }}
+            />
+            <ForwardMessageModal
+              visible={showForwardModal}
+              conversations={allConversations}
+              currentConversationId={conversationId}
+              sending={forwardSending}
+              onClose={() => {
+                setShowForwardModal(false);
+                setForwardingMessage(null);
+              }}
+              onSelect={handleForwardSelect}
+            />
+            {showReactionPicker && (
+              <ReactionPicker
+                visible={showReactionPicker}
+                onClose={() => {
+                  setShowReactionPicker(false);
+                  setReactionPickerMessageId(null);
+                }}
+                onReactionSelect={handleReactionSelectFromPicker}
+              />
+            )}
+            <ReactionReactorsModal
+              visible={reactionReactorsModal !== null}
+              emoji={reactionReactorsModal?.emoji ?? ""}
+              reactors={reactionModalList}
+              resolveName={resolveReactorDisplayName}
+              onClose={() => setReactionReactorsModal(null)}
+            />
+            {appealModal ? (
+              <BlockedImageAppealModal
+                visible={appealModal.visible}
+                onClose={() =>
+                  setAppealModal((prev) =>
+                    prev ? { ...prev, visible: false } : prev,
+                  )
+                }
+                imageUri={appealModal.imageUri}
+                blockReason={appealModal.blockReason}
+                scores={appealModal.scores}
+                messageTempId={appealModal.messageTempId}
+                conversationId={conversationId}
+                recipientId={
+                  conversation?.type === "direct"
+                    ? (
+                        conversation.member_user_ids ||
+                        conversation.members?.map(
+                          (m: { user_id: string }) => m.user_id,
+                        )
+                      )?.find((id: string) => id !== userId)
+                    : undefined
+                }
+              />
+            ) : null}
+            <MessageSearch
+              visible={showSearch}
+              onClose={() => {
+                setShowSearch(false);
+                setSearchQuery("");
+                setSearchResults([]);
+              }}
+              onSearch={handleSearch}
+              resultsCount={searchResults.length}
+              currentIndex={currentSearchIndex}
+              onNext={handleSearchNext}
+              onPrevious={handleSearchPrevious}
+            />
+            <ScheduleDateTimePicker
+              visible={showSchedulePicker}
+              onClose={() => {
+                setShowSchedulePicker(false);
+                setScheduleMessageText("");
+              }}
+              onConfirm={handleScheduleConfirm}
+            />
+            <Modal
+              visible={showInfoModal && conversation?.type !== "group"}
+              transparent
+              animationType="slide"
+              statusBarTranslucent
+              onRequestClose={() => {
+                setShowInfoModal(false);
+              }}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <LinearGradient
+                    colors={colors.background.gradient.app}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.modalGradient}
+                  >
+                    <View style={styles.modalHeader}>
+                      <Text style={styles.modalTitle}>
+                        Informations de la conversation
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          Haptics.impactAsync(
+                            Haptics.ImpactFeedbackStyle.Light,
+                          );
+                          setShowInfoModal(false);
+                        }}
+                        style={styles.closeButton}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name="close"
+                          size={24}
+                          color={colors.text.light}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <ScrollView
+                      style={styles.modalBody}
+                      showsVerticalScrollIndicator={false}
+                    >
+                      <View style={styles.infoSectionMain}>
+                        <Avatar
+                          size={80}
+                          uri={conversation?.avatar_url}
+                          name={
+                            conversation
+                              ? getConversationDisplayName(conversation)
+                              : "Contact"
+                          }
+                          showOnlineBadge={conversation?.type === "direct"}
+                          isOnline={false}
+                        />
+                        <Text style={styles.infoName}>
+                          {conversation
+                            ? getConversationDisplayName(conversation)
+                            : "Contact"}
+                        </Text>
+                        {conversation?.type === "direct" && (
+                          <Text style={styles.infoStatus}>Hors ligne</Text>
+                        )}
+                      </View>
+                      <View style={styles.infoSection}>
+                        <Text style={styles.infoLabel}>TYPE</Text>
+                        <Text style={styles.infoValue}>
+                          {conversation?.type === "group"
+                            ? "Groupe"
+                            : "Conversation directe"}
+                        </Text>
+                      </View>
+                      {conversation?.type === "direct" ? (
+                        <View style={styles.infoSection}>
+                          <Text style={styles.infoLabel}>CONFIDENTIALITÉ</Text>
+                          <View style={styles.infoToggleRow}>
+                            <Text style={styles.infoValue}>
+                              Chiffrement E2E
+                            </Text>
+                            <Switch
+                              value={e2eeEnabled}
+                              onValueChange={handleToggleE2EE}
+                              disabled={e2eeToggleBusy}
+                              trackColor={{
+                                false: "rgba(255, 255, 255, 0.15)",
+                                true: colors.primary.main,
+                              }}
+                              thumbColor={colors.text.light}
+                            />
+                          </View>
+                        </View>
+                      ) : null}
+                      <View style={styles.infoSection}>
+                        <Text style={styles.infoLabel}>MESSAGES</Text>
+                        <Text style={styles.infoValue}>
+                          {messages.length} message
+                          {messages.length > 1 ? "s" : ""}
+                        </Text>
+                      </View>
+                      <View style={styles.infoSectionActions}>
+                        <Text style={styles.infoLabel}>ACTIONS</Text>
+                        <TouchableOpacity
+                          style={styles.infoActionRow}
+                          onPress={() => {
+                            setShowInfoModal(false);
+                            setShowSearch(true);
+                          }}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel="Rechercher dans la conversation"
+                        >
+                          <Ionicons
+                            name="search"
+                            size={20}
+                            color={colors.text.light}
+                            style={styles.infoActionIcon}
+                          />
+                          <Text style={styles.infoActionLabel}>
+                            Rechercher des messages
+                          </Text>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={20}
+                            color={withOpacity(colors.text.light, 0.4)}
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.infoActionRow}
+                          onPress={() => {
+                            setShowInfoModal(false);
+                            handleScheduledPress();
+                          }}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel="Messages programmés"
+                        >
+                          <Ionicons
+                            name="timer-outline"
+                            size={20}
+                            color={colors.text.light}
+                            style={styles.infoActionIcon}
+                          />
+                          <Text style={styles.infoActionLabel}>
+                            Messages programmés
+                          </Text>
+                          <Ionicons
+                            name="chevron-forward"
+                            size={20}
+                            color={withOpacity(colors.text.light, 0.4)}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </ScrollView>
+                  </LinearGradient>
+                </View>
+              </View>
+            </Modal>
+            <Toast
+              visible={callsToast.visible}
+              message={callsToast.message}
+              type={callsToast.type}
+              duration={4000}
+              onHide={() => setCallsToast((t) => ({ ...t, visible: false }))}
+            />
+          </SafeAreaView>
+        </View>
+      )}
+    </SpotlightTourProvider>
   );
 };
 
@@ -3148,6 +3781,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
+  emptyChatOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  newMessagesPillContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 12,
+    alignItems: "center",
+  },
+  newMessagesPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(13, 18, 40, 0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+  },
+  newMessagesPillText: {
+    color: "rgba(255, 255, 255, 0.92)",
+    fontSize: 13,
+    fontWeight: "600",
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.8)",
@@ -3239,6 +3903,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.text.light,
     letterSpacing: 0.2,
+  },
+  infoToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
   },
   infoSectionActions: {
     marginBottom: 24,

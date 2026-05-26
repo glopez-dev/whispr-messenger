@@ -15,14 +15,15 @@ export const CLASS_NAMES_V2 = [
 ] as const;
 
 /**
- * V3: single sigmoid unit outputting p(food). The two synthetic labels are
- * only used to build the `probs` map returned by `GateResult` so consumers
- * see a consistent shape across model versions.
+ * V3: 3-class softmax (MobileNetV3-Small + custom head) trained on
+ * healthy/unhealthy/not_food. Class order matches the alphabetical sort
+ * applied by `tf.keras.utils.image_dataset_from_directory` at training time.
+ * Only `unhealthy` produces a block decision.
  */
-export const CLASS_NAMES_V3 = ["food", "not_food"] as const;
+export const CLASS_NAMES_V3 = ["healthy", "not_food", "unhealthy"] as const;
 
-/** Index of the "food" class in CLASS_NAMES_V3 — used by decideV3FromProbs. */
-export const V3_FOOD_INDEX = 0;
+/** Index of the "unhealthy" class in CLASS_NAMES_V3 — the only blocking label. */
+export const V3_UNHEALTHY_INDEX = 2;
 
 /**
  * Backwards-compatible alias. A few existing modules and tests import

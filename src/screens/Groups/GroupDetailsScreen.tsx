@@ -54,8 +54,6 @@ import {
   groupsAPI,
   GroupDetails,
   GroupMember,
-  GroupStats,
-  GroupLog,
   GroupSettings,
 } from "../../services/groups/api";
 import { messagingAPI } from "../../services/messaging/api";
@@ -125,17 +123,17 @@ export const GroupDetailsScreen: React.FC = () => {
 
   const [groupDetails, setGroupDetails] = useState<GroupDetails | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [stats, setStats] = useState<GroupStats | null>(null);
-  const [logs, setLogs] = useState<GroupLog[]>([]);
   const [settings, setSettings] = useState<GroupSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "info" | "members" | "stats" | "history" | "settings"
+    "info" | "members" | "settings"
   >("info");
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showTransferAdminModal, setShowTransferAdminModal] = useState(false);
+  const [showLastAdminWarningModal, setShowLastAdminWarningModal] =
+    useState(false);
   const [leaving, setLeaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -173,16 +171,12 @@ export const GroupDetailsScreen: React.FC = () => {
         groupsAPI.getGroupMembers(groupId, {
           conversationId: conversationKey,
         }),
-        groupsAPI.getGroupStats(groupId, {
-          conversationId: conversationKey,
-        }),
-        groupsAPI.getGroupLogs(groupId),
         groupsAPI.getGroupSettings(groupId, {
           conversationId: conversationKey,
         }),
       ]);
 
-      const [detailsR, membersR, statsR, logsR, settingsR] = results;
+      const [detailsR, membersR, settingsR] = results;
 
       if (detailsR.status === "fulfilled") {
         setGroupDetails(detailsR.value);
@@ -217,22 +211,6 @@ export const GroupDetailsScreen: React.FC = () => {
           "getGroupMembers failed",
           membersR.reason,
         );
-      }
-
-      if (statsR.status === "fulfilled") {
-        setStats(statsR.value);
-      } else {
-        logger.warn(
-          "GroupDetailsScreen",
-          "getGroupStats failed",
-          statsR.reason,
-        );
-      }
-
-      if (logsR.status === "fulfilled") {
-        setLogs(logsR.value.logs);
-      } else {
-        logger.warn("GroupDetailsScreen", "getGroupLogs failed", logsR.reason);
       }
 
       if (settingsR.status === "fulfilled") {
@@ -291,20 +269,28 @@ export const GroupDetailsScreen: React.FC = () => {
   }, [navigation, conversationId, conversationKey]);
 
   const currentUserMember = members.find((m) => m.user_id === CURRENT_USER_ID);
-  const isAdmin = currentUserMember?.role === "admin";
+  const isOwner = currentUserMember?.role === "owner";
+  // owner compte aussi comme admin pour les permissions existantes
+  const isAdmin = isOwner || currentUserMember?.role === "admin";
+  const ownerCount = members.filter((m) => m.role === "owner").length;
   const adminCount = members.filter((m) => m.role === "admin").length;
-  const isLastAdmin = isAdmin && adminCount === 1;
+  const isLastAdmin = isAdmin && (ownerCount + adminCount) === 1;
   const otherMembers = members.filter((m) => m.user_id !== CURRENT_USER_ID);
 
   const handleLeaveGroup = useCallback(async () => {
-    if (isLastAdmin) {
+    // si dernier admin sans autres membres, on ne peut pas quitter (groupe orphelin)
+    if (isLastAdmin && otherMembers.length === 0) {
       setShowLeaveModal(false);
-      setShowTransferAdminModal(true);
+      Alert.alert(
+        "Impossible de quitter",
+        "Tu es le seul membre et admin. Supprime le groupe si tu veux le fermer.",
+      );
       return;
     }
 
     try {
       setLeaving(true);
+      // le backend promeut automatiquement un autre membre si l'user est le dernier admin
       await groupsAPI.leaveGroup(groupId, CURRENT_USER_ID, conversationId);
       removeConversationLocal(conversationKey);
       refreshConversations().catch(() => {});
@@ -326,6 +312,7 @@ export const GroupDetailsScreen: React.FC = () => {
     groupId,
     isLastAdmin,
     navigation,
+    otherMembers.length,
     refreshConversations,
     removeConversationLocal,
   ]);
@@ -649,11 +636,48 @@ export const GroupDetailsScreen: React.FC = () => {
       try {
         setMemberActionLoading(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        await messagingAPI.updateGroupMemberRole(
-          conversationId,
-          member.user_id,
-          role,
-        );
+
+        // préférer les endpoints dédiés user-service (PR #151), repli messaging
+        if (role === "admin") {
+          try {
+            await groupsAPI.promoteMember(groupId, member.user_id);
+          } catch (e: any) {
+            if (e?.status === 404 || e?.status === 405) {
+              await messagingAPI.updateGroupMemberRole(
+                conversationId,
+                member.user_id,
+                "admin",
+              );
+            } else {
+              throw e;
+            }
+          }
+        } else {
+          try {
+            await groupsAPI.demoteMember(groupId, member.user_id);
+          } catch (e: any) {
+            if (e?.status === 409) {
+              // dernier admin - ne devrait pas arriver ici vu isSelfDemotionBlocked,
+              // mais on le gère quand même pour les races conditions
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert(
+                "Impossible",
+                "Tu ne peux pas retirer le dernier admin",
+              );
+              return;
+            }
+            if (e?.status === 404 || e?.status === 405) {
+              await messagingAPI.updateGroupMemberRole(
+                conversationId,
+                member.user_id,
+                "member",
+              );
+            } else {
+              throw e;
+            }
+          }
+        }
+
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setMemberActionFor(null);
         loadGroupData();
@@ -665,7 +689,7 @@ export const GroupDetailsScreen: React.FC = () => {
         setMemberActionLoading(false);
       }
     },
-    [CURRENT_USER_ID, conversationId, isLastAdmin, loadGroupData],
+    [CURRENT_USER_ID, conversationId, groupId, isLastAdmin, loadGroupData],
   );
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
@@ -797,16 +821,6 @@ export const GroupDetailsScreen: React.FC = () => {
             },
             { key: "members", label: "Membres", icon: "people-outline" },
             {
-              key: "stats",
-              label: "Statistiques",
-              icon: "stats-chart-outline",
-            },
-            {
-              key: "history",
-              label: "Historique",
-              icon: "time-outline",
-            },
-            {
               key: "settings",
               label: "Paramètres",
               icon: "settings-outline",
@@ -894,56 +908,6 @@ export const GroupDetailsScreen: React.FC = () => {
               : "-"}
           </Text>
         </View>
-        <View
-          style={[
-            styles.infoRow,
-            { borderBottomColor: withOpacity(colors.ui.divider, 0.3) },
-          ]}
-        >
-          <View style={styles.infoRowLeft}>
-            <Ionicons
-              name="time-outline"
-              size={20}
-              color={withOpacity(colors.text.light, 0.7)}
-            />
-            <Text
-              style={[
-                styles.infoLabel,
-                { color: withOpacity(colors.text.light, 0.7) },
-              ]}
-            >
-              Dernière activité
-            </Text>
-          </View>
-          <Text style={[styles.infoValue, { color: colors.text.light }]}>
-            {stats?.lastActivity
-              ? new Date(stats.lastActivity).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "short",
-                })
-              : "-"}
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <View style={styles.infoRowLeft}>
-            <Ionicons
-              name="chatbubbles-outline"
-              size={20}
-              color={withOpacity(colors.text.light, 0.7)}
-            />
-            <Text
-              style={[
-                styles.infoLabel,
-                { color: withOpacity(colors.text.light, 0.7) },
-              ]}
-            >
-              Messages
-            </Text>
-          </View>
-          <Text style={[styles.infoValue, { color: colors.text.light }]}>
-            {stats?.messageCount || 0}
-          </Text>
-        </View>
       </View>
     </Animated.View>
   );
@@ -961,8 +925,14 @@ export const GroupDetailsScreen: React.FC = () => {
               { color: withOpacity(colors.text.light, 0.7) },
             ]}
           >
-            {stats?.adminCount || 0} administrateur
-            {stats && stats.adminCount > 1 ? "s" : ""}
+            {(() => {
+              const owners = members.filter((m) => m.role === "owner").length;
+              const admins = members.filter((m) => m.role === "admin").length;
+              const parts: string[] = [];
+              if (owners > 0) parts.push(`${owners} propriétaire${owners > 1 ? "s" : ""}`);
+              if (admins > 0) parts.push(`${admins} administrateur${admins > 1 ? "s" : ""}`);
+              return parts.length > 0 ? parts.join(", ") : "0 administrateur";
+            })()}
           </Text>
         </View>
         <TouchableOpacity
@@ -1031,6 +1001,28 @@ export const GroupDetailsScreen: React.FC = () => {
                 <Text style={[styles.memberName, { color: colors.text.light }]}>
                   {member.display_name}
                 </Text>
+                {member.role === "owner" && (
+                  <View
+                    style={[
+                      styles.roleBadge,
+                      { backgroundColor: "#B8860B" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="star"
+                      size={12}
+                      color="#FFD700"
+                    />
+                    <Text
+                      style={[
+                        styles.roleBadgeText,
+                        { color: "#FFD700" },
+                      ]}
+                    >
+                      Propriétaire
+                    </Text>
+                  </View>
+                )}
                 {member.role === "admin" && (
                   <View
                     style={[
@@ -1099,10 +1091,13 @@ export const GroupDetailsScreen: React.FC = () => {
                 })}
               </Text>
             </View>
-            {isAdmin && member.user_id !== CURRENT_USER_ID && (
+            {member.user_id !== CURRENT_USER_ID &&
+              // owner peut agir sur tout le monde sauf lui-même
+              // admin peut agir uniquement sur les membres simples
+              (isOwner || (isAdmin && member.role === "member")) && (
               <TouchableOpacity
                 onPress={(e) => {
-                  e.stopPropagation?.();
+                  e?.stopPropagation?.();
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setMemberActionFor(member);
                 }}
@@ -1120,197 +1115,6 @@ export const GroupDetailsScreen: React.FC = () => {
             )}
           </AnimatedTouchableOpacity>
         ))}
-      </View>
-    </Animated.View>
-  );
-
-  const renderStatsTab = () => (
-    <Animated.View entering={FadeIn.delay(100).duration(300)}>
-      <View style={styles.statsCard}>
-        <View style={styles.statsGrid}>
-          <Animated.View
-            style={[
-              styles.statItem,
-              { backgroundColor: withOpacity(colors.primary.main, 0.2) },
-            ]}
-            entering={FadeInDown.delay(150).springify()}
-          >
-            <LinearGradient
-              colors={[colors.primary.main, colors.secondary.main]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statIconContainer}
-            >
-              <Ionicons name="people" size={24} color={colors.text.light} />
-            </LinearGradient>
-            <Text style={[styles.statValue, { color: colors.text.light }]}>
-              {stats?.memberCount || 0}
-            </Text>
-            <Text
-              style={[
-                styles.statLabel,
-                { color: withOpacity(colors.text.light, 0.7) },
-              ]}
-            >
-              Membres
-            </Text>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.statItem,
-              { backgroundColor: withOpacity(colors.secondary.main, 0.2) },
-            ]}
-            entering={FadeInDown.delay(200).springify()}
-          >
-            <LinearGradient
-              colors={[colors.secondary.main, colors.primary.main]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statIconContainer}
-            >
-              <Ionicons
-                name="shield-checkmark"
-                size={24}
-                color={colors.text.light}
-              />
-            </LinearGradient>
-            <Text style={[styles.statValue, { color: colors.text.light }]}>
-              {stats?.adminCount || 0}
-            </Text>
-            <Text
-              style={[
-                styles.statLabel,
-                { color: withOpacity(colors.text.light, 0.7) },
-              ]}
-            >
-              Admins
-            </Text>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.statItem,
-              { backgroundColor: withOpacity(colors.primary.main, 0.2) },
-            ]}
-            entering={FadeInDown.delay(250).springify()}
-          >
-            <LinearGradient
-              colors={[colors.primary.main, colors.secondary.main]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.statIconContainer}
-            >
-              <Ionicons
-                name="chatbubbles"
-                size={24}
-                color={colors.text.light}
-              />
-            </LinearGradient>
-            <Text style={[styles.statValue, { color: colors.text.light }]}>
-              {stats?.messageCount || 0}
-            </Text>
-            <Text
-              style={[
-                styles.statLabel,
-                { color: withOpacity(colors.text.light, 0.7) },
-              ]}
-            >
-              Messages
-            </Text>
-          </Animated.View>
-        </View>
-      </View>
-    </Animated.View>
-  );
-
-  const renderHistoryTab = () => (
-    <Animated.View entering={FadeIn.delay(100).duration(300)}>
-      <View style={styles.historyCard}>
-        {logs.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="time-outline"
-              size={48}
-              color={withOpacity(colors.text.light, 0.5)}
-            />
-            <Text
-              style={[
-                styles.emptyText,
-                { color: withOpacity(colors.text.light, 0.7) },
-              ]}
-            >
-              Aucun historique disponible
-            </Text>
-          </View>
-        ) : (
-          logs.map((log, index) => (
-            <Animated.View
-              key={log.id}
-              style={[
-                styles.logItem,
-                { borderBottomColor: withOpacity(colors.ui.divider, 0.3) },
-              ]}
-              entering={FadeInDown.delay(150 + index * 50).springify()}
-            >
-              <View style={styles.logIconContainer}>
-                <Ionicons
-                  name={
-                    log.action_type === "group_created"
-                      ? "add-circle"
-                      : log.action_type === "member_added"
-                        ? "person-add"
-                        : log.action_type === "member_removed"
-                          ? "person-remove"
-                          : log.action_type === "role_changed"
-                            ? "swap-horizontal"
-                            : log.action_type === "admin_transferred"
-                              ? "shield-checkmark"
-                              : "settings"
-                  }
-                  size={20}
-                  color={colors.primary.main}
-                />
-              </View>
-              <View style={styles.logContent}>
-                <Text style={[styles.logAction, { color: colors.text.light }]}>
-                  {log.action_type === "group_created"
-                    ? "Groupe créé"
-                    : log.action_type === "member_added"
-                      ? "Membre ajouté"
-                      : log.action_type === "member_removed"
-                        ? "Membre retiré"
-                        : log.action_type === "role_changed"
-                          ? "Rôle modifié"
-                          : log.action_type === "admin_transferred"
-                            ? "Administration transférée"
-                            : "Paramètres modifiés"}
-                </Text>
-                <Text
-                  style={[
-                    styles.logActor,
-                    { color: withOpacity(colors.text.light, 0.7) },
-                  ]}
-                >
-                  par {log.actor_name}
-                </Text>
-                <Text
-                  style={[
-                    styles.logTime,
-                    { color: withOpacity(colors.text.light, 0.5) },
-                  ]}
-                >
-                  {new Date(log.timestamp).toLocaleDateString("fr-FR", {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
-              </View>
-            </Animated.View>
-          ))
-        )}
       </View>
     </Animated.View>
   );
@@ -1543,9 +1347,9 @@ export const GroupDetailsScreen: React.FC = () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               // refresh members avant decision pour eviter isLastAdmin stale (concurrent demote)
               await loadGroupData().catch(() => {});
-              // si dernier admin, on saute la typed-confirm et on force le transfert direct
-              if (isLastAdmin) {
-                setShowTransferAdminModal(true);
+              if (isLastAdmin && otherMembers.length > 0) {
+                // dernier admin + autres membres : Modal custom (Alert.alert muet sur web)
+                setShowLastAdminWarningModal(true);
               } else {
                 setShowLeaveModal(true);
               }
@@ -1633,10 +1437,6 @@ export const GroupDetailsScreen: React.FC = () => {
         return renderInfoTab();
       case "members":
         return renderMembersTab();
-      case "stats":
-        return renderStatsTab();
-      case "history":
-        return renderHistoryTab();
       case "settings":
         return renderSettingsTab();
       default:
@@ -1656,6 +1456,76 @@ export const GroupDetailsScreen: React.FC = () => {
       onCancel={() => setShowLeaveModal(false)}
       onConfirm={handleLeaveGroup}
     />
+  );
+
+  const renderLastAdminWarningModal = () => (
+    <Modal
+      visible={showLastAdminWarningModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowLastAdminWarningModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <AnimatedView
+          style={styles.modalContainer}
+          entering={FadeInDown.duration(250).springify()}
+        >
+          <LinearGradient
+            colors={colors.background.gradient.app}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.modalGradient}
+          >
+            <View style={styles.modalHeader}>
+              <View
+                style={[
+                  styles.modalIconContainer,
+                  styles.modalIconContainerInfo,
+                ]}
+              >
+                <LinearGradient
+                  colors={[colors.ui.warning, colors.ui.error]}
+                  style={styles.modalIconGradient}
+                >
+                  <Ionicons
+                    name="shield-outline"
+                    size={28}
+                    color={colors.text.light}
+                  />
+                </LinearGradient>
+              </View>
+              <Text style={styles.modalTitle}>Dernier administrateur</Text>
+              <Text style={styles.modalDescription}>
+                Un autre membre sera promu administrateur automatiquement.
+                Continuer ?
+              </Text>
+            </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={() => setShowLastAdminWarningModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalButtonCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButtonConfirm,
+                  { backgroundColor: colors.ui.error },
+                ]}
+                onPress={() => {
+                  setShowLastAdminWarningModal(false);
+                  setShowLeaveModal(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.modalButtonConfirmText}>Quitter</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </AnimatedView>
+      </View>
+    </Modal>
   );
 
   const renderDeleteModal = () => (
@@ -1975,11 +1845,13 @@ export const GroupDetailsScreen: React.FC = () => {
                   {member.display_name}
                 </Text>
                 <Text style={styles.modalDescription}>
-                  {member.role === "admin"
-                    ? "Administrateur"
-                    : member.role === "moderator"
-                      ? "Modérateur"
-                      : "Membre"}
+                  {member.role === "owner"
+                    ? "Propriétaire"
+                    : member.role === "admin"
+                      ? "Administrateur"
+                      : member.role === "moderator"
+                        ? "Modérateur"
+                        : "Membre"}
                 </Text>
               </View>
 
@@ -1991,7 +1863,8 @@ export const GroupDetailsScreen: React.FC = () => {
                 />
               )}
 
-              {member.role !== "admin" && !isSelf && (
+              {/* Promouvoir : owner uniquement, sur les membres simples */}
+              {isOwner && member.role === "member" && !isSelf && (
                 <TouchableOpacity
                   style={styles.memberActionRow}
                   onPress={() => handleChangeRole(member, "admin")}
@@ -2009,7 +1882,8 @@ export const GroupDetailsScreen: React.FC = () => {
                 </TouchableOpacity>
               )}
 
-              {member.role === "admin" && !isSelf && (
+              {/* Rétrograder : owner uniquement, sur les admins */}
+              {isOwner && member.role === "admin" && !isSelf && (
                 <TouchableOpacity
                   style={styles.memberActionRow}
                   onPress={() => handleChangeRole(member, "member")}
@@ -2027,7 +1901,11 @@ export const GroupDetailsScreen: React.FC = () => {
                 </TouchableOpacity>
               )}
 
-              {!isSelf && (
+              {/* Retirer : owner sur admin+membre, admin sur membre uniquement */}
+              {!isSelf &&
+                (isOwner
+                  ? member.role !== "owner"
+                  : isAdmin && member.role === "member") && (
                 <TouchableOpacity
                   style={styles.memberActionRow}
                   onPress={() => handleRemoveMember(member)}
@@ -2160,6 +2038,7 @@ export const GroupDetailsScreen: React.FC = () => {
           <View style={styles.contentContainer}>{renderContent()}</View>
         </ScrollView>
         {renderLeaveModal()}
+        {renderLastAdminWarningModal()}
         {renderDeleteModal()}
         {renderTransferAdminModal()}
         {renderAddMemberModal()}
@@ -2372,73 +2251,6 @@ const styles = StyleSheet.create({
   memberJoined: {
     fontSize: typography.fontSize.xs,
   },
-  statsCard: {
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  statItem: {
-    flex: 1,
-    minWidth: "30%",
-    padding: 20,
-    borderRadius: 16,
-    alignItems: "center",
-  },
-  statIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  statValue: {
-    fontSize: typography.fontSize.xxl,
-    fontWeight: typography.fontWeight.bold,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: typography.fontSize.sm,
-    textAlign: "center",
-  },
-  historyCard: {
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  logItem: {
-    flexDirection: "row",
-    padding: 16,
-    borderBottomWidth: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-  },
-  logIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  logContent: {
-    flex: 1,
-  },
-  logAction: {
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semiBold,
-    marginBottom: 4,
-  },
-  logActor: {
-    fontSize: typography.fontSize.sm,
-    marginBottom: 4,
-  },
-  logTime: {
-    fontSize: typography.fontSize.xs,
-  },
   settingsCard: {
     borderRadius: 16,
     overflow: "hidden",
@@ -2620,6 +2432,19 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     fontWeight: typography.fontWeight.semiBold,
     color: withOpacity(colors.text.light, 0.9),
+    letterSpacing: 0.3,
+  },
+  modalButtonConfirm: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalButtonConfirmText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.text.light,
     letterSpacing: 0.3,
   },
   membersList: {

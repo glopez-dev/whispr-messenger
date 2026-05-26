@@ -12,7 +12,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   FlatList,
   ImageBackground,
   RefreshControl,
@@ -67,29 +66,25 @@ const SwipeableArchivedItem: React.FC<SwipeableArchivedItemProps> = ({
   index,
 }) => {
   const swipeRef = useRef<SwipeableMethods | null>(null);
-  const [isSwiping, setIsSwiping] = useState(false);
 
   const renderRightActions = () => {
-    if (!isSwiping) return <View />;
     return (
       <View style={styles.swipeActions}>
-        <Animated.View>
-          <TouchableOpacity
-            style={[styles.swipeButton, styles.unarchiveButton]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              onUnarchive(conversation.id);
-              swipeRef.current?.close();
-            }}
-            accessibilityLabel="Désarchiver"
-          >
-            <Ionicons
-              name="arrow-up-circle-outline"
-              size={24}
-              color={colors.text.light}
-            />
-          </TouchableOpacity>
-        </Animated.View>
+        <TouchableOpacity
+          style={[styles.swipeButton, styles.unarchiveButton]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onUnarchive(conversation.id);
+            swipeRef.current?.close();
+          }}
+          accessibilityLabel="Désarchiver"
+        >
+          <Ionicons
+            name="arrow-up-circle-outline"
+            size={24}
+            color={colors.text.light}
+          />
+        </TouchableOpacity>
       </View>
     );
   };
@@ -101,15 +96,11 @@ const SwipeableArchivedItem: React.FC<SwipeableArchivedItemProps> = ({
       rightThreshold={40}
       friction={2}
       overshootRight={false}
-      onSwipeableOpenStartDrag={() => setIsSwiping(true)}
       onSwipeableWillOpen={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }}
-      onSwipeableClose={() => setIsSwiping(false)}
     >
-      <View
-        style={[styles.itemWrapper, isSwiping && styles.itemWrapperSwiping]}
-      >
+      <View style={styles.itemWrapper}>
         <ConversationItem
           conversation={conversation}
           onPress={onPress}
@@ -138,6 +129,7 @@ export const ArchivedConversationsScreen: React.FC = () => {
   const unarchiveConversation = useConversationsStore(
     (s) => s.unarchiveConversation,
   );
+  const fetchConversations = useConversationsStore((s) => s.fetchConversations);
 
   const [refreshing, setRefreshing] = useState(false);
   const [screenRefreshKey, setScreenRefreshKey] = useState(0);
@@ -169,6 +161,8 @@ export const ArchivedConversationsScreen: React.FC = () => {
     async (conversationId: string) => {
       try {
         await unarchiveConversation(conversationId);
+        // re-fetch pour garantir la sync multi-device
+        fetchConversations();
         setToast({
           visible: true,
           message: "Conversation désarchivée",
@@ -182,7 +176,7 @@ export const ArchivedConversationsScreen: React.FC = () => {
         });
       }
     },
-    [unarchiveConversation],
+    [unarchiveConversation, fetchConversations],
   );
 
   const onRefresh = useCallback(async () => {
@@ -427,10 +421,6 @@ const styles = StyleSheet.create({
   itemWrapper: {
     backgroundColor: "transparent",
     overflow: "hidden",
-  },
-  itemWrapperSwiping: {
-    backgroundColor: "#1A1F3A",
-    borderRadius: 16,
   },
   swipeActions: {
     flexDirection: "row",
