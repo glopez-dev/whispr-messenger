@@ -2,6 +2,7 @@ import { AuthService } from "./AuthService";
 import { TokenService } from "./TokenService";
 import { DeviceService } from "./DeviceService";
 import { getApiBaseUrl } from "./apiBase";
+import type { TokenPair } from "../types/auth";
 
 type ApiError = Error & { status?: number; body?: unknown };
 
@@ -129,10 +130,14 @@ export const TwoFactorAuthService = {
 
 export interface DeviceInfo {
   id: string;
-  name: string;
-  platform: string;
-  last_active: string;
-  is_current: boolean;
+  deviceName: string;
+  deviceType: string;
+  model?: string;
+  osVersion?: string;
+  appVersion?: string;
+  lastActive: Date | string;
+  isVerified: boolean;
+  isActive: boolean;
 }
 
 export const DeviceManagerService = {
@@ -153,6 +158,82 @@ export const DeviceManagerService = {
     await apiFetch<void>(`/device/${encodeURIComponent(deviceId)}`, {
       method: "DELETE",
     });
+  },
+
+  /**
+   * POST /auth/qr-code/scan
+   * Exchange a QR challenge JWT (scanned from an authenticated device) for tokens.
+   * Called from an unauthenticated device — no access token required.
+   */
+  async scanQRChallenge(challenge: string): Promise<TokenPair> {
+    let authenticatedDeviceId = "";
+    const parts = challenge.split(".");
+    if (parts.length === 3) {
+      try {
+        const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64 + "==".slice(0, (4 - (base64.length % 4)) % 4);
+        const payload = JSON.parse(atob(padded)) as {
+          deviceId?: string;
+          sub?: string;
+        };
+        authenticatedDeviceId = payload.deviceId ?? payload.sub ?? "";
+      } catch {
+        // malformed JWT payload — proceed without authenticatedDeviceId
+      }
+    }
+
+    const { deviceName, deviceType } = await DeviceService.getDeviceInfo();
+    const raw = await apiFetch<{
+      access_token?: string;
+      refresh_token?: string;
+      accessToken?: string;
+      refreshToken?: string;
+    }>("/qr-code/scan", {
+      method: "POST",
+      body: JSON.stringify({
+        challenge,
+        authenticatedDeviceId,
+        deviceName,
+        deviceType,
+      }),
+    });
+    return {
+      accessToken: raw.access_token ?? raw.accessToken ?? "",
+      refreshToken: raw.refresh_token ?? raw.refreshToken ?? "",
+    };
+  },
+
+  async generateQRChallenge(deviceId: string): Promise<string> {
+    const token = await TokenService.getAccessToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "text/plain, application/json",
+      "x-device-type": "mobile",
+    };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch(
+      `${getAuthBaseUrl()}/qr-code/challenge/${encodeURIComponent(deviceId)}`,
+      { method: "POST", headers },
+    );
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      const err = new Error(
+        (body as { message?: string })?.message ?? `HTTP ${response.status}`,
+      ) as ApiError;
+      err.status = response.status;
+      err.body = body;
+      throw err;
+    }
+
+    const text = await response.text();
+    // NestJS sends string primitives as plain text — handle both formats
+    try {
+      return JSON.parse(text) as string;
+    } catch {
+      return text;
+    }
   },
 };
 
@@ -177,7 +258,72 @@ export interface SignalHealthStatus {
   needs_replenishment: boolean;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRateLimitError(err: unknown): boolean {
+  const e = err as { status?: number; message?: string };
+  if (e?.status === 429) return true;
+  if (typeof e?.message === "string" && /throttlerexception/i.test(e.message))
+    return true;
+  return false;
+}
+
+async function withRetry<T>(
+  run: () => Promise<T>,
+  maxAttempts = 3,
+): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await run();
+    } catch (err) {
+      attempt += 1;
+      if (!isRateLimitError(err) || attempt >= maxAttempts) throw err;
+      const backoff = 250 * Math.pow(2, attempt - 1);
+      await sleep(backoff);
+    }
+  }
+}
+
+type CacheEntry<T> = {
+  expiresAt: number;
+  value?: T;
+  inFlight?: Promise<T>;
+};
+
+const devicesCache = new Map<
+  string,
+  CacheEntry<{ userId: string; deviceIds: string[] }>
+>();
+const bundleCache = new Map<string, CacheEntry<SignalKeyBundle>>();
+
 export const SignalKeysService = {
+  async listDevices(
+    userId: string,
+  ): Promise<{ userId: string; deviceIds: string[] }> {
+    const cacheKey = userId;
+    const cached = devicesCache.get(cacheKey);
+    const now = Date.now();
+    if (cached?.value && cached.expiresAt > now) return cached.value;
+    if (cached?.inFlight) return cached.inFlight;
+
+    const inFlight = withRetry(() =>
+      apiFetch<{ userId: string; deviceIds: string[] }>(
+        `/signal/keys/${encodeURIComponent(userId)}/devices`,
+      ),
+    );
+    devicesCache.set(cacheKey, { expiresAt: now + 15_000, inFlight });
+    try {
+      const value = await inFlight;
+      devicesCache.set(cacheKey, { expiresAt: now + 15_000, value });
+      return value;
+    } catch (err) {
+      devicesCache.delete(cacheKey);
+      throw err;
+    }
+  },
   /**
    * GET /auth/signal/keys/:userId/devices/:deviceId
    * Fetch the key bundle for a specific user+device (for E2E session init).
@@ -186,9 +332,58 @@ export const SignalKeysService = {
     userId: string,
     deviceId: string,
   ): Promise<SignalKeyBundle> {
-    return apiFetch<SignalKeyBundle>(
-      `/signal/keys/${encodeURIComponent(userId)}/devices/${encodeURIComponent(deviceId)}`,
-    );
+    const cacheKey = `${userId}:${deviceId}`;
+    const cached = bundleCache.get(cacheKey);
+    const now = Date.now();
+    if (cached?.value && cached.expiresAt > now) return cached.value;
+    if (cached?.inFlight) return cached.inFlight;
+
+    const inFlight = withRetry(async () => {
+      const raw = await apiFetch<any>(
+        `/signal/keys/${encodeURIComponent(userId)}/devices/${encodeURIComponent(deviceId)}`,
+      );
+
+      const identity_key =
+        raw?.identity_key ?? raw?.identityKey ?? raw?.identityKey?.publicKey;
+
+      const signed_prekey =
+        raw?.signed_prekey ??
+        (raw?.signedPreKey
+          ? {
+              key_id: raw.signedPreKey.keyId,
+              public_key: raw.signedPreKey.publicKey,
+              signature: raw.signedPreKey.signature,
+            }
+          : null);
+
+      const one_time_prekeys =
+        raw?.one_time_prekeys ??
+        (raw?.preKey
+          ? [{ key_id: raw.preKey.keyId, public_key: raw.preKey.publicKey }]
+          : []);
+
+      if (typeof identity_key !== "string" || identity_key.length === 0) {
+        throw new Error("INVALID_SIGNAL_BUNDLE");
+      }
+      if (!signed_prekey) {
+        throw new Error("INVALID_SIGNAL_BUNDLE");
+      }
+      return {
+        identity_key,
+        signed_prekey,
+        one_time_prekeys,
+      };
+    });
+
+    bundleCache.set(cacheKey, { expiresAt: now + 30_000, inFlight });
+    try {
+      const value = await inFlight;
+      bundleCache.set(cacheKey, { expiresAt: now + 30_000, value });
+      return value;
+    } catch (err) {
+      bundleCache.delete(cacheKey);
+      throw err;
+    }
   },
 
   /**
@@ -229,10 +424,30 @@ export const SignalKeysService = {
   },
 
   /**
-   * GET /auth/signal/health
-   * Check key health (how many prekeys remain, rotation needed, etc.).
+   * GET /auth/signal/keys/:userId/devices/:deviceId/status
+   * Check key health for the current device (how many prekeys remain, rotation needed, etc.).
    */
-  async getHealth(): Promise<SignalHealthStatus> {
-    return apiFetch<SignalHealthStatus>("/signal/health");
+  async getDeviceHealth(
+    userId: string,
+    deviceId: string,
+  ): Promise<SignalHealthStatus> {
+    const data = await withRetry(() =>
+      apiFetch<any>(
+        `/signal/keys/${encodeURIComponent(userId)}/devices/${encodeURIComponent(deviceId)}/status`,
+      ),
+    );
+    return {
+      prekeys_remaining: data.availablePreKeys,
+      signed_prekey_age_days: 0, // Not provided by this endpoint but not critical for replenish check
+      needs_replenishment: data.isLow || !data.hasActiveSignedPreKey,
+    };
+  },
+
+  /**
+   * GET /auth/signal/health
+   * GLOBAL health check (admin only typically).
+   */
+  async getGlobalHealth(): Promise<any> {
+    return apiFetch<any>("/signal/health");
   },
 };

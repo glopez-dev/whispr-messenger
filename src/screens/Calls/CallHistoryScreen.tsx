@@ -1,4 +1,41 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
+import {
+  AttachStep,
+  SpotlightTourProvider,
+  type TourStep,
+} from "react-native-spotlight-tour";
+import { TourTooltip } from "../../components/Tour/TourTooltip";
+import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+
+const CALLS_STEPS_COUNT = 2;
+
+const CALLS_TOUR_STEPS: TourStep[] = [
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Centre d'appels"
+        description="Retrouve ici tous tes appels audio et vidéo passés avec leur statut."
+        total={CALLS_STEPS_COUNT}
+      />
+    ),
+  },
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Statistiques"
+        description="Un aperçu de tes appels : total, manqués et connectés en un coup d'œil."
+        total={CALLS_STEPS_COUNT}
+      />
+    ),
+  },
+];
 import { Text, FlatList, StyleSheet, RefreshControl, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -60,204 +97,238 @@ export const CallHistoryScreen: React.FC = () => {
   }, [load]);
 
   return (
-    <FlatList
-      data={calls}
-      keyExtractor={(c) => c.id}
-      refreshControl={
-        <RefreshControl
-          refreshing={loading}
-          onRefresh={load}
-          tintColor={colors.text.light}
-        />
-      }
-      contentContainerStyle={{
-        paddingHorizontal: 16,
-        paddingTop: 8,
-        paddingBottom: insets.bottom + FLOATING_TAB_BAR_RESERVED_SPACE + 16,
-      }}
-      ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-      ListHeaderComponent={
-        <View style={styles.headerBlock}>
-          <BlurView intensity={45} tint="dark" style={styles.topHeaderBlur}>
-            <View style={styles.topHeaderCard}>
-              <View style={styles.topHeaderBadge}>
-                <Ionicons
-                  name="call-outline"
-                  size={14}
-                  color={colors.primary.main}
-                />
-                <Text style={styles.topHeaderBadgeText}>Centre d'appels</Text>
-              </View>
-              <Text style={styles.topHeaderTitle}>Appels</Text>
-              <Text style={styles.topHeaderSubtitle}>
-                Historique audio et vidéo.
-              </Text>
-            </View>
-          </BlurView>
-          <BlurView intensity={45} tint="dark" style={styles.heroBlur}>
-            <View style={styles.heroCard}>
-              <View style={styles.heroBadge}>
-                <Ionicons
-                  name="sparkles-outline"
-                  size={14}
-                  color={colors.primary.main}
-                />
-                <Text style={styles.heroBadgeText}>Historique récent</Text>
-              </View>
-              <Text style={styles.heroTitle}>Vos appels</Text>
-              <Text style={styles.heroSubtitle}>
-                Retrouvez les appels récents avec un aperçu rapide des statuts
-                et durées.
-              </Text>
-              <View style={styles.statsRow}>
-                <StatPill
-                  icon="call-outline"
-                  label="Total"
-                  value={String(stats.total)}
-                />
-                <StatPill
-                  icon="checkmark-done-outline"
-                  label="Terminés"
-                  value={String(stats.connected)}
-                />
-                <StatPill
-                  icon="alert-circle-outline"
-                  label="Manqués"
-                  value={String(stats.missed)}
-                />
-              </View>
-            </View>
-          </BlurView>
-        </View>
-      }
-      renderItem={({ item }) => {
-        const meta = getStatusMeta(item.status);
-        return (
-          <BlurView intensity={35} tint="dark" style={styles.cardBlur}>
-            <View style={styles.card}>
-              <View style={styles.avatarBlock}>
-                <Avatar uri={item.avatarUrl} name={item.title} size={54} />
-                <View
-                  style={[
-                    styles.typeFloatingBadge,
-                    {
-                      backgroundColor:
-                        item.type === "video"
-                          ? withOpacity(colors.secondary.main, 0.9)
-                          : withOpacity(colors.primary.main, 0.88),
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      item.type === "video"
-                        ? "videocam-outline"
-                        : "call-outline"
-                    }
-                    size={12}
-                    color={colors.text.light}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.cardBody}>
-                <View style={styles.titleRow}>
-                  <Text style={styles.title} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: meta.backgroundColor },
-                    ]}
+    <SpotlightTourProvider
+      steps={CALLS_TOUR_STEPS}
+      overlayColor="#0B1124"
+      overlayOpacity={0.82}
+      placement="bottom"
+      offset={10}
+    >
+      {() => (
+        <>
+          <TourAutoStart />
+          <FlatList
+            data={calls}
+            keyExtractor={(c) => c.id}
+            refreshControl={
+              <RefreshControl
+                refreshing={loading}
+                onRefresh={load}
+                tintColor={colors.text.light}
+              />
+            }
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 8,
+              paddingBottom:
+                insets.bottom + FLOATING_TAB_BAR_RESERVED_SPACE + 16,
+            }}
+            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+            ListHeaderComponent={
+              <View style={styles.headerBlock}>
+                <AttachStep index={0} fill={Platform.OS !== "web"}>
+                  <BlurView
+                    intensity={45}
+                    tint="dark"
+                    style={styles.topHeaderBlur}
                   >
-                    <Ionicons
-                      name={meta.icon}
-                      size={12}
-                      color={meta.textColor}
-                    />
-                    <Text
-                      style={[
-                        styles.statusBadgeText,
-                        { color: meta.textColor },
-                      ]}
-                    >
-                      {meta.label}
-                    </Text>
-                  </View>
-                </View>
-
-                {!!item.subtitle && (
-                  <Text style={styles.subtitle} numberOfLines={1}>
-                    {item.subtitle}
-                  </Text>
-                )}
-
-                <Text style={styles.dateText}>
-                  {formatDate(item.started_at)}
-                </Text>
-
-                <View style={styles.metaInfoRow}>
-                  <View style={styles.metaInfoPill}>
-                    <Ionicons
-                      name={
-                        item.type === "video"
-                          ? "videocam-outline"
-                          : "call-outline"
-                      }
-                      size={13}
-                      color="rgba(255,255,255,0.7)"
-                    />
-                    <Text style={styles.metaText}>
-                      {item.type === "video" ? "Appel vidéo" : "Appel audio"}
-                    </Text>
-                  </View>
-                  <View style={styles.metaInfoPill}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={13}
-                      color="rgba(255,255,255,0.7)"
-                    />
-                    <Text style={styles.metaText}>
-                      {relativeDayLabel(item.started_at)}
-                    </Text>
-                  </View>
-                  {item.duration_seconds != null && (
-                    <View style={styles.metaInfoPill}>
-                      <Ionicons
-                        name="time-outline"
-                        size={13}
-                        color="rgba(255,255,255,0.7)"
-                      />
-                      <Text style={styles.metaText}>
-                        Durée {formatDuration(item.duration_seconds)}
+                    <View style={styles.topHeaderCard}>
+                      <View style={styles.topHeaderBadge}>
+                        <Ionicons
+                          name="call-outline"
+                          size={14}
+                          color={colors.primary.main}
+                        />
+                        <Text style={styles.topHeaderBadgeText}>
+                          Centre d'appels
+                        </Text>
+                      </View>
+                      <Text style={styles.topHeaderTitle}>Appels</Text>
+                      <Text style={styles.topHeaderSubtitle}>
+                        Historique audio et vidéo.
                       </Text>
                     </View>
-                  )}
-                </View>
+                  </BlurView>
+                </AttachStep>
+                <AttachStep index={1} fill={Platform.OS !== "web"}>
+                  <BlurView intensity={45} tint="dark" style={styles.heroBlur}>
+                    <View style={styles.heroCard}>
+                      <View style={styles.heroBadge}>
+                        <Ionicons
+                          name="sparkles-outline"
+                          size={14}
+                          color={colors.primary.main}
+                        />
+                        <Text style={styles.heroBadgeText}>
+                          Historique récent
+                        </Text>
+                      </View>
+                      <Text style={styles.heroTitle}>Vos appels</Text>
+                      <Text style={styles.heroSubtitle}>
+                        Retrouvez les appels récents avec un aperçu rapide des
+                        statuts et durées.
+                      </Text>
+                      <View style={styles.statsRow}>
+                        <StatPill
+                          icon="call-outline"
+                          label="Total"
+                          value={String(stats.total)}
+                        />
+                        <StatPill
+                          icon="checkmark-done-outline"
+                          label="Terminés"
+                          value={String(stats.connected)}
+                        />
+                        <StatPill
+                          icon="alert-circle-outline"
+                          label="Manqués"
+                          value={String(stats.missed)}
+                        />
+                      </View>
+                    </View>
+                  </BlurView>
+                </AttachStep>
               </View>
-            </View>
-          </BlurView>
-        );
-      }}
-      ListEmptyComponent={
-        <BlurView intensity={35} tint="dark" style={styles.emptyBlur}>
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name="call-outline"
-                size={24}
-                color="rgba(255,255,255,0.82)"
-              />
-            </View>
-            <Text style={styles.emptyTitle}>Aucun appel pour le moment</Text>
-            <Text style={styles.emptySubtitle}>
-              Vos appels audio et vidéo apparaîtront ici.
-            </Text>
-          </View>
-        </BlurView>
-      }
-    />
+            }
+            renderItem={({ item }) => {
+              const meta = getStatusMeta(item.status);
+              return (
+                <BlurView intensity={35} tint="dark" style={styles.cardBlur}>
+                  <View style={styles.card}>
+                    <View style={styles.avatarBlock}>
+                      <Avatar
+                        uri={item.avatarUrl}
+                        name={item.title}
+                        size={54}
+                      />
+                      <View
+                        style={[
+                          styles.typeFloatingBadge,
+                          {
+                            backgroundColor:
+                              item.type === "video"
+                                ? withOpacity(colors.secondary.main, 0.9)
+                                : withOpacity(colors.primary.main, 0.88),
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={
+                            item.type === "video"
+                              ? "videocam-outline"
+                              : "call-outline"
+                          }
+                          size={12}
+                          color={colors.text.light}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.cardBody}>
+                      <View style={styles.titleRow}>
+                        <Text style={styles.title} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            { backgroundColor: meta.backgroundColor },
+                          ]}
+                        >
+                          <Ionicons
+                            name={meta.icon}
+                            size={12}
+                            color={meta.textColor}
+                          />
+                          <Text
+                            style={[
+                              styles.statusBadgeText,
+                              { color: meta.textColor },
+                            ]}
+                          >
+                            {meta.label}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {!!item.subtitle && (
+                        <Text style={styles.subtitle} numberOfLines={1}>
+                          {item.subtitle}
+                        </Text>
+                      )}
+
+                      <Text style={styles.dateText}>
+                        {formatDate(item.started_at)}
+                      </Text>
+
+                      <View style={styles.metaInfoRow}>
+                        <View style={styles.metaInfoPill}>
+                          <Ionicons
+                            name={
+                              item.type === "video"
+                                ? "videocam-outline"
+                                : "call-outline"
+                            }
+                            size={13}
+                            color="rgba(255,255,255,0.7)"
+                          />
+                          <Text style={styles.metaText}>
+                            {item.type === "video"
+                              ? "Appel vidéo"
+                              : "Appel audio"}
+                          </Text>
+                        </View>
+                        <View style={styles.metaInfoPill}>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={13}
+                            color="rgba(255,255,255,0.7)"
+                          />
+                          <Text style={styles.metaText}>
+                            {relativeDayLabel(item.started_at)}
+                          </Text>
+                        </View>
+                        {item.duration_seconds != null && (
+                          <View style={styles.metaInfoPill}>
+                            <Ionicons
+                              name="time-outline"
+                              size={13}
+                              color="rgba(255,255,255,0.7)"
+                            />
+                            <Text style={styles.metaText}>
+                              Durée {formatDuration(item.duration_seconds)}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </BlurView>
+              );
+            }}
+            ListEmptyComponent={
+              <BlurView intensity={35} tint="dark" style={styles.emptyBlur}>
+                <View style={styles.emptyCard}>
+                  <View style={styles.emptyIcon}>
+                    <Ionicons
+                      name="call-outline"
+                      size={24}
+                      color="rgba(255,255,255,0.82)"
+                    />
+                  </View>
+                  <Text style={styles.emptyTitle}>
+                    Aucun appel pour le moment
+                  </Text>
+                  <Text style={styles.emptySubtitle}>
+                    Vos appels audio et vidéo apparaîtront ici.
+                  </Text>
+                </View>
+              </BlurView>
+            }
+          />
+        </>
+      )}
+    </SpotlightTourProvider>
   );
 };
 

@@ -22,6 +22,7 @@ import {
   uriNeedsAuthResolution,
   useResolvedMediaUrl,
 } from "../../hooks/useResolvedMediaUrl";
+import { useE2EEMedia } from "../../hooks/useE2EEMedia";
 import { MediaService } from "../../services/MediaService";
 
 let AudioModule: any = null;
@@ -46,6 +47,10 @@ interface AudioMessageProps {
   mediaId?: string;
   duration?: number; // en secondes, depuis les metadata
   isSent?: boolean;
+  e2ee?: {
+    key: string;
+    nonce: string;
+  };
 }
 
 function isStableMediaId(value?: string): boolean {
@@ -80,6 +85,7 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({
   mediaId,
   duration,
   isSent = false,
+  e2ee,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(0);
@@ -104,9 +110,11 @@ export const AudioMessage: React.FC<AudioMessageProps> = ({
   const { resolvedUri: streamedResolvedUri } = useResolvedMediaUrl(
     shouldCacheNativeAudio ? undefined : uri,
   );
-  const resolvedUri = shouldCacheNativeAudio
+  const baseResolvedUri = shouldCacheNativeAudio
     ? nativeAudioUri
     : streamedResolvedUri;
+
+  const { decryptedUri: resolvedUri } = useE2EEMedia(baseResolvedUri, e2ee);
 
   useEffect(() => {
     if (!shouldCacheNativeAudio || !mediaId) {

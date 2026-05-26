@@ -703,6 +703,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.dejaCompte": "Déjà un compte ?",
     "auth.pasEncoreCompte": "Pas encore de compte ?",
     "auth.tagline": "Sécurisé. Privé. Simple.",
+    "auth.premiumCta": "Découvrir nos offres Premium",
     "auth.smsCode": "Nous vous enverrons un code de vérification par SMS",
     "auth.searchCountry": "Rechercher un pays...",
     "auth.noCountryFound": "Aucun pays trouvé",
@@ -760,6 +761,21 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.cancel": "Annuler",
     "auth.skip": "Passer",
     "auth.linkedAccount": "Compte associé :",
+    "auth.loginViaQR": "Se connecter via QR code",
+    "auth.yourRecoveryCodes": "Vos codes de récupération",
+    "auth.recoveryCodesWarning":
+      "Ces codes ne seront affichés qu'une seule fois. Conservez-les dans un endroit sûr (gestionnaire de mots de passe, impression papier).",
+    "auth.copyAllCodes": "Copier tous les codes",
+    "auth.codeCopied": "Codes copiés !",
+    "auth.iSavedMyCodes": "J'ai sauvegardé mes codes en lieu sûr",
+    "auth.continueToApp": "Continuer",
+    "auth.useRecoveryCode": "Vous n'avez plus accès à ce numéro ?",
+    "auth.enterRecoveryCode": "Entrez votre code de récupération",
+    "auth.recoveryCodePlaceholder": "XXXX-XXXX-XXXX",
+    "auth.redeemCode": "Utiliser ce code",
+    "auth.invalidRecoveryCode": "Code invalide ou déjà utilisé",
+    "auth.recoveryCodeRateLimit": "Trop de tentatives. Réessayez plus tard.",
+    "auth.recoveryCodeSuccess": "Compte récupéré avec succès",
 
     // Profile
     "profile.title": "Profil",
@@ -877,11 +893,32 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "security.scanQRCode": "Scanner le code QR",
     "security.qrScannerComingSoon":
       "Le scanner QR sera disponible prochainement",
+    "security.qrInstructions": "Scannez ce code avec l'appareil à connecter",
+    "security.qrExpiresIn": "Expire dans",
+    "security.qrRefresh": "Actualiser",
+    "security.qrExpired": "QR code expiré",
+    "security.qrGenerateError": "Impossible de générer le QR code",
     "security.createdOn": "Créé le",
     "security.infoMessage":
       "Ces clés permettent de vérifier l'identité de vos appareils et de sécuriser vos conversations.",
     "security.showSecurityKeys": "Afficher les clés de sécurité",
     "security.hideSecurityKeys": "Masquer les clés de sécurité",
+    "security.noDevices": "Aucun appareil connecté",
+    "security.loadDevicesError": "Impossible de charger les appareils",
+    "security.disconnectError": "Impossible de déconnecter cet appareil",
+    "security.now": "Maintenant",
+    "security.minutesAgo": "Il y a",
+    "security.hoursAgo": "Il y a",
+    "security.daysAgo": "Il y a",
+    "biometric.lockSubtitle": "Authentifiez-vous pour continuer",
+    "biometric.unlockButton": "Déverrouiller",
+    "biometric.promptMessage": "Déverrouillez Whispr",
+    "biometric.cancelLabel": "Annuler",
+    "biometric.notAvailable":
+      "Authentification biométrique non disponible sur cet appareil",
+    "biometric.notEnrolled":
+      "Aucune empreinte ou Face ID configuré dans les réglages du système",
+    "biometric.enableConfirm": "Confirmer l'activation",
 
     // Two Factor Authentication
     "twoFactor.title": "Authentification à deux facteurs",
@@ -996,6 +1033,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "common.next": "Suivant",
     "common.retry": "Réessayer",
     "common.optional": "optionnel",
+    "common.soon": "Bientôt",
     "common.copyError": "Impossible de copier dans le presse-papiers.",
 
     // Confirmation forte (typed-confirm)
@@ -1039,6 +1077,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.dejaCompte": "Already have an account?",
     "auth.pasEncoreCompte": "No account yet?",
     "auth.tagline": "Secure. Private. Simple.",
+    "auth.premiumCta": "Discover our Premium plans",
     "auth.smsCode": "We will send you a verification code by SMS",
     "auth.searchCountry": "Search for a country...",
     "auth.noCountryFound": "No country found",
@@ -1092,6 +1131,21 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.cancel": "Cancel",
     "auth.skip": "Skip",
     "auth.linkedAccount": "Linked account:",
+    "auth.loginViaQR": "Sign in with QR code",
+    "auth.yourRecoveryCodes": "Your recovery codes",
+    "auth.recoveryCodesWarning":
+      "These codes will only be shown once. Keep them in a safe place (password manager, printed copy).",
+    "auth.copyAllCodes": "Copy all codes",
+    "auth.codeCopied": "Codes copied!",
+    "auth.iSavedMyCodes": "I've saved my codes in a safe place",
+    "auth.continueToApp": "Continue",
+    "auth.useRecoveryCode": "You no longer have access to this number?",
+    "auth.enterRecoveryCode": "Enter your recovery code",
+    "auth.recoveryCodePlaceholder": "XXXX-XXXX-XXXX",
+    "auth.redeemCode": "Use this code",
+    "auth.invalidRecoveryCode": "Invalid or already used code",
+    "auth.recoveryCodeRateLimit": "Too many attempts. Please try again later.",
+    "auth.recoveryCodeSuccess": "Account successfully recovered",
 
     // Profile
     "profile.title": "Profile",
@@ -1206,11 +1260,33 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "security.codeCopied": "Code copied to clipboard",
     "security.scanQRCode": "Scan QR Code",
     "security.qrScannerComingSoon": "QR scanner will be available soon",
+    "security.qrInstructions":
+      "Scan this code with the device you want to connect",
+    "security.qrExpiresIn": "Expires in",
+    "security.qrRefresh": "Refresh",
+    "security.qrExpired": "QR code expired",
+    "security.qrGenerateError": "Unable to generate QR code",
     "security.createdOn": "Created on",
     "security.infoMessage":
       "These keys allow you to verify your devices' identity and secure your conversations.",
     "security.showSecurityKeys": "Show security keys",
     "security.hideSecurityKeys": "Hide security keys",
+    "security.noDevices": "No devices connected",
+    "security.loadDevicesError": "Unable to load devices",
+    "security.disconnectError": "Unable to disconnect this device",
+    "security.now": "Just now",
+    "security.minutesAgo": "ago",
+    "security.hoursAgo": "ago",
+    "security.daysAgo": "ago",
+    "biometric.lockSubtitle": "Authenticate to continue",
+    "biometric.unlockButton": "Unlock",
+    "biometric.promptMessage": "Unlock Whispr",
+    "biometric.cancelLabel": "Cancel",
+    "biometric.notAvailable":
+      "Biometric authentication is not available on this device",
+    "biometric.notEnrolled":
+      "No fingerprint or Face ID configured in system settings",
+    "biometric.enableConfirm": "Confirm activation",
 
     // Two Factor Authentication
     "twoFactor.title": "Two-Factor Authentication",
@@ -1320,6 +1396,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "common.next": "Next",
     "common.retry": "Retry",
     "common.optional": "optional",
+    "common.soon": "Soon",
     "common.copyError": "Unable to copy to clipboard.",
 
     // Strong confirmation (typed-confirm)
@@ -1452,6 +1529,11 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
   const flushPendingRemoteVisualSync = useCallback(async () => {
     const pendingSettings = pendingRemoteVisualSyncRef.current;
     if (!pendingSettings) {
+      return;
+    }
+
+    const token = await TokenService.getAccessToken().catch(() => null);
+    if (!token) {
       return;
     }
 

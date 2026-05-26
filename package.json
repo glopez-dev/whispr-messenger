@@ -16,16 +16,19 @@
     "type-check": "tsc --noEmit",
     "e2e:web": "playwright test",
     "e2e:web:install": "playwright install --with-deps chromium webkit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@livekit/react-native": "^2.10.1",
     "@livekit/react-native-webrtc": "^144.0.0",
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/netinfo": "^12.0.1",
     "@react-native-masked-view/masked-view": "^0.3.2",
     "@react-navigation/native": "^7.1.17",
     "@react-navigation/stack": "^7.4.8",
+    "@tanstack/react-query": "^5.100.10",
     "@tensorflow/tfjs": "^4.22.0",
     "@types/jpeg-js": "^0.3.0",
     "@yudiel/react-qr-scanner": "^2.5.1",
@@ -47,6 +50,7 @@
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "^17.0.8",
     "expo-linear-gradient": "^15.0.7",
+    "expo-local-authentication": "~17.0.8",
     "expo-notifications": "~0.32.12",
     "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
@@ -57,6 +61,7 @@
     "livekit-client": "^2.18.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-hook-form": "^7.76.0",
     "react-native": "0.81.5",
     "react-native-call-keeper": "^2.1.1",
     "react-native-fs": "^2.20.0",
@@ -66,11 +71,14 @@
     "react-native-reanimated": "4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
+    "react-native-spotlight-tour": "^4.0.0",
     "react-native-svg": "15.12.1",
     "react-native-web": "^0.21.2",
+    "react-native-webview": "13.15.0",
     "react-native-worklets": "0.5.1",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
+    "zod": "^4.4.3",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
@@ -92,6 +100,8 @@
     "jest": "^29.7.0",
     "jest-expo": "~54.0.17",
     "lint-staged": "^16.4.0",
+    "patch-package": "^8.0.1",
+    "postinstall-postinstall": "^2.1.0",
     "prettier": "^3.6.2",
     "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
@@ -110,6 +120,12 @@
   "jest": {
     "preset": "jest-expo",
     "coverageProvider": "v8",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.test.(ts|tsx)"
+    ],
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/e2e/"
@@ -118,7 +134,9 @@
       "<rootDir>/jest.setup.js"
     ],
     "moduleNameMapper": {
-      "@react-native-async-storage/async-storage": "<rootDir>/node_modules/@react-native-async-storage/async-storage/jest/async-storage-mock"
+      "@react-native-async-storage/async-storage": "<rootDir>/node_modules/@react-native-async-storage/async-storage/jest/async-storage-mock",
+      "\\.bin$": "<rootDir>/src/__test-utils__/binaryAssetMock.js",
+      "^expo-local-authentication$": "<rootDir>/src/__test-utils__/expoLocalAuthMock.js"
     },
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@sentry/.*))"
@@ -126,8 +144,22 @@
     "collectCoverageFrom": [
       "src/**/*.{ts,tsx}",
       "!src/**/*.d.ts",
+      "!src/**/__tests__/**",
       "!src/__test-utils__/**",
-      "!src/types/**"
+      "!src/types/**",
+      "!src/**/index.ts",
+      "!src/services/moderation/image-to-tensor.ts",
+      "!src/services/moderation/tfjs.service.ts",
+      "!src/services/moderation/tfjs.service.web.ts",
+      "!src/services/moderation/tflite.service.web.ts",
+      "!src/services/calls/bootstrap.native.ts",
+      "!src/services/calls/callNotificationBridge.ts",
+      "!src/services/calls/systemCallProvider.ts",
+      "!src/services/calls/liveKitProvider.ts",
+      "!src/components/Calls/CallParticipantTile.web.tsx",
+      "!src/services/storage.web.ts",
+      "!src/services/webCryptoVault.web.ts",
+      "!src/components/Common/SafariPWABanner.tsx"
     ]
   }
 }

@@ -8,7 +8,7 @@ import Constants from "expo-constants";
  * attaquant qui rachèterait ce domaine intercepterait toutes les
  * requêtes auth/messages des builds qui n'auraient pas reçu d'env.
  */
-const APP_CONFIG_DEFAULT_API = "https://whispr.devzeyu.com";
+const APP_CONFIG_DEFAULT_API = "https://whispr-preprod.roadmvn.com";
 
 function pickBaseUrl(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;

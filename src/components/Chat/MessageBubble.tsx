@@ -32,6 +32,11 @@ import { ReplyPreview } from "./ReplyPreview";
 import { ReactionPicker } from "./ReactionPicker";
 import { MediaMessage } from "./MediaMessage";
 import { AudioMessage } from "./AudioMessage";
+import { MediaUploadProgressOverlay } from "./MediaUploadProgressOverlay";
+import {
+  getMediaUploadOverlayState,
+  type MediaSendClientMetadata,
+} from "../../types/mediaUpload";
 import { LinkPreviewCard } from "./LinkPreviewCard";
 import { MaskedBubbleSurface } from "./MaskedBubbleSurface";
 import { MessageStatusLabel } from "./MessageStatusLabel";
@@ -39,6 +44,7 @@ import { useMessageSwipe } from "../../context/MessageSwipeContext";
 import { FormattedText } from "../../utils/textFormatter";
 import { isReachableUrl, formatHourMinute } from "../../utils";
 import { getApiBaseUrl } from "../../services/apiBase";
+import { E2EEService } from "../../services/E2EEService";
 import {
   extractFirstUrl,
   getLinkPreview,
@@ -215,6 +221,10 @@ interface MessageBubbleProps {
   };
   /** Called when the user taps "Contester" on a locally blocked image */
   onContest?: (message: MessageWithRelations) => void;
+  /** Called when the user taps "Réessayer" on a failed (non-moderation) message */
+  onRetry?: (message: MessageWithRelations) => void;
+  /** Called when the user taps "Annuler" on a failed message */
+  onCancel?: (message: MessageWithRelations) => void;
   /** When true, renders a textual delivery status under the bubble (only the
    * latest message sent by the current user should set this). */
   isLastSentByMe?: boolean;
@@ -244,6 +254,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   searchQuery,
   pendingAppeal,
   onContest,
+  onRetry,
+  onCancel,
   isLastSentByMe = false,
   isGroupConversation = false,
   otherMembersCount = 0,
@@ -287,11 +299,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     message.content &&
     ["Photo", "Vidéo", "Fichier", "Message vocal"].includes(message.content);
 
+  // Belt-and-suspenders: si jamais une enveloppe E2EE brute remonte jusqu'ici
+  // (decryption ratee, message texte chiffre route via media, etc.), on
+  // remplace par un fallback lisible plutot que de leak la JSON dans la UI.
+  const rawContent = message.content || "";
+  const safeContent =
+    typeof rawContent === "string" && E2EEService.isEncryptedPayload(rawContent)
+      ? "[Message chiffré]"
+      : rawContent;
+
   const displayContent = isTombstoned
     ? "[Message supprimé]"
     : hasMedia && isDefaultMediaText
       ? "" // Don't show default text for media without caption
-      : message.content || "";
+      : safeContent;
 
   const firstLinkInMessage = useMemo(
     () => extractFirstUrl(message.content),
@@ -405,6 +426,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isForwarded =
     !!message.forwarded_from_id || message.metadata?.forwarded === true;
   const isFailed = message.status === "failed";
+  const e2eeMedia =
+    (message.metadata as any)?.e2ee &&
+    (message.metadata as any)?.media_key &&
+    (message.metadata as any)?.media_nonce
+      ? {
+          key: (message.metadata as any).media_key as string,
+          nonce: (message.metadata as any).media_nonce as string,
+        }
+      : undefined;
+  const mediaUploadOverlay = isSent
+    ? getMediaUploadOverlayState(
+        message.status,
+        message.metadata as MediaSendClientMetadata | undefined,
+      )
+    : { visible: false, indeterminate: false };
+
+  const wrapOutgoingMedia = (node: React.ReactNode) => {
+    if (!mediaUploadOverlay.visible) {
+      return node;
+    }
+    return (
+      <View style={styles.mediaOverlayHost}>
+        {node}
+        <MediaUploadProgressOverlay
+          progress={mediaUploadOverlay.progress}
+          label={mediaUploadOverlay.label}
+          indeterminate={mediaUploadOverlay.indeterminate}
+        />
+      </View>
+    );
+  };
 
   // Only display the sender avatar for received messages in a group conversation.
   const shouldRenderAvatarSlot = !isSent && showSenderAvatar;
@@ -434,6 +486,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   mediaId={firstAttachment.media_id}
                   duration={firstAttachment.metadata.duration}
                   isSent={true}
+                  e2ee={e2eeMedia}
                 />
               ) : (
                 <MediaMessage
@@ -451,6 +504,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     firstAttachment.media_id,
                     "thumbnail",
                   )}
+                  e2ee={e2eeMedia}
                 />
               )
             ) : null}
@@ -497,7 +551,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   </View>
                 ) : null}
               </View>
-            ) : null}
+            ) : (
+              <View style={styles.failedActionRow}>
+                <TouchableOpacity
+                  style={styles.failedRetryBtn}
+                  onPress={() => onRetry?.(message)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.failedRetryText}>Réessayer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.failedCancelBtn}
+                  onPress={() => onCancel?.(message)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.failedCancelText}>Annuler</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </MaskedBubbleSurface>
         </View>
       );
@@ -522,39 +593,41 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 onPress={() => onReplyPress?.(message.reply_to!.id)}
               />
             ) : null}
-            {hasMedia && firstAttachment && firstAttachment.metadata ? (
-              <>
-                {firstAttachment.media_type === "audio" ? (
-                  <AudioMessage
-                    uri={resolveMediaUrl(
-                      firstAttachment.metadata.media_url,
-                      firstAttachment.media_id,
-                      "blob",
-                    )}
-                    mediaId={firstAttachment.media_id}
-                    duration={firstAttachment.metadata.duration}
-                    isSent={true}
-                  />
-                ) : (
-                  <MediaMessage
-                    uri={resolveMediaUrl(
-                      firstAttachment.metadata.media_url ||
+            {hasMedia && firstAttachment && firstAttachment.metadata
+              ? wrapOutgoingMedia(
+                  firstAttachment.media_type === "audio" ? (
+                    <AudioMessage
+                      uri={resolveMediaUrl(
+                        firstAttachment.metadata.media_url,
+                        firstAttachment.media_id,
+                        "blob",
+                      )}
+                      mediaId={firstAttachment.media_id}
+                      duration={firstAttachment.metadata.duration}
+                      isSent={true}
+                      e2ee={e2eeMedia}
+                    />
+                  ) : (
+                    <MediaMessage
+                      uri={resolveMediaUrl(
+                        firstAttachment.metadata.media_url ||
+                          firstAttachment.metadata.thumbnail_url,
+                        firstAttachment.media_id,
+                        "blob",
+                      )}
+                      type={firstAttachment.media_type}
+                      filename={firstAttachment.metadata.filename}
+                      size={firstAttachment.metadata.size}
+                      thumbnailUri={resolveMediaUrl(
                         firstAttachment.metadata.thumbnail_url,
-                      firstAttachment.media_id,
-                      "blob",
-                    )}
-                    type={firstAttachment.media_type}
-                    filename={firstAttachment.metadata.filename}
-                    size={firstAttachment.metadata.size}
-                    thumbnailUri={resolveMediaUrl(
-                      firstAttachment.metadata.thumbnail_url,
-                      firstAttachment.media_id,
-                      "thumbnail",
-                    )}
-                  />
-                )}
-              </>
-            ) : null}
+                        firstAttachment.media_id,
+                        "thumbnail",
+                      )}
+                      e2ee={e2eeMedia}
+                    />
+                  ),
+                )
+              : null}
             {displayContent ? (
               isTombstoned ? (
                 <Text style={[styles.sentText, styles.deletedText]}>
@@ -633,6 +706,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   mediaId={firstAttachment.media_id}
                   duration={firstAttachment.metadata.duration}
                   isSent={false}
+                  e2ee={e2eeMedia}
                 />
               ) : (
                 <MediaMessage
@@ -652,6 +726,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     firstAttachment.media_id,
                     "thumbnail",
                   )}
+                  e2ee={e2eeMedia}
                 />
               )}
             </>
@@ -836,6 +911,11 @@ const styles = StyleSheet.create({
     maxWidth: "75%",
     position: "relative",
   },
+  mediaOverlayHost: {
+    position: "relative",
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+  },
   bubbleContent: {
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -937,6 +1017,37 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  failedActionRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 4,
+    paddingTop: 8,
+    paddingBottom: 2,
+  },
+  failedRetryBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+  },
+  failedRetryText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  failedCancelBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: "rgba(240,72,72,0.18)",
+    alignItems: "center",
+  },
+  failedCancelText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#F04848",
   },
 });
 

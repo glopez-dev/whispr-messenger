@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { CallsUnavailableScreen } from "../screens/Calls/CallsUnavailableScreen";
 import { isCallsAvailable } from "../hooks/useCallsAvailable";
@@ -18,6 +18,8 @@ import { TwoFactorAuthScreen } from "../screens/Security/TwoFactorAuthScreen";
 import { TwoFactorSetupScreen } from "../screens/Security/TwoFactorSetupScreen";
 import { TwoFactorVerifyScreen } from "../screens/Security/TwoFactorVerifyScreen";
 import { TwoFactorBackupCodesScreen } from "../screens/Security/TwoFactorBackupCodesScreen";
+import { RecoveryCodesScreen } from "../screens/Auth/RecoveryCodesScreen";
+import { RecoveryCodeEntryScreen } from "../screens/Auth/RecoveryCodeEntryScreen";
 import { ConversationsListScreen } from "../screens/Chat/ConversationsListScreen";
 import { ArchivedConversationsScreen } from "../screens/Chat/ArchivedConversationsScreen";
 import { ChatScreen } from "../screens/Chat/ChatScreen";
@@ -40,6 +42,7 @@ import {
   AppealStatusScreen,
 } from "../screens/Moderation";
 import {
+  AdminDemosScreen,
   ModerationDashboardScreen,
   ReportQueueScreen,
   ReportReviewScreen,
@@ -49,12 +52,20 @@ import {
   SanctionFormScreen,
 } from "../screens/Admin";
 
+import { AppState } from "react-native";
+import * as LocalAuthentication from "expo-local-authentication";
 import { useAuth } from "../context/AuthContext";
 import { useOfflineQueueDrainer } from "../hooks/useOfflineQueueDrainer";
+import { useNetworkMonitor } from "../hooks/useNetworkMonitor";
 import { useModerationStore } from "../store/moderationStore";
 import { useConversationsStore } from "../store/conversationsStore";
 import { profileSetupFlag } from "../services/profileSetupFlag";
 import { SplashScreen } from "../screens/SplashScreen/SplashScreen";
+import { OnboardingScreen } from "../screens/Auth/OnboardingScreen";
+import { BiometricLockScreen } from "../screens/Auth/BiometricLockScreen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { storage as secureStorage } from "../services/storage";
+import { TourProvider } from "../context/TourContext";
 import { contactsAPI } from "../services/contacts/api";
 import { TokenService } from "../services/TokenService";
 import { UserService } from "../services/UserService";
@@ -76,6 +87,7 @@ import { cacheService } from "../services/messaging/cache";
 const SPLASH_MIN_MS = 2000;
 
 export type AuthStackParamList = {
+  Onboarding: undefined;
   Welcome: undefined;
   PhoneInput: { mode: AuthPurpose };
   Otp: {
@@ -97,12 +109,20 @@ export type AuthStackParamList = {
   TwoFactorSetup: undefined;
   TwoFactorVerify: { secret: string };
   TwoFactorBackupCodes: { codes: string[] };
+  TwoFactorVerifyLogin: {
+    verificationId: string;
+    deviceInfo: import("../types/auth").DeviceInfo;
+    signalKeyBundle: import("../types/auth").SignalKeyBundleDto;
+  };
+  RecoveryCodes: { mode?: "resume" } | undefined;
+  RecoveryCodeEntry: undefined;
   ConversationsList: undefined;
   ArchivedConversations: undefined;
   Chat: { conversationId: string; openSearch?: boolean };
   Contacts: undefined;
   MyQRCode: undefined;
   QRCodeScanner: undefined;
+  DevicePairingScanner: undefined;
   BlockedUsers: undefined;
   GroupDetails: {
     groupId: string;
@@ -140,6 +160,7 @@ export type AuthStackParamList = {
   AppealForm: { sanction: UserSanction };
   AppealStatus: { sanctionId?: string; appealId?: string };
   // Admin screens
+  AdminDemos: undefined;
   ModerationDashboard: undefined;
   ReportQueue: undefined;
   ReportReview: { report: Report };
@@ -155,12 +176,18 @@ export type AuthStackParamList = {
 
 const Stack = createStackNavigator<AuthStackParamList>();
 
+const ONBOARDING_KEY = "@whispr:onboarding_done";
+
+const SECURITY_STORAGE_KEY = "whispr_settings_security";
+
 export const AuthNavigator: React.FC = () => {
   const { isLoading, isAuthenticated, userId } = useAuth();
   const [splashMinElapsed, setSplashMinElapsed] = useState(false);
   const [profileSetupPending, setProfileSetupPending] = useState<
     boolean | null
   >(null);
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
+  const [biometricLocked, setBiometricLocked] = useState<boolean | null>(null);
   const fetchMyRole = useModerationStore((s) => s.fetchMyRole);
   // Source de vérité unique pour la disponibilité des appels (Expo Go,
   // module natif WebRTC manquant, web). Mémorisé : la dispo ne change pas
@@ -174,10 +201,59 @@ export const AuthNavigator: React.FC = () => {
   // a no-op when the queue is empty, so calling it unconditionally is
   // cheap.
   useOfflineQueueDrainer();
+  useNetworkMonitor();
 
   useEffect(() => {
     const t = setTimeout(() => setSplashMinElapsed(true), SPLASH_MIN_MS);
     return () => clearTimeout(t);
+  }, []);
+
+  const isBiometricEnabled = async (): Promise<boolean> => {
+    try {
+      const raw = await secureStorage.getItem(SECURITY_STORAGE_KEY);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      return parsed.biometricAuth === true;
+    } catch {
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setBiometricLocked(false);
+      return;
+    }
+    isBiometricEnabled().then((enabled) => setBiometricLocked(enabled));
+  }, [isAuthenticated]);
+
+  const backgroundedAtRef = useRef<number | null>(null);
+  const MIN_BACKGROUND_MS = 30_000;
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "background" || state === "inactive") {
+        backgroundedAtRef.current = Date.now();
+      } else if (state === "active") {
+        const backgroundedAt = backgroundedAtRef.current;
+        backgroundedAtRef.current = null;
+        const wasLongEnough =
+          backgroundedAt !== null &&
+          Date.now() - backgroundedAt >= MIN_BACKGROUND_MS;
+        if (!wasLongEnough) return;
+        isBiometricEnabled().then((enabled) => {
+          if (enabled) setBiometricLocked(true);
+        });
+      }
+    });
+    return () => sub.remove();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => setOnboardingDone(v === "1"))
+      .catch(() => setOnboardingDone(false));
   }, []);
 
   useEffect(() => {
@@ -294,86 +370,39 @@ export const AuthNavigator: React.FC = () => {
   }, [hasCallsSupport, isAuthenticated, userId]);
 
   const showSplash =
-    isLoading || !splashMinElapsed || profileSetupPending === null;
+    isLoading ||
+    !splashMinElapsed ||
+    profileSetupPending === null ||
+    onboardingDone === null ||
+    (isAuthenticated && biometricLocked === null);
 
   if (showSplash) {
     return <SplashScreen />;
   }
 
+  if (isAuthenticated && biometricLocked) {
+    return <BiometricLockScreen onUnlock={() => setBiometricLocked(false)} />;
+  }
+
   const initialRouteName = !isAuthenticated
-    ? "Welcome"
+    ? onboardingDone
+      ? "Welcome"
+      : "Onboarding"
     : profileSetupPending
       ? "ProfileSetup"
       : "ConversationsList";
 
   return (
-    <Stack.Navigator
-      initialRouteName={initialRouteName}
-      screenOptions={{
-        headerShown: false,
-        gestureEnabled: true,
-        gestureDirection: "horizontal",
-        cardStyle: {
-          backgroundColor: "transparent",
-        },
-        cardStyleInterpolator: ({ current, layouts }) => ({
+    <TourProvider>
+      <Stack.Navigator
+        initialRouteName={initialRouteName}
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
           cardStyle: {
             backgroundColor: "transparent",
-            transform: [
-              {
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              },
-            ],
           },
-        }),
-      }}
-    >
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
-      <Stack.Screen name="PhoneInput" component={PhoneInputScreen} />
-      <Stack.Screen name="Otp" component={OtpScreen} />
-      <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-      <Stack.Screen name="MyProfile" component={MyProfileScreen} />
-      <Stack.Screen name="UserProfile" component={UserProfileScreen} />
-      <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          // Le swipe-back horizontal capturait les gestes verticaux sur iOS ; le retour reste via la flèche.
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen name="AboutContent" component={AboutContentScreen} />
-      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-      <Stack.Screen name="TermsOfUse" component={TermsOfUseScreen} />
-      <Stack.Screen name="SecurityKeys" component={SecurityKeysScreen} />
-      <Stack.Screen name="Devices" component={DevicesScreen} />
-      <Stack.Screen name="TwoFactorAuth" component={TwoFactorAuthScreen} />
-      <Stack.Screen
-        name="TwoFactorSetup"
-        component={TwoFactorSetupScreen}
-        options={{ gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="TwoFactorVerify"
-        component={TwoFactorVerifyScreen}
-        options={{ gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="TwoFactorBackupCodes"
-        component={TwoFactorBackupCodesScreen}
-        options={{ gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="ConversationsList"
-        component={ConversationsListScreen}
-      />
-      <Stack.Screen
-        name="ArchivedConversations"
-        component={ArchivedConversationsScreen}
-        options={{
           cardStyleInterpolator: ({ current, layouts }) => ({
             cardStyle: {
               backgroundColor: "transparent",
@@ -388,98 +417,192 @@ export const AuthNavigator: React.FC = () => {
             },
           }),
         }}
-      />
-      <Stack.Screen name="Chat" component={ChatScreen} />
-      <Stack.Screen name="Contacts" component={ContactsScreen} />
-      <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} />
-      <Stack.Screen
-        name="QRCodeScanner"
-        getComponent={() =>
-          require("../screens/Contacts/QRCodeScannerScreen").QRCodeScannerScreen
-        }
-      />
-      <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
-      <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} />
-      <Stack.Screen name="GroupManagement" component={GroupManagementScreen} />
-      <Stack.Screen
-        name="ScheduledMessages"
-        component={ScheduledMessagesScreen}
-      />
-      <Stack.Screen
-        name="Calls"
-        getComponent={() =>
-          hasCallsSupport
-            ? require("../screens/Calls/CallsScreen").CallsScreen
-            : CallsUnavailableScreen
-        }
-      />
-      <Stack.Screen
-        name="IncomingCall"
-        getComponent={() =>
-          hasCallsSupport
-            ? require("../screens/Calls/IncomingCallScreen").IncomingCallScreen
-            : CallsUnavailableScreen
-        }
-        options={{
-          presentation: "modal",
-          headerShown: false,
-          gestureEnabled: false,
-        }}
-      />
-      <Stack.Screen
-        name="InCall"
-        getComponent={() =>
-          hasCallsSupport
-            ? require("../screens/Calls/InCallScreen").InCallScreen
-            : CallsUnavailableScreen
-        }
-        options={{ headerShown: false, gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="CallHistory"
-        getComponent={() =>
-          hasCallsSupport
-            ? require("../screens/Calls/CallHistoryScreen").CallHistoryScreen
-            : CallsUnavailableScreen
-        }
-        options={{ title: "Appels" }}
-      />
-      <Stack.Screen
-        name="ModerationDecision"
-        component={ModerationDecisionScreen}
-      />
-      <Stack.Screen
-        name="ModerationAppealForm"
-        component={ModerationAppealFormScreen}
-      />
-      <Stack.Screen
-        name="ModerationAppealSubmitted"
-        component={ModerationAppealSubmittedScreen}
-      />
-      {/* Moderation — user-facing */}
-      <Stack.Screen name="ReportHistory" component={ReportHistoryScreen} />
-      <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
-      <Stack.Screen name="MySanctions" component={MySanctionsScreen} />
-      <Stack.Screen
-        name="SanctionNotice"
-        component={SanctionNoticeScreen}
-        options={{ gestureEnabled: false }}
-      />
-      <Stack.Screen name="AppealForm" component={AppealFormScreen} />
-      <Stack.Screen name="AppealStatus" component={AppealStatusScreen} />
-      {/* Moderation — admin */}
-      <Stack.Screen
-        name="ModerationDashboard"
-        component={ModerationDashboardScreen}
-      />
-      <Stack.Screen name="ReportQueue" component={ReportQueueScreen} />
-      <Stack.Screen name="ReportReview" component={ReportReviewScreen} />
-      <Stack.Screen name="AppealQueue" component={AppealQueueScreen} />
-      <Stack.Screen name="AppealReview" component={AppealReviewScreen} />
-      <Stack.Screen name="UserModeration" component={UserModerationScreen} />
-      <Stack.Screen name="SanctionForm" component={SanctionFormScreen} />
-      <Stack.Screen name="ModerationTest" component={ModerationTestScreen} />
-    </Stack.Navigator>
+      >
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="PhoneInput" component={PhoneInputScreen} />
+        <Stack.Screen name="Otp" component={OtpScreen} />
+        <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+        <Stack.Screen name="MyProfile" component={MyProfileScreen} />
+        <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+        <Stack.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{
+            // Le swipe-back horizontal capturait les gestes verticaux sur iOS ; le retour reste via la flèche.
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen name="AboutContent" component={AboutContentScreen} />
+        <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+        <Stack.Screen name="TermsOfUse" component={TermsOfUseScreen} />
+        <Stack.Screen name="SecurityKeys" component={SecurityKeysScreen} />
+        <Stack.Screen name="Devices" component={DevicesScreen} />
+        <Stack.Screen name="TwoFactorAuth" component={TwoFactorAuthScreen} />
+        <Stack.Screen
+          name="TwoFactorSetup"
+          component={TwoFactorSetupScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="TwoFactorVerify"
+          component={TwoFactorVerifyScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="TwoFactorBackupCodes"
+          component={TwoFactorBackupCodesScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="TwoFactorVerifyLogin"
+          getComponent={() =>
+            require("../screens/Auth/TwoFactorVerifyLoginScreen")
+              .TwoFactorVerifyLoginScreen
+          }
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="RecoveryCodes"
+          component={RecoveryCodesScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="RecoveryCodeEntry"
+          component={RecoveryCodeEntryScreen}
+        />
+        <Stack.Screen
+          name="ConversationsList"
+          component={ConversationsListScreen}
+        />
+        <Stack.Screen
+          name="ArchivedConversations"
+          component={ArchivedConversationsScreen}
+          options={{
+            cardStyleInterpolator: ({ current, layouts }) => ({
+              cardStyle: {
+                backgroundColor: "transparent",
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            }),
+          }}
+        />
+        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="Contacts" component={ContactsScreen} />
+        <Stack.Screen name="MyQRCode" component={MyQRCodeScreen} />
+        <Stack.Screen
+          name="QRCodeScanner"
+          getComponent={() =>
+            require("../screens/Contacts/QRCodeScannerScreen")
+              .QRCodeScannerScreen
+          }
+        />
+        <Stack.Screen
+          name="DevicePairingScanner"
+          getComponent={() =>
+            require("../screens/Auth/DevicePairingScannerScreen")
+              .DevicePairingScannerScreen
+          }
+        />
+        <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
+        <Stack.Screen name="GroupDetails" component={GroupDetailsScreen} />
+        <Stack.Screen
+          name="GroupManagement"
+          component={GroupManagementScreen}
+        />
+        <Stack.Screen
+          name="ScheduledMessages"
+          component={ScheduledMessagesScreen}
+        />
+        <Stack.Screen
+          name="Calls"
+          getComponent={() =>
+            hasCallsSupport
+              ? require("../screens/Calls/CallsScreen").CallsScreen
+              : CallsUnavailableScreen
+          }
+        />
+        <Stack.Screen
+          name="IncomingCall"
+          getComponent={() =>
+            hasCallsSupport
+              ? require("../screens/Calls/IncomingCallScreen")
+                  .IncomingCallScreen
+              : CallsUnavailableScreen
+          }
+          options={{
+            presentation: "modal",
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="InCall"
+          getComponent={() =>
+            hasCallsSupport
+              ? require("../screens/Calls/InCallScreen").InCallScreen
+              : CallsUnavailableScreen
+          }
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="CallHistory"
+          getComponent={() =>
+            hasCallsSupport
+              ? require("../screens/Calls/CallHistoryScreen").CallHistoryScreen
+              : CallsUnavailableScreen
+          }
+          options={{ title: "Appels" }}
+        />
+        <Stack.Screen
+          name="ModerationDecision"
+          component={ModerationDecisionScreen}
+        />
+        <Stack.Screen
+          name="ModerationAppealForm"
+          component={ModerationAppealFormScreen}
+        />
+        <Stack.Screen
+          name="ModerationAppealSubmitted"
+          component={ModerationAppealSubmittedScreen}
+        />
+        {/* Moderation — user-facing */}
+        <Stack.Screen name="ReportHistory" component={ReportHistoryScreen} />
+        <Stack.Screen name="ReportDetail" component={ReportDetailScreen} />
+        <Stack.Screen name="MySanctions" component={MySanctionsScreen} />
+        <Stack.Screen
+          name="SanctionNotice"
+          component={SanctionNoticeScreen}
+          options={{ gestureEnabled: false }}
+        />
+        <Stack.Screen name="AppealForm" component={AppealFormScreen} />
+        <Stack.Screen name="AppealStatus" component={AppealStatusScreen} />
+        {/* Moderation — admin */}
+        <Stack.Screen name="AdminDemos" component={AdminDemosScreen} />
+        <Stack.Screen
+          name="ModerationDashboard"
+          component={ModerationDashboardScreen}
+        />
+        <Stack.Screen name="ReportQueue" component={ReportQueueScreen} />
+        <Stack.Screen name="ReportReview" component={ReportReviewScreen} />
+        <Stack.Screen name="AppealQueue" component={AppealQueueScreen} />
+        <Stack.Screen name="AppealReview" component={AppealReviewScreen} />
+        <Stack.Screen name="UserModeration" component={UserModerationScreen} />
+        <Stack.Screen name="SanctionForm" component={SanctionFormScreen} />
+        <Stack.Screen name="ModerationTest" component={ModerationTestScreen} />
+      </Stack.Navigator>
+    </TourProvider>
   );
 };
 

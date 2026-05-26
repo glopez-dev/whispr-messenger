@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import { TokenService } from "../services/TokenService";
+import { AuthService } from "../services/AuthService";
 import * as FileSystem from "expo-file-system/legacy";
 
 type NativeCacheEntry = { resolvedUri: string; storedAt: number };
@@ -511,7 +512,7 @@ export function useResolvedMediaUrl(uri: string | undefined): ResolvedMediaUrl {
     (async () => {
       revokeBlobUrl();
       try {
-        const token = await TokenService.getAccessToken();
+        let token = await TokenService.getAccessToken();
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -566,14 +567,43 @@ export function useResolvedMediaUrl(uri: string | undefined): ResolvedMediaUrl {
         // endpoint. We never hand the presigned URL to the renderer.
         // Use the throttled variant so a chat-screen burst doesn't trip
         // the server-side 30 req/s short throttle.
-        const renderableUri =
-          Platform.OS === "web"
-            ? await streamMediaToRenderableUriThrottled(
-                uri,
-                token,
-                abortController.signal,
-              )
-            : await writeDiskCache(uri, token);
+        //
+        // WHISPR-1143 — si le stream echoue avec 401 (token expire), on
+        // rafraichit le token une seule fois et on reessaie. Le media-service
+        // retourne 401 pour les tokens invalides/expires ; les avatars et
+        // thumbnails sont en PUBLIC_READABLE_CONTEXTS (tout user authentifie
+        // peut y acceder) mais le token doit etre valide.
+        let renderableUri: string;
+        try {
+          renderableUri =
+            Platform.OS === "web"
+              ? await streamMediaToRenderableUriThrottled(
+                  uri,
+                  token,
+                  abortController.signal,
+                )
+              : await writeDiskCache(uri, token);
+        } catch (streamErr) {
+          // retry une seule fois apres refresh sur 401
+          const is401 =
+            streamErr instanceof Error && /HTTP 401/.test(streamErr.message);
+          if (!is401 || cancelled) throw streamErr;
+          try {
+            await AuthService.refreshTokens();
+          } catch {
+            // refresh echoue → on laisse l'erreur originale remonter
+            throw streamErr;
+          }
+          token = await TokenService.getAccessToken();
+          renderableUri =
+            Platform.OS === "web"
+              ? await streamMediaToRenderableUriThrottled(
+                  uri,
+                  token,
+                  abortController.signal,
+                )
+              : await writeDiskCache(uri, token);
+        }
         if (cancelled) {
           if (
             renderableUri.startsWith("blob:") &&

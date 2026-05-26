@@ -17,6 +17,7 @@ import {
   InteractionManager,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as LocalAuthentication from "expo-local-authentication";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { storage as secureStorage } from "../../services/storage";
@@ -37,6 +38,7 @@ import {
 } from "../../services/NotificationService";
 import { setReadReceiptsEnabled } from "../../services/messaging/readReceiptsPref";
 import { SettingsChoiceAlert } from "./SettingsChoiceAlert";
+import { useTour } from "../../context/TourContext";
 import { DangerConfirmModal } from "../../components/Common/DangerConfirmModal";
 import { FLOATING_TAB_BAR_RESERVED_SPACE } from "../../components/Navigation/floatingTabBarLayout";
 import {
@@ -81,6 +83,7 @@ export const SettingsScreen: React.FC = () => {
   const { fetchMyRole } = useModerationStore();
   const isStaff = useIsStaff();
   const insets = useSafeAreaInsets();
+  const { isTourActive, replayTour, skipTour: disableTour } = useTour();
 
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [showBackgroundModal, setShowBackgroundModal] = useState(false);
@@ -105,7 +108,7 @@ export const SettingsScreen: React.FC = () => {
     notifications: "@whispr_settings_notifications",
     messaging: "@whispr_settings_messaging",
     app: "@whispr_settings_app",
-    security: "@whispr_settings_security",
+    security: "whispr_settings_security",
   };
 
   // Privacy settings
@@ -178,36 +181,23 @@ export const SettingsScreen: React.FC = () => {
   /**
    * Map local privacy values (Everyone/Contacts/Nobody) to API format (everyone/contacts/nobody)
    */
+  const toVisibility = (
+    val: string | undefined,
+  ): "everyone" | "contacts" | "nobody" => {
+    const v = (val ?? "everyone").toLowerCase();
+    if (v === "contacts" || v === "nobody") return v;
+    return "everyone";
+  };
+
   const privacyToApi = useCallback(
     (local: typeof privacySettings): PrivacySettings => ({
-      profilePictureVisibility: local.profilePhoto.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      firstNameVisibility: local.firstName.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      lastNameVisibility: local.lastName.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      biographyVisibility: local.biography.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      lastSeenVisibility: local.lastSeen.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      onlineStatusVisibility: local.onlineStatus.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
-      groupAddPermission: local.groupAdd.toLowerCase() as
-        | "everyone"
-        | "contacts"
-        | "nobody",
+      profilePictureVisibility: toVisibility(local.profilePhoto),
+      firstNameVisibility: toVisibility(local.firstName),
+      lastNameVisibility: toVisibility(local.lastName),
+      biographyVisibility: toVisibility(local.biography),
+      lastSeenVisibility: toVisibility(local.lastSeen),
+      onlineStatusVisibility: toVisibility(local.onlineStatus),
+      groupAddPermission: toVisibility(local.groupAdd),
       searchVisibility: true,
       phoneNumberSearch: "everyone",
     }),
@@ -236,9 +226,9 @@ export const SettingsScreen: React.FC = () => {
    */
   const notificationToApi = useCallback(
     (local: typeof notificationSettings): Partial<NotificationSettings> => ({
-      push_enabled: local.notifications,
-      sound_enabled: local.sound,
-      vibration_enabled: local.mentions,
+      message_push_enabled: local.notifications,
+      system_push_enabled: local.sound,
+      mentions_only: local.mentions,
     }),
     [],
   );
@@ -248,9 +238,9 @@ export const SettingsScreen: React.FC = () => {
    */
   const apiToNotification = useCallback(
     (api: NotificationSettings) => ({
-      notifications: api.push_enabled,
-      sound: api.sound_enabled,
-      mentions: api.vibration_enabled,
+      notifications: api.message_push_enabled,
+      sound: api.system_push_enabled,
+      mentions: api.mentions_only,
     }),
     [],
   );
@@ -259,17 +249,29 @@ export const SettingsScreen: React.FC = () => {
    * Sync notification settings to the notification-service backend.
    * Uses a PATCH-style merge: reads current backend settings first, then
    * updates only the fields we manage locally, preserving backend-only
-   * fields (message_previews, show_sender_name, quiet_hours_*).
+   * fields (marketing_push_enabled, message_email_enabled, quiet_hours_*).
+   * Si le backend refuse, rollback vers previous et alerte l'utilisateur.
    */
   const syncNotificationsToBackend = useCallback(
-    async (local: typeof notificationSettings) => {
+    async (
+      local: typeof notificationSettings,
+      previous: typeof notificationSettings,
+    ) => {
       if (!userId) return;
+      const doRollback = () => {
+        setNotificationSettings(previous);
+        persistSettings(STORAGE_KEYS.notifications, previous);
+        Alert.alert(
+          "Erreur",
+          "Impossible de synchroniser ce parametre. Veuillez reessayer.",
+        );
+      };
       try {
         let existing: Partial<NotificationSettings> = {};
         try {
           existing = await NotificationService.getSettings(userId);
         } catch {
-          // If fetching fails, proceed with only local fields
+          // si fetch echoue, on continue avec les champs locaux uniquement
         }
         const merged: Partial<NotificationSettings> = {
           ...existing,
@@ -278,28 +280,43 @@ export const SettingsScreen: React.FC = () => {
         await NotificationService.updateSettings(userId, merged);
       } catch (error) {
         console.error("Error syncing notification settings to backend:", error);
+        doRollback();
       }
     },
-    [userId, notificationToApi],
+    [userId, notificationToApi, persistSettings, STORAGE_KEYS.notifications],
   );
 
   /**
-   * Sync privacy settings to the backend API
+   * Sync privacy settings to the backend API.
+   * Si le backend refuse, rollback vers previous et alerte l'utilisateur.
    */
   const syncPrivacyToBackend = useCallback(
-    async (localPrivacy: typeof privacySettings) => {
+    async (
+      localPrivacy: typeof privacySettings,
+      previous: typeof privacySettings,
+    ) => {
+      const doRollback = () => {
+        setPrivacySettings(previous);
+        persistSettings(STORAGE_KEYS.privacy, previous);
+        Alert.alert(
+          "Erreur",
+          "Impossible de synchroniser ce parametre. Veuillez reessayer.",
+        );
+      };
       try {
         const userService = UserService.getInstance();
         const apiSettings = privacyToApi(localPrivacy);
         const result = await userService.updatePrivacySettings(apiSettings);
         if (!result.success) {
           console.error("Failed to sync privacy settings:", result.message);
+          doRollback();
         }
       } catch (error) {
         console.error("Error syncing privacy to backend:", error);
+        doRollback();
       }
     },
-    [privacyToApi],
+    [privacyToApi, persistSettings, STORAGE_KEYS.privacy],
   );
 
   /**
@@ -424,7 +441,7 @@ export const SettingsScreen: React.FC = () => {
         setNotificationSettings((prev) => {
           const updated = { ...prev, [key]: value };
           persistSettings(STORAGE_KEYS.notifications, updated);
-          syncNotificationsToBackend(updated);
+          syncNotificationsToBackend(updated, prev);
           return updated;
         });
         break;
@@ -492,12 +509,44 @@ export const SettingsScreen: React.FC = () => {
         });
         break;
       case "security":
-        setSecuritySettings((prev) => {
-          const updated = { ...prev, [key]: value };
-          persistSettings(STORAGE_KEYS.security, updated);
-          return updated;
-        });
+        if (key === "biometricAuth" && value) {
+          void enableBiometric();
+        } else {
+          setSecuritySettings((prev) => {
+            const updated = { ...prev, [key]: value };
+            persistSettings(STORAGE_KEYS.security, updated);
+            return updated;
+          });
+        }
         break;
+    }
+  };
+
+  const enableBiometric = async () => {
+    if (Platform.OS === "web") return;
+    const [hasHardware, isEnrolled] = await Promise.all([
+      LocalAuthentication.hasHardwareAsync(),
+      LocalAuthentication.isEnrolledAsync(),
+    ]);
+    if (!hasHardware) {
+      Alert.alert("Non disponible", getLocalizedText("biometric.notAvailable"));
+      return;
+    }
+    if (!isEnrolled) {
+      Alert.alert("Non configuré", getLocalizedText("biometric.notEnrolled"));
+      return;
+    }
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: getLocalizedText("biometric.enableConfirm"),
+      cancelLabel: getLocalizedText("biometric.cancelLabel"),
+      disableDeviceFallback: false,
+    });
+    if (result.success) {
+      setSecuritySettings((prev) => {
+        const updated = { ...prev, biometricAuth: true };
+        persistSettings(STORAGE_KEYS.security, updated);
+        return updated;
+      });
     }
   };
 
@@ -587,7 +636,7 @@ export const SettingsScreen: React.FC = () => {
         setPrivacySettings((prev) => {
           const updated = { ...prev, [selectedPrivacyItem]: value };
           persistSettings(STORAGE_KEYS.privacy, updated);
-          syncPrivacyToBackend(updated);
+          syncPrivacyToBackend(updated, prev);
           return updated;
         });
         setShowPrivacyModal(false);
@@ -1205,6 +1254,25 @@ export const SettingsScreen: React.FC = () => {
             }
             onPress={() => setShowFontSizeModal(true)}
           />
+          <SettingItem
+            label="Tour guidé"
+            subtitle="Afficher le tour de présentation"
+            icon="compass-outline"
+            onPress={() => (isTourActive ? disableTour() : replayTour())}
+            rightComponent={
+              <Switch
+                value={isTourActive}
+                onValueChange={(value) =>
+                  value ? replayTour() : disableTour()
+                }
+                trackColor={{
+                  false: themeColors.text.tertiary,
+                  true: themeColors.primary,
+                }}
+                thumbColor="#FFFFFF"
+              />
+            }
+          />
         </SettingSection>
 
         <SettingSection
@@ -1278,6 +1346,7 @@ export const SettingsScreen: React.FC = () => {
               onValueChange={(value) =>
                 handleToggle("security", "biometricAuth", value)
               }
+              disabled={Platform.OS === "web"}
               trackColor={{
                 false: themeColors.text.tertiary,
                 true: themeColors.primary,
@@ -1326,15 +1395,27 @@ export const SettingsScreen: React.FC = () => {
           )}
         </SettingSection>
 
+        {/* Administration - visible uniquement pour les admins/modérateurs */}
+        {isStaff && (
+          <SettingSection title="Administration" icon="flask-outline">
+            <SettingItem
+              label="Demos IA (Admin)"
+              subtitle="Demontrer les modeles IA Zeyou et Maya aux prospects"
+              onPress={() => navigation.navigate("AdminDemos")}
+              icon="cube-outline"
+            />
+          </SettingSection>
+        )}
+
         {/* Developer / Debug - visible en dev local + en build preprod (jamais en prod) */}
         {(__DEV__ || process.env.EXPO_PUBLIC_ENV === "preprod") && (
           <SettingSection title="Debug" icon="bug-outline">
             <SettingItem
               label="Modèle de modération"
-              subtitle="Bascule entre le modèle v2 (EfficientNet 9-classes) et v3 (MobileNetV3 binary, avec gate vidéo)"
+              subtitle="Bascule entre le modèle v2 (EfficientNet 9-classes) et v3 (MobileNetV3 healthy/not_food/unhealthy, avec gate vidéo)"
               value={
                 moderationModel === "v3"
-                  ? "v3 · MobileNetV3 binary"
+                  ? "v3 · MobileNetV3 3-classes"
                   : "v2 · EfficientNet 9-classes"
               }
               onPress={() => setShowModerationModelModal(true)}
@@ -1353,6 +1434,36 @@ export const SettingsScreen: React.FC = () => {
                 />
               }
             />
+            {__DEV__ && (
+              <>
+                <SettingItem
+                  label="[DEV] Recovery Codes Screen"
+                  subtitle="Preview écran codes de backup (données mockées)"
+                  onPress={() => navigation.navigate("RecoveryCodes")}
+                  icon="shield-checkmark-outline"
+                  rightComponent={
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={themeColors.text.tertiary}
+                    />
+                  }
+                />
+                <SettingItem
+                  label="[DEV] Recovery Code Entry"
+                  subtitle="Preview saisie code de récupération"
+                  onPress={() => navigation.navigate("RecoveryCodeEntry")}
+                  icon="key-outline"
+                  rightComponent={
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={themeColors.text.tertiary}
+                    />
+                  }
+                />
+              </>
+            )}
           </SettingSection>
         )}
       </ScrollView>
@@ -1443,7 +1554,7 @@ export const SettingsScreen: React.FC = () => {
           title="Modèle de modération"
           options={[
             { label: "v2 · EfficientNet 9-classes", value: "v2" },
-            { label: "v3 · MobileNetV3 binary (+ vidéo)", value: "v3" },
+            { label: "v3 · MobileNetV3 3-classes (+ vidéo)", value: "v3" },
           ]}
           selectedValue={moderationModel}
           onSelect={async (value) => {

@@ -25,7 +25,7 @@ export interface GroupMember {
   display_name: string;
   username?: string;
   avatar_url?: string;
-  role: "admin" | "moderator" | "member";
+  role: "owner" | "admin" | "moderator" | "member";
   joined_at: string;
   is_active: boolean;
 }
@@ -87,7 +87,7 @@ interface RawConversationMember {
 }
 
 interface ResolvedMemberMeta {
-  role: "admin" | "moderator" | "member";
+  role: "owner" | "admin" | "moderator" | "member";
   joinedAt?: string;
   isActive?: boolean;
 }
@@ -483,8 +483,10 @@ async function fetchConversationMembers(
     const uid = m.userId ?? m.user_id;
     if (!uid) continue;
     const rawRole = (m.role ?? "member").toLowerCase();
-    let role: "admin" | "moderator" | "member" = "member";
-    if (rawRole === "admin" || rawRole === "owner") {
+    let role: "owner" | "admin" | "moderator" | "member" = "member";
+    if (rawRole === "owner") {
+      role = "owner";
+    } else if (rawRole === "admin") {
       role = "admin";
     } else if (rawRole === "moderator") {
       role = "moderator";
@@ -704,7 +706,7 @@ export const groupsAPI = {
         const displayName = fullName || profile?.username || "Utilisateur";
 
         const memberMeta = roleByUserId.get(userId);
-        const role: "admin" | "moderator" | "member" =
+        const role: "owner" | "admin" | "moderator" | "member" =
           memberMeta?.role ?? (userId === ownerId ? "admin" : "member");
 
         return {
@@ -796,39 +798,46 @@ export const groupsAPI = {
     };
   },
 
-  /**
-   * TODO(WHISPR-961): backend endpoint not yet implemented in user-service.
-   * Needs GET /user/v1/groups/:groupId/logs returning paginated group audit
-   * events (member add/remove, role change, settings update, admin transfer).
-   * Until then we return an empty list so the UI renders the empty state
-   * instead of throwing.
-   */
   async getGroupLogs(
     groupId: string,
     params?: { page?: number; limit?: number; actionType?: string },
   ): Promise<{ logs: GroupLog[]; total: number }> {
-    void groupId;
-    void params;
-    return { logs: [], total: 0 };
+    const headers = await getAuthHeaders();
+    const query = new URLSearchParams();
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.actionType) query.set("actionType", params.actionType);
+    const qs = query.toString();
+    const res = await fetch(
+      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/logs${qs ? `?${qs}` : ""}`,
+      { headers },
+    );
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `Impossible de charger les logs (${res.status})${text ? `: ${text}` : ""}`,
+      );
+    }
+    return res.json();
   },
 
-  /**
-   * TODO(WHISPR-961): backend endpoint not yet implemented in user-service.
-   * Needs GET/PATCH /user/v1/groups/:groupId/settings backed by a
-   * group_settings table (permissions, moderation level, join approval).
-   * Until then we return the app defaults so the settings screen is usable.
-   */
   async getGroupSettings(
     groupId: string,
     params?: { conversationId?: string },
   ): Promise<GroupSettings> {
     const headers = await getAuthHeaders();
-    const convId = params?.conversationId ?? groupId;
+    const convId = params?.conversationId || groupId;
     const conv = await fetchMessagingConversationPayload(convId, headers);
-    if (!conv) {
+    const userServiceGroupId =
+      conv?.externalGroupId || conv?.external_group_id || groupId;
+    const res = await fetch(
+      `${API_BASE_URL}/groups/${encodeURIComponent(userServiceGroupId)}/settings`,
+      { headers },
+    );
+    if (!res.ok) {
       return { ...DEFAULT_GROUP_SETTINGS };
     }
-    return extractGroupSettingsFromConversation(conv);
+    return res.json();
   },
 
   async updateGroupSettings(
@@ -837,51 +846,25 @@ export const groupsAPI = {
     params?: { conversationId?: string },
   ): Promise<GroupSettings> {
     const headers = await getAuthHeaders();
-    const convId = params?.conversationId ?? groupId;
+    const convId = params?.conversationId || groupId;
     const conv = await fetchMessagingConversationPayload(convId, headers);
-    if (!conv) {
-      throw new Error("Impossible de charger la conversation du groupe");
-    }
-
-    const current = extractGroupSettingsFromConversation(conv);
-    const mergedSettings: GroupSettings = {
-      ...current,
-      ...updates,
-    };
-
-    const metadata =
-      conv.metadata && typeof conv.metadata === "object"
-        ? (conv.metadata as Record<string, unknown>)
-        : {};
-
+    const userServiceGroupId =
+      conv?.externalGroupId || conv?.external_group_id || groupId;
     const res = await fetch(
-      `${MESSAGING_API_URL}/conversations/${encodeURIComponent(convId)}`,
+      `${API_BASE_URL}/groups/${encodeURIComponent(userServiceGroupId)}/settings`,
       {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
-        body: JSON.stringify({
-          metadata: {
-            ...metadata,
-            group_settings: mergedSettings,
-          },
-        }),
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(updates),
       },
     );
-
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(
         `Impossible de mettre a jour les parametres (${res.status})${text ? `: ${text}` : ""}`,
       );
     }
-
-    const updated = await fetchMessagingConversationPayload(convId, headers);
-    return updated
-      ? extractGroupSettingsFromConversation(updated)
-      : mergedSettings;
+    return res.json();
   },
 
   /**
@@ -1157,6 +1140,81 @@ export const groupsAPI = {
           : raw;
       const err = new Error(msg) as Error & { status: number };
       err.status = response.status;
+      throw err;
+    }
+  },
+
+  /**
+   * PATCH /user/v1/groups/:groupId/members/:userId/promote — admin only
+   * Promouvoir un membre en admin.
+   */
+  async promoteMember(groupId: string, userId: string): Promise<void> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(
+      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/promote`,
+      {
+        method: "PATCH",
+        headers,
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        (body as { error?: string; message?: string })?.error ??
+        (body as { message?: string })?.message ??
+        `HTTP ${res.status}`;
+      const err = new Error(msg) as Error & { status: number };
+      err.status = res.status;
+      throw err;
+    }
+  },
+
+  /**
+   * PATCH /user/v1/groups/:groupId/members/:userId/demote — admin only
+   * Retirer le rôle admin d'un membre. 409 si dernier admin.
+   */
+  async demoteMember(groupId: string, userId: string): Promise<void> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(
+      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/demote`,
+      {
+        method: "PATCH",
+        headers,
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        (body as { error?: string; message?: string })?.error ??
+        (body as { message?: string })?.message ??
+        `HTTP ${res.status}`;
+      const err = new Error(msg) as Error & { status: number };
+      err.status = res.status;
+      throw err;
+    }
+  },
+
+  /**
+   * DELETE /user/v1/groups/:groupId/members/:userId/kick — owner ou admin
+   * Retirer un membre par force (équivalent de remove, mais via user-service).
+   */
+  async kickMember(groupId: string, userId: string): Promise<void> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(
+      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/kick`,
+      {
+        method: "DELETE",
+        headers,
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const msg =
+        (body as { error?: string; message?: string })?.error ??
+        (body as { message?: string })?.message ??
+        `HTTP ${res.status}`;
+      const err = new Error(msg) as Error & { status: number };
+      err.status = res.status;
       throw err;
     }
   },

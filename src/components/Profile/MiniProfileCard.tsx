@@ -8,6 +8,7 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -220,7 +221,9 @@ export const MiniProfileCard: React.FC<MiniProfileCardProps> = ({
       setCachedRelation(userId, "blocked");
       setRelation("blocked");
     } catch {
-      // si l'appel rate, on garde le relation precedent
+      if (mounted.current) {
+        Alert.alert("Erreur", "Impossible de bloquer cet utilisateur");
+      }
     } finally {
       if (mounted.current) setBusyAction(null);
     }
@@ -236,7 +239,9 @@ export const MiniProfileCard: React.FC<MiniProfileCardProps> = ({
       setCachedRelation(userId, "contact");
       setRelation("contact");
     } catch {
-      // idem
+      if (mounted.current) {
+        Alert.alert("Erreur", "Impossible de debloquer cet utilisateur");
+      }
     } finally {
       if (mounted.current) setBusyAction(null);
     }

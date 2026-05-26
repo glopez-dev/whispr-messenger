@@ -31,7 +31,7 @@ export function useOfflineQueueDrainer(): void {
       if (inFlight.current) return;
       inFlight.current = true;
       try {
-        const { sent, failed, skipped } = await offlineQueue.drainAll(
+        const { sent, failed, skipped, expired } = await offlineQueue.drainAll(
           async (queued) => {
             await messagingAPI.sendMessage(queued.conversation_id, {
               content: queued.content,
@@ -44,10 +44,13 @@ export function useOfflineQueueDrainer(): void {
             });
           },
         );
-        if (!skipped && (sent > 0 || failed > 0)) {
+        if (
+          !skipped &&
+          (sent > 0 || failed > 0 || (expired?.length ?? 0) > 0)
+        ) {
           logger.info(
             "offlineQueueDrainer",
-            `Drained offline queue: ${sent} sent, ${failed} still pending`,
+            `Drained offline queue: ${sent} sent, ${failed} pending, ${expired?.length ?? 0} expired`,
           );
         }
       } catch (err) {

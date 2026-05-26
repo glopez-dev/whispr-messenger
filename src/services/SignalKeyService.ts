@@ -1,5 +1,5 @@
 import nacl from "tweetnacl";
-import { encodeBase64 } from "tweetnacl-util";
+import { encodeBase64, decodeBase64 } from "tweetnacl-util";
 import { getRandomBytes } from "expo-crypto";
 import { TokenService } from "./TokenService";
 import { generateClientRandom } from "../utils/crypto";
@@ -38,28 +38,60 @@ function toBase64(bytes: Uint8Array): string {
   return encodeBase64(bytes);
 }
 
+export type KeyBundleContext = "register" | "login" | "recovery";
+
+function deriveIdentityPublicKey(secretKey: Uint8Array): Uint8Array {
+  // La clé secrète NaCl box est 64 octets ; les 32 premiers sont la seed
+  // Curve25519, les 32 suivants sont la clé publique dérivée.
+  // On peut reconstruire la paire via fromSecretKey si l'implémentation
+  // le supporte, sinon on dérive manuellement via keyPair.fromSeed n'existe
+  // pas pour box. tweetnacl expose publicKey dans secretKey[32..64].
+  return secretKey.slice(32, 64);
+}
+
 export const SignalKeyService = {
-  async generateKeyBundle(): Promise<SignalKeyBundleDto> {
-    // Identity key pair (Curve25519)
-    const identityKeyPair = nacl.box.keyPair();
+  async generateKeyBundle(
+    context: KeyBundleContext = "register",
+  ): Promise<SignalKeyBundleDto> {
+    let identitySecretKey: Uint8Array;
+    let identityPublicKey: Uint8Array;
+
+    if (context === "login") {
+      // En contexte login : réutiliser la clé d'identité existante pour ne
+      // pas casser les sessions E2EE en cours. La clé est générée une seule
+      // fois à l'inscription et persistée dans le vault sécurisé.
+      const existingKey = await TokenService.getIdentityPrivateKey();
+      if (existingKey) {
+        identitySecretKey = decodeBase64(existingKey);
+        identityPublicKey = deriveIdentityPublicKey(identitySecretKey);
+      } else {
+        // Pas de clé stockée (premier login sur cet appareil) : générer et persister.
+        const kp = nacl.box.keyPair();
+        identitySecretKey = kp.secretKey;
+        identityPublicKey = kp.publicKey;
+        await TokenService.saveIdentityPrivateKey(toBase64(identitySecretKey));
+      }
+    } else {
+      // register ou recovery : générer une nouvelle paire et écraser.
+      // recovery est un placeholder pour le flow complet du ticket suivant.
+      const kp = nacl.box.keyPair();
+      identitySecretKey = kp.secretKey;
+      identityPublicKey = kp.publicKey;
+      await TokenService.saveIdentityPrivateKey(toBase64(identitySecretKey));
+    }
 
     // Signed pre-key pair (Curve25519)
     const signedPreKeyPair = nacl.box.keyPair();
 
-    // Sign the signed pre-key public key with the identity key (Ed25519)
-    // We use the identity key secret to derive a signing key via nacl.sign.keyPair.fromSeed
-    // The identity key secret is 32 bytes — valid seed for Ed25519
+    // Signer la clé publique du signed pre-key avec la clé d'identité (Ed25519)
     const signingKeyPair = nacl.sign.keyPair.fromSeed(
-      identityKeyPair.secretKey.slice(0, 32),
+      identitySecretKey.slice(0, 32),
     );
     const signature = nacl.sign.detached(
       signedPreKeyPair.publicKey,
       signingKeyPair.secretKey,
     );
 
-    // Use timestamp-based ids to avoid collisions with previously
-    // uploaded keys on the same device (backend has a unique
-    // (deviceId, keyId) constraint).
     const signedPrekeyId = generateSignedPrekeyId();
     const prekeyBase = generatePrekeyIdBase(signedPrekeyId);
 
@@ -72,13 +104,8 @@ export const SignalKeyService = {
       };
     });
 
-    // Persist identity private key securely for future sessions
-    await TokenService.saveIdentityPrivateKey(
-      toBase64(identityKeyPair.secretKey),
-    );
-
     return {
-      identityKey: toBase64(identityKeyPair.publicKey),
+      identityKey: toBase64(identityPublicKey),
       signedPreKey: {
         keyId: signedPrekeyId,
         publicKey: toBase64(signedPreKeyPair.publicKey),

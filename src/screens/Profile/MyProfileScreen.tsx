@@ -23,6 +23,13 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
+  AttachStep,
+  SpotlightTourProvider,
+  type TourStep,
+} from "react-native-spotlight-tour";
+import { TourTooltip } from "../../components/Tour/TourTooltip";
+import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+import {
   View,
   Text,
   StyleSheet,
@@ -120,6 +127,35 @@ const pickImageFromWeb = (
     input.click();
   });
 };
+
+const PROFILE_STEPS_COUNT = 2;
+
+const PROFILE_TOUR_STEPS: TourStep[] = [
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props: import("react-native-spotlight-tour").RenderProps) => (
+      <TourTooltip
+        {...props}
+        title="Photo de profil"
+        description="Appuie sur ta photo pour la changer. Elle est visible par tes contacts."
+        total={PROFILE_STEPS_COUNT}
+      />
+    ),
+  },
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props: import("react-native-spotlight-tour").RenderProps) => (
+      <TourTooltip
+        {...props}
+        title="Modifier le profil"
+        description="Mets à jour ton nom, ta bio et tes préférences de confidentialité."
+        total={PROFILE_STEPS_COUNT}
+      />
+    ),
+  },
+];
 
 export const MyProfileScreen: React.FC = () => {
   const { userId: currentUserId } = useAuth();
@@ -700,14 +736,16 @@ export const MyProfileScreen: React.FC = () => {
       <TouchableOpacity onPress={handleHomePress} style={styles.iconButton}>
         <Ionicons name="chatbubbles" size={24} color={colors.text.light} />
       </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => setIsEditing(true)}
-        style={styles.iconButton}
-        accessibilityRole="button"
-        accessibilityLabel="Modifier le profil"
-      >
-        <Ionicons name="pencil" size={22} color={colors.text.light} />
-      </TouchableOpacity>
+      <AttachStep index={1}>
+        <TouchableOpacity
+          onPress={() => setIsEditing(true)}
+          style={styles.iconButton}
+          accessibilityRole="button"
+          accessibilityLabel="Modifier le profil"
+        >
+          <Ionicons name="pencil" size={22} color={colors.text.light} />
+        </TouchableOpacity>
+      </AttachStep>
     </>
   ) : (
     <TouchableOpacity
@@ -722,238 +760,264 @@ export const MyProfileScreen: React.FC = () => {
   );
 
   return (
-    <LinearGradient
-      colors={colors.background.gradient.app}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
+    <SpotlightTourProvider
+      steps={PROFILE_TOUR_STEPS}
+      overlayColor="#0B1124"
+      overlayOpacity={0.82}
+      placement="bottom"
+      offset={10}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-      >
-        <Animated.View
-          style={[
-            styles.content,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            },
-          ]}
+      {() => (
+        <LinearGradient
+          colors={colors.background.gradient.app}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.container}
         >
-          <ProfileHeader
-            title="Profil"
-            onBack={handleBackPress}
-            rightActions={rightActions}
-          />
-
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={Platform.OS === "web"}
+          <TourAutoStart />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.keyboardView}
           >
-            <ProfilePictureBlock
-              uri={profile.profilePicture}
-              name={`${profile.firstName} ${profile.lastName}`.trim()}
-              editable={isEditing}
-              onPress={() => setShowImagePicker(true)}
-              label={isEditing ? "Appuyez pour changer" : "Photo de profil"}
-              scaleAnim={scaleAnim}
-            />
+            <Animated.View
+              style={[
+                styles.content,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+              <ProfileHeader
+                title="Profil"
+                onBack={handleBackPress}
+                rightActions={rightActions}
+              />
 
-            <View style={styles.profileInfo}>
-              {!profileLoaded ? (
-                <View style={styles.loadingRow}>
-                  <ActivityIndicator color="rgba(255,255,255,0.8)" />
-                  <Text style={styles.loadingText}>Chargement du profil</Text>
-                </View>
-              ) : profileLoadError ? (
-                <Text style={styles.loadErrorText}>{profileLoadError}</Text>
-              ) : null}
+              <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={Platform.OS === "web"}
+              >
+                <AttachStep index={0}>
+                  <ProfilePictureBlock
+                    uri={profile.profilePicture}
+                    name={`${profile.firstName} ${profile.lastName}`.trim()}
+                    editable={isEditing}
+                    onPress={() => setShowImagePicker(true)}
+                    label={
+                      isEditing ? "Appuyez pour changer" : "Photo de profil"
+                    }
+                    scaleAnim={scaleAnim}
+                  />
+                </AttachStep>
 
-              {isEditing ? (
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Nom complet</Text>
-                  <View style={styles.nameInputsContainer}>
-                    <TextInput
-                      style={[styles.input, styles.nameInput]}
-                      value={profile.firstName}
-                      onChangeText={(text) =>
-                        handleFieldChange("firstName", text)
+                <View style={styles.profileInfo}>
+                  {!profileLoaded ? (
+                    <View style={styles.loadingRow}>
+                      <ActivityIndicator color="rgba(255,255,255,0.8)" />
+                      <Text style={styles.loadingText}>
+                        Chargement du profil
+                      </Text>
+                    </View>
+                  ) : profileLoadError ? (
+                    <Text style={styles.loadErrorText}>{profileLoadError}</Text>
+                  ) : null}
+
+                  {isEditing ? (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionLabel}>Nom complet</Text>
+                      <View style={styles.nameInputsContainer}>
+                        <TextInput
+                          style={[styles.input, styles.nameInput]}
+                          value={profile.firstName}
+                          onChangeText={(text) =>
+                            handleFieldChange("firstName", text)
+                          }
+                          placeholder="Prénom"
+                          placeholderTextColor="rgba(255,255,255,0.5)"
+                        />
+                        <TextInput
+                          style={[styles.input, styles.nameInput]}
+                          value={profile.lastName}
+                          onChangeText={(text) =>
+                            handleFieldChange("lastName", text)
+                          }
+                          placeholder="Nom"
+                          placeholderTextColor="rgba(255,255,255,0.5)"
+                        />
+                      </View>
+                    </View>
+                  ) : (
+                    <ProfileFieldRow
+                      label="Nom complet"
+                      value={
+                        profile.firstName || profile.lastName
+                          ? `${profile.firstName} ${profile.lastName}`.trim()
+                          : undefined
                       }
-                      placeholder="Prénom"
-                      placeholderTextColor="rgba(255,255,255,0.5)"
                     />
-                    <TextInput
-                      style={[styles.input, styles.nameInput]}
-                      value={profile.lastName}
-                      onChangeText={(text) =>
-                        handleFieldChange("lastName", text)
+                  )}
+
+                  {isEditing ? (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionLabel}>Nom d'utilisateur</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={profile.username}
+                        onChangeText={(text) =>
+                          handleFieldChange("username", text)
+                        }
+                        placeholder="@nomdutilisateur"
+                        placeholderTextColor={colors.text.placeholder}
+                        autoCapitalize="none"
+                      />
+                      {!!fieldErrors.username && (
+                        <Text style={styles.fieldErrorText}>
+                          {fieldErrors.username}
+                        </Text>
+                      )}
+                      {!fieldErrors.username && (
+                        <Text style={styles.fieldHelperText}>
+                          Lettres Unicode, chiffres et _ autorisés. Normalisé à
+                          l'enregistrement.
+                        </Text>
+                      )}
+                    </View>
+                  ) : (
+                    <ProfileFieldRow
+                      label="Nom d'utilisateur"
+                      value={
+                        profile.username
+                          ? formatUsername(profile.username)
+                          : undefined
                       }
-                      placeholder="Nom"
-                      placeholderTextColor="rgba(255,255,255,0.5)"
+                    />
+                  )}
+
+                  <ProfileFieldRow
+                    label="Numéro de téléphone"
+                    value={profile.phoneNumber}
+                  />
+
+                  {isEditing ? (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionLabel}>Biographie</Text>
+                      <TextInput
+                        style={[styles.input, styles.biographyInput]}
+                        value={profile.biography}
+                        onChangeText={(text) =>
+                          handleFieldChange("biography", text)
+                        }
+                        placeholder="Parlez-nous de vous..."
+                        placeholderTextColor={colors.text.placeholder}
+                        multiline
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                        maxLength={500}
+                      />
+                      <Text style={styles.characterCount}>
+                        {(profile.biography || "").length}/500 caractères
+                      </Text>
+                    </View>
+                  ) : (
+                    <ProfileFieldRow
+                      label="Biographie"
+                      value={profile.biography}
+                    />
+                  )}
+
+                  <StatusChip
+                    isOnline={profile.isOnline}
+                    lastSeen={profile.lastSeen}
+                  />
+
+                  {profile.createdAt && (
+                    <ProfileFieldRow
+                      label="Membre depuis"
+                      value={new Date(profile.createdAt).toLocaleDateString(
+                        "fr-FR",
+                        {
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                        },
+                      )}
+                    />
+                  )}
+                </View>
+
+                {isEditing && (
+                  <View style={styles.actionButtons}>
+                    <Button
+                      title={loading ? "Sauvegarde" : "Sauvegarder"}
+                      variant="primary"
+                      size="large"
+                      onPress={handleSaveProfile}
+                      loading={loading}
+                      fullWidth
                     />
                   </View>
-                </View>
-              ) : (
-                <ProfileFieldRow
-                  label="Nom complet"
-                  value={
-                    profile.firstName || profile.lastName
-                      ? `${profile.firstName} ${profile.lastName}`.trim()
-                      : undefined
-                  }
-                />
-              )}
+                )}
+              </ScrollView>
+            </Animated.View>
+          </KeyboardAvoidingView>
 
-              {isEditing ? (
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Nom d'utilisateur</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={profile.username}
-                    onChangeText={(text) => handleFieldChange("username", text)}
-                    placeholder="@nomdutilisateur"
-                    placeholderTextColor={colors.text.placeholder}
-                    autoCapitalize="none"
+          <Modal
+            visible={showImagePicker}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowImagePicker(false)}
+          >
+            <View style={styles.alertOverlay}>
+              <View style={styles.alertCard}>
+                <Text style={styles.alertTitle}>
+                  Changer la photo de profil
+                </Text>
+                <Text style={styles.alertSubtitle}>
+                  Sélectionnez une option
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.alertAction}
+                  onPress={handleCameraCapture}
+                >
+                  <Ionicons
+                    name="camera"
+                    size={18}
+                    color="#0A84FF"
+                    style={styles.alertIcon}
                   />
-                  {!!fieldErrors.username && (
-                    <Text style={styles.fieldErrorText}>
-                      {fieldErrors.username}
-                    </Text>
-                  )}
-                  {!fieldErrors.username && (
-                    <Text style={styles.fieldHelperText}>
-                      Lettres Unicode, chiffres et _ autorisés. Normalisé à
-                      l'enregistrement.
-                    </Text>
-                  )}
-                </View>
-              ) : (
-                <ProfileFieldRow
-                  label="Nom d'utilisateur"
-                  value={
-                    profile.username
-                      ? formatUsername(profile.username)
-                      : undefined
-                  }
-                />
-              )}
+                  <Text style={styles.alertActionText}>Prendre une photo</Text>
+                </TouchableOpacity>
 
-              <ProfileFieldRow
-                label="Numéro de téléphone"
-                value={profile.phoneNumber}
-              />
-
-              {isEditing ? (
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Biographie</Text>
-                  <TextInput
-                    style={[styles.input, styles.biographyInput]}
-                    value={profile.biography}
-                    onChangeText={(text) =>
-                      handleFieldChange("biography", text)
-                    }
-                    placeholder="Parlez-nous de vous..."
-                    placeholderTextColor={colors.text.placeholder}
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                    maxLength={500}
+                <TouchableOpacity
+                  style={styles.alertAction}
+                  onPress={handleImagePicker}
+                >
+                  <Ionicons
+                    name="image"
+                    size={18}
+                    color="#0A84FF"
+                    style={styles.alertIcon}
                   />
-                  <Text style={styles.characterCount}>
-                    {(profile.biography || "").length}/500 caractères
+                  <Text style={styles.alertActionText}>
+                    Choisir depuis la galerie
                   </Text>
-                </View>
-              ) : (
-                <ProfileFieldRow label="Biographie" value={profile.biography} />
-              )}
+                </TouchableOpacity>
 
-              <StatusChip
-                isOnline={profile.isOnline}
-                lastSeen={profile.lastSeen}
-              />
-
-              {profile.createdAt && (
-                <ProfileFieldRow
-                  label="Membre depuis"
-                  value={new Date(profile.createdAt).toLocaleDateString(
-                    "fr-FR",
-                    {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    },
-                  )}
-                />
-              )}
-            </View>
-
-            {isEditing && (
-              <View style={styles.actionButtons}>
-                <Button
-                  title={loading ? "Sauvegarde" : "Sauvegarder"}
-                  variant="primary"
-                  size="large"
-                  onPress={handleSaveProfile}
-                  loading={loading}
-                  fullWidth
-                />
+                <TouchableOpacity
+                  style={styles.alertCancel}
+                  onPress={() => setShowImagePicker(false)}
+                >
+                  <Text style={styles.alertCancelText}>Continuer</Text>
+                </TouchableOpacity>
               </View>
-            )}
-          </ScrollView>
-        </Animated.View>
-      </KeyboardAvoidingView>
-
-      <Modal
-        visible={showImagePicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowImagePicker(false)}
-      >
-        <View style={styles.alertOverlay}>
-          <View style={styles.alertCard}>
-            <Text style={styles.alertTitle}>Changer la photo de profil</Text>
-            <Text style={styles.alertSubtitle}>Sélectionnez une option</Text>
-
-            <TouchableOpacity
-              style={styles.alertAction}
-              onPress={handleCameraCapture}
-            >
-              <Ionicons
-                name="camera"
-                size={18}
-                color="#0A84FF"
-                style={styles.alertIcon}
-              />
-              <Text style={styles.alertActionText}>Prendre une photo</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.alertAction}
-              onPress={handleImagePicker}
-            >
-              <Ionicons
-                name="image"
-                size={18}
-                color="#0A84FF"
-                style={styles.alertIcon}
-              />
-              <Text style={styles.alertActionText}>
-                Choisir depuis la galerie
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.alertCancel}
-              onPress={() => setShowImagePicker(false)}
-            >
-              <Text style={styles.alertCancelText}>Continuer</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </LinearGradient>
+            </View>
+          </Modal>
+        </LinearGradient>
+      )}
+    </SpotlightTourProvider>
   );
 };
 
