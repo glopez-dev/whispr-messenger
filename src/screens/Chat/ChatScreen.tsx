@@ -498,13 +498,18 @@ export const ChatScreen: React.FC = () => {
   const { userId: rawUserId } = useAuth();
   const userId = rawUserId ?? "";
   const [token, setToken] = useState<string>("");
+  const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!userId) {
       setToken("");
+      setDeviceId(undefined);
       return;
     }
-    TokenService.getAccessToken().then((t) => setToken(t ?? ""));
+    TokenService.getAccessToken().then((t) => {
+      setToken(t ?? "");
+      if (t) setDeviceId(TokenService.decodeAccessToken(t)?.deviceId);
+    });
   }, [userId]);
 
   // WebSocket connection
@@ -516,6 +521,7 @@ export const ChatScreen: React.FC = () => {
     sendTyping,
   } = useWebSocket({
     userId,
+    deviceId,
     token,
     onPresenceUpdate: (presenceUserId: string, isOnline: boolean) => {
       setOnlineUsers((prev) => {
@@ -900,8 +906,6 @@ export const ChatScreen: React.FC = () => {
         for (const queued of pending) {
           try {
             let outgoingContent = queued.content;
-            let signature: string | undefined;
-            let sender_public_key: string | undefined;
             if (
               e2eeEnabledRef.current &&
               queued.message_type === "text" &&
@@ -923,8 +927,6 @@ export const ChatScreen: React.FC = () => {
                   recipientUserId: otherUserId,
                 });
                 outgoingContent = enc.content;
-                signature = enc.signature;
-                sender_public_key = enc.sender_public_key;
               }
             }
             const sent = await messagingAPI.sendMessage(conversationId, {
@@ -933,8 +935,6 @@ export const ChatScreen: React.FC = () => {
               client_random: queued.client_random,
               metadata: {},
               reply_to_id: queued.reply_to_id,
-              signature,
-              sender_public_key,
             });
             // Replace queued message with sent one
             setMessages((prev) =>
@@ -1629,8 +1629,6 @@ export const ChatScreen: React.FC = () => {
 
         try {
           let outgoingContent = content;
-          let signature: string | undefined;
-          let sender_public_key: string | undefined;
 
           // Blind the server: always use E2EE for direct chats if possible,
           // or if explicitly enabled via metadata (for groups).
@@ -1655,8 +1653,6 @@ export const ChatScreen: React.FC = () => {
                   recipientUserIds: otherUserIds,
                 });
                 outgoingContent = enc.content;
-                signature = enc.signature;
-                sender_public_key = enc.sender_public_key;
               } catch (encErr: any) {
                 logger.warn(
                   "ChatScreen",
@@ -1679,8 +1675,6 @@ export const ChatScreen: React.FC = () => {
                 // Otherwise (auto-e2ee for 1v1), we fallback to cleartext
                 // if the recipient is not E2EE-ready yet.
                 outgoingContent = content;
-                signature = undefined;
-                sender_public_key = undefined;
               }
             }
           }
@@ -1691,8 +1685,6 @@ export const ChatScreen: React.FC = () => {
             client_random: tempMessage.client_random as number,
             metadata: {},
             reply_to_id: replyToId,
-            signature,
-            sender_public_key,
           });
 
           setMessages((prev) => {
@@ -1718,8 +1710,11 @@ export const ChatScreen: React.FC = () => {
             .applyNewMessage({ ...(sent as any), content } as any, userId)
             .catch(() => {});
           useConversationsStore.getState().resetUnreadCount(conversationId);
-        } catch (error) {
+        } catch (error: any) {
           logger.error("ChatScreen", "Error sending message", error);
+          if (error?.body) {
+            logger.error("ChatScreen", "Send 422 body", error.body);
+          }
           setMessages((prev) => {
             return prev.map((m) => {
               if (m.id === tempMessage.id) {
@@ -2107,8 +2102,6 @@ export const ChatScreen: React.FC = () => {
 
         // 3. Send message via messaging-service with remote media URLs
         let finalContent = messageContent;
-        let signature: string | undefined;
-        let sender_public_key: string | undefined;
 
         if (e2eeMediaMeta) {
           const memberIdsForEnc =
@@ -2131,8 +2124,6 @@ export const ChatScreen: React.FC = () => {
                 recipientUserIds: otherUserIds,
               });
               finalContent = enc.content;
-              signature = enc.signature;
-              sender_public_key = enc.sender_public_key;
             } catch (encErr) {
               logger.warn(
                 "ChatScreen",
@@ -2153,8 +2144,6 @@ export const ChatScreen: React.FC = () => {
             e2ee: !!e2eeMediaMeta,
           },
           reply_to_id: replyToId,
-          signature,
-          sender_public_key,
         });
 
         // 4. Attach media record to the message (non-blocking — message already has metadata)
