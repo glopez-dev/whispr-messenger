@@ -129,6 +129,7 @@ const CHAT_TOUR_STEPS: TourStep[] = [
 ];
 import { getConversationDisplayName } from "../../utils";
 import { generateClientRandom } from "../../utils/crypto";
+import { convertHeicToJpeg } from "../../utils/imageCompression";
 import { usePresenceStore } from "../../store/presenceStore";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { colors, withOpacity } from "../../theme/colors";
@@ -1923,15 +1924,40 @@ export const ChatScreen: React.FC = () => {
           uploadProgress: 0,
         });
 
+        // Conversion HEIC → JPEG avant upload : les navigateurs Chrome/Firefox
+        // ne décodent pas HEIC nativement → carré noir côté receveur sur PWA.
+        // On convertit ici, avant E2EE, pour que le ciphertext porte du JPEG.
+        let finalUri = uploadUri;
+        let finalFilename = filename;
+        let finalMimeType = mimeType;
+        if (type === "image") {
+          const heicResult = await convertHeicToJpeg(uploadUri, filename);
+          if (heicResult != null) {
+            finalUri = heicResult.uri;
+            finalMimeType = heicResult.mimeType;
+            finalFilename = heicResult.filename;
+          } else if (
+            mimeType === "image/heic" ||
+            mimeType === "image/heif" ||
+            filename.match(/\.(heic|heif)$/i)
+          ) {
+            // Conversion échouée sur un fichier HEIC confirmé : log + fallback HEIC
+            logger.warn(
+              "ChatScreen.handleSendMedia",
+              "HEIC→JPEG conversion failed, uploading original HEIC (may render black on Chrome/Firefox)",
+            );
+          }
+        }
+
         // E2EE for media: blind the server
         const shouldEncrypt = e2eeEnabled || conversation?.type === "direct";
-        let finalUploadUri = uploadUri;
-        let uploadMimeType = mimeType;
+        let finalUploadUri = finalUri;
+        let uploadMimeType = finalMimeType;
         let e2eeMediaMeta: { key: string; nonce: string } | undefined;
 
         if (shouldEncrypt) {
           try {
-            const encMedia = await E2EEService.encryptMediaFile(uploadUri);
+            const encMedia = await E2EEService.encryptMediaFile(finalUri);
             finalUploadUri = encMedia.encryptedUri;
             e2eeMediaMeta = { key: encMedia.key, nonce: encMedia.nonce };
             // The ciphertext no longer matches the original image/video magic
@@ -1952,7 +1978,7 @@ export const ChatScreen: React.FC = () => {
 
         // 1. Upload file to media-service (encrypted or plain)
         const uploadResult = await MediaService.uploadMedia(
-          { uri: finalUploadUri, name: filename, type: uploadMimeType },
+          { uri: finalUploadUri, name: finalFilename, type: uploadMimeType },
           (percent) => {
             patchTempUploadMeta({
               uploadPhase: "uploading",
@@ -1993,8 +2019,8 @@ export const ChatScreen: React.FC = () => {
           media_id: uploadResult.id,
           media_url: uploadResult.url,
           thumbnail_url: uploadResult.thumbnail_url || uploadResult.url,
-          filename: uploadResult.filename || filename,
-          mime_type: uploadResult.mime_type || mimeType,
+          filename: uploadResult.filename || finalFilename,
+          mime_type: uploadResult.mime_type || finalMimeType,
           size: uploadResult.size,
           duration: resolvedDuration,
         };
@@ -2014,7 +2040,7 @@ export const ChatScreen: React.FC = () => {
                       media_url: uploadResult.url,
                       thumbnail_url:
                         uploadResult.thumbnail_url || uploadResult.url,
-                      mime_type: uploadResult.mime_type || mimeType,
+                      mime_type: uploadResult.mime_type || finalMimeType,
                       duration: resolvedDuration,
                     },
                   })),
@@ -2163,9 +2189,9 @@ export const ChatScreen: React.FC = () => {
             media_id: uploadResult.id,
             media_type: type,
             metadata: {
-              filename: uploadResult.filename || filename,
+              filename: uploadResult.filename || finalFilename,
               size: uploadResult.size,
-              mime_type: uploadResult.mime_type || mimeType,
+              mime_type: uploadResult.mime_type || finalMimeType,
               media_url: uploadResult.url,
               thumbnail_url: uploadResult.thumbnail_url || uploadResult.url,
               duration: resolvedDuration,

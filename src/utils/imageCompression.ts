@@ -3,10 +3,13 @@
  * WHISPR-265: Compression automatique des images avant envoi
  * WHISPR-1039: ne plus déformer les images, le côté le plus long est borné
  *              et le ratio d'origine est préservé.
- * WHISPR-1197: GIF/HEIC sont préservés tels quels (pas de re-encodage JPEG)
- *              pour conserver l'animation des GIFs et la compression native
- *              Apple sur les HEIC. Seuls JPEG/PNG/inconnu passent par le
- *              pipeline `manipulateAsync`.
+ * WHISPR-1197: GIF/HEIC sont préservés tels quels dans compressImage (pas de
+ *              re-encodage JPEG) pour conserver l'animation des GIFs et la
+ *              compression native Apple sur les HEIC.
+ *              Exception : convertHeicToJpeg() est dédié à la compatibilité
+ *              web — les navigateurs Chrome/Firefox ne décodent pas HEIC
+ *              nativement, les images apparaissent noires. Cette conversion
+ *              doit être appelée avant upload dans handleSendMedia.
  */
 
 import * as ImageManipulator from "expo-image-manipulator";
@@ -42,6 +45,53 @@ export function detectImageFormatFromUri(uri: string): ImageFormat {
       return "webp";
     default:
       return "unknown";
+  }
+}
+
+export interface HeicConversionResult {
+  uri: string;
+  mimeType: "image/jpeg";
+  filename: string;
+}
+
+/**
+ * Convertit un fichier HEIC/HEIF en JPEG via expo-image-manipulator.
+ *
+ * Les navigateurs web (Chrome, Firefox, Brave) ne décodent pas HEIC
+ * nativement : les images apparaissent comme des carrés noirs côté receveur
+ * sur PWA. Cette conversion doit être appelée avant upload.
+ *
+ * En cas d'échec de la conversion (rare), la fonction retourne null et
+ * l'appelant doit envoyer le HEIC original en fallback (avec un warning log).
+ *
+ * @param uri      URI locale du fichier HEIC/HEIF
+ * @param filename Nom de fichier d'origine (ex: IMG_1234.heic)
+ */
+export async function convertHeicToJpeg(
+  uri: string,
+  filename: string,
+): Promise<HeicConversionResult | null> {
+  const format = detectImageFormatFromUri(uri);
+  if (format !== "heic") {
+    // Pas HEIC/HEIF — rien à convertir, retourner tel quel serait confusant
+    // pour l'appelant qui s'attend à un résultat typé JPEG. On retourne null.
+    return null;
+  }
+
+  try {
+    const result = await ImageManipulator.manipulateAsync(uri, [], {
+      compress: 0.92,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
+    return {
+      uri: result.uri,
+      mimeType: "image/jpeg",
+      filename: filename.replace(/\.(heic|heif)$/i, ".jpg"),
+    };
+  } catch (err) {
+    // expo-image-manipulator peut échouer sur certains appareils très anciens
+    // ou sur des fichiers HEIC corrompus. On laisse l'appelant décider du fallback.
+    return null;
   }
 }
 
