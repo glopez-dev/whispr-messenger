@@ -116,6 +116,54 @@ describe("MediaService.uploadMedia client-side validation (WHISPR-1220)", () => 
     });
   });
 
+  it("accepts application/octet-stream for E2EE-encrypted message uploads", async () => {
+    // E2EE upload path: ChatScreen.handleSendMedia substitutes
+    // application/octet-stream for the original MIME after encrypting the
+    // blob. The allowlist must not block this.
+    (global as any).fetch = jest
+      .fn()
+      .mockResolvedValueOnce({ blob: () => Promise.resolve(mockBlob(1024)) })
+      .mockResolvedValueOnce({ blob: () => Promise.resolve(mockBlob(1024)) })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ mediaId: "abc" }),
+        text: () => Promise.resolve(""),
+      });
+
+    await expect(
+      MediaService.uploadMedia(
+        {
+          uri: "https://blob.test/encrypted",
+          name: "encrypted.bin",
+          type: "application/octet-stream",
+        },
+        undefined,
+        { context: "message" },
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  it("still rejects application/octet-stream for the avatar context", async () => {
+    mockFetchOnce(1024);
+
+    await expect(
+      MediaService.uploadMedia(
+        {
+          uri: "https://blob.test/x",
+          name: "x.bin",
+          type: "application/octet-stream",
+        },
+        undefined,
+        { context: "avatar" },
+      ),
+    ).rejects.toMatchObject({
+      code: "UPLOAD_MIME_NOT_ALLOWED",
+      context: "avatar",
+      mimeType: "application/octet-stream",
+    });
+  });
+
   it("accepts MIME with parameters (e.g. 'image/jpeg; charset=binary')", async () => {
     // Three fetches on the web success path: size check, FormData blob
     // conversion, then the actual POST upload.
