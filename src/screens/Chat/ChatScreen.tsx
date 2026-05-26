@@ -1926,6 +1926,7 @@ export const ChatScreen: React.FC = () => {
         // E2EE for media: blind the server
         const shouldEncrypt = e2eeEnabled || conversation?.type === "direct";
         let finalUploadUri = uploadUri;
+        let uploadMimeType = mimeType;
         let e2eeMediaMeta: { key: string; nonce: string } | undefined;
 
         if (shouldEncrypt) {
@@ -1933,6 +1934,12 @@ export const ChatScreen: React.FC = () => {
             const encMedia = await E2EEService.encryptMediaFile(uploadUri);
             finalUploadUri = encMedia.encryptedUri;
             e2eeMediaMeta = { key: encMedia.key, nonce: encMedia.nonce };
+            // The ciphertext no longer matches the original image/video magic
+            // bytes, so the server-side magic-bytes validator rejects it as 415
+            // when declared as image/jpeg etc. Upload as opaque octet-stream;
+            // the real MIME stays in the message attachment metadata for the
+            // recipient to decode after decryption.
+            uploadMimeType = "application/octet-stream";
           } catch (encErr) {
             logger.warn(
               "ChatScreen",
@@ -1945,7 +1952,7 @@ export const ChatScreen: React.FC = () => {
 
         // 1. Upload file to media-service (encrypted or plain)
         const uploadResult = await MediaService.uploadMedia(
-          { uri: finalUploadUri, name: filename, type: mimeType },
+          { uri: finalUploadUri, name: filename, type: uploadMimeType },
           (percent) => {
             patchTempUploadMeta({
               uploadPhase: "uploading",
