@@ -379,7 +379,14 @@ describe("groupsAPI.getGroupLogs", () => {
 // ---------------- getGroupSettings ----------------
 
 describe("groupsAPI.getGroupSettings", () => {
-  it("GETs /user/v1/groups/:groupId/settings and returns parsed settings", async () => {
+  it("resolves externalGroupId from conversation and GETs settings with it", async () => {
+    // 1st call: fetch conversation → externalGroupId = "real-uuid"
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({
+        body: { data: { id: "conv-1", externalGroupId: "real-uuid" } },
+      }),
+    );
+    // 2nd call: GET settings using the resolved UUID
     mockFetch.mockResolvedValueOnce(
       mockResponse({
         body: {
@@ -394,16 +401,41 @@ describe("groupsAPI.getGroupSettings", () => {
       }),
     );
 
-    const settings = await groupsAPI.getGroupSettings("grp-1");
+    const settings = await groupsAPI.getGroupSettings("conv-1", {
+      conversationId: "conv-1",
+    });
 
-    expect(mockFetch.mock.calls[0][0]).toBe(
-      `${USER_BASE}/groups/grp-1/settings`,
+    expect(mockFetch.mock.calls[0][0]).toBe(`${MSG_BASE}/conversations/conv-1`);
+    expect(mockFetch.mock.calls[1][0]).toBe(
+      `${USER_BASE}/groups/real-uuid/settings`,
     );
     expect(settings.message_permission).toBe("moderators_plus");
     expect(settings.moderation_level).toBe("strict");
   });
 
-  it("returns defaults when the backend returns a non-OK status", async () => {
+  it("falls back to groupId when conversation has no externalGroupId", async () => {
+    // 1st call: conversation with no externalGroupId
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { data: { id: "grp-1" } } }),
+    );
+    // 2nd call: settings
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { message_permission: "all_members" } }),
+    );
+
+    await groupsAPI.getGroupSettings("grp-1");
+
+    expect(mockFetch.mock.calls[1][0]).toBe(
+      `${USER_BASE}/groups/grp-1/settings`,
+    );
+  });
+
+  it("returns defaults when the settings endpoint returns a non-OK status", async () => {
+    // conversation fetch
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { data: { id: "grp-1" } } }),
+    );
+    // settings 404
     mockFetch.mockResolvedValueOnce(mockResponse({ status: 404 }));
 
     const settings = await groupsAPI.getGroupSettings("grp-1");
@@ -417,24 +449,17 @@ describe("groupsAPI.getGroupSettings", () => {
       join_approval_required: false,
     });
   });
-
-  it("ignores the conversationId param (no longer used)", async () => {
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({ body: { message_permission: "all_members" } }),
-    );
-
-    await groupsAPI.getGroupSettings("grp-1", { conversationId: "conv-X" });
-
-    expect(mockFetch.mock.calls[0][0]).toBe(
-      `${USER_BASE}/groups/grp-1/settings`,
-    );
-  });
 });
 
 // ---------------- updateGroupSettings ----------------
 
 describe("groupsAPI.updateGroupSettings", () => {
-  it("PATCHes /user/v1/groups/:groupId/settings and returns updated settings", async () => {
+  it("resolves externalGroupId then PATCHes settings with it", async () => {
+    // 1st call: conversation → externalGroupId
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { data: { externalGroupId: "real-uuid" } } }),
+    );
+    // 2nd call: PATCH settings
     mockFetch.mockResolvedValueOnce(
       mockResponse({
         body: {
@@ -449,43 +474,53 @@ describe("groupsAPI.updateGroupSettings", () => {
       }),
     );
 
-    const result = await groupsAPI.updateGroupSettings("grp-1", {
-      message_permission: "admins_only",
-    });
+    const result = await groupsAPI.updateGroupSettings(
+      "conv-1",
+      { message_permission: "admins_only" },
+      { conversationId: "conv-1" },
+    );
 
-    const call = mockFetch.mock.calls[0];
-    expect(call[0]).toBe(`${USER_BASE}/groups/grp-1/settings`);
-    expect(call[1].method).toBe("PATCH");
-    expect(JSON.parse(call[1].body)).toEqual({
+    const patchCall = mockFetch.mock.calls[1];
+    expect(patchCall[0]).toBe(`${USER_BASE}/groups/real-uuid/settings`);
+    expect(patchCall[1].method).toBe("PATCH");
+    expect(JSON.parse(patchCall[1].body)).toEqual({
       message_permission: "admins_only",
     });
     expect(result.message_permission).toBe("admins_only");
   });
 
+  it("falls back to groupId when conversation has no externalGroupId", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { data: { id: "grp-1" } } }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { message_permission: "all_members" } }),
+    );
+
+    await groupsAPI.updateGroupSettings("grp-1", {});
+
+    expect(mockFetch.mock.calls[1][0]).toBe(
+      `${USER_BASE}/groups/grp-1/settings`,
+    );
+  });
+
   it("throws when the PATCH fails", async () => {
+    // conversation fetch
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { data: { externalGroupId: "real-uuid" } } }),
+    );
+    // PATCH 403
     mockFetch.mockResolvedValueOnce(
       mockResponse({ status: 403, textBody: "forbidden" }),
     );
 
     await expect(
-      groupsAPI.updateGroupSettings("grp-1", { moderation_level: "strict" }),
+      groupsAPI.updateGroupSettings(
+        "conv-1",
+        { moderation_level: "strict" },
+        { conversationId: "conv-1" },
+      ),
     ).rejects.toThrow(/Impossible de mettre a jour les parametres \(403\)/);
-  });
-
-  it("ignores the conversationId param (no longer used)", async () => {
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({ body: { message_permission: "all_members" } }),
-    );
-
-    await groupsAPI.updateGroupSettings(
-      "grp-1",
-      {},
-      { conversationId: "conv-X" },
-    );
-
-    expect(mockFetch.mock.calls[0][0]).toBe(
-      `${USER_BASE}/groups/grp-1/settings`,
-    );
   });
 });
 
