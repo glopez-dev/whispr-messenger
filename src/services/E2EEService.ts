@@ -309,30 +309,31 @@ export const E2EEService = {
         (d) => d !== deviceId,
       );
 
-      const myOtherBundles = await Promise.all(
-        myOtherDeviceIds.map(async (d) => {
-          try {
-            const cached = getCachedBundle(userId, d);
-            if (cached) {
-              return { user_id: userId, device_id: d, identity_key: cached };
-            }
-            const bundle = await SignalKeysService.getKeyBundle(userId, d);
-            setCachedBundle(userId, d, bundle.identity_key);
-            return {
+      for (const d of myOtherDeviceIds) {
+        try {
+          const cached = getCachedBundle(userId, d);
+          if (cached) {
+            myOtherRecipients.push({
               user_id: userId,
               device_id: d,
-              identity_key: bundle.identity_key,
-            };
-          } catch (err) {
-            console.warn(
-              `[E2EEService] Could not fetch bundle for own device ${d}:`,
-              err,
-            );
-            return null;
+              identity_key: cached,
+            });
+            continue;
           }
-        }),
-      );
-      myOtherRecipients = myOtherBundles.filter((b): b is any => b !== null);
+          const bundle = await SignalKeysService.getKeyBundle(userId, d);
+          setCachedBundle(userId, d, bundle.identity_key);
+          myOtherRecipients.push({
+            user_id: userId,
+            device_id: d,
+            identity_key: bundle.identity_key,
+          });
+        } catch (err) {
+          console.warn(
+            `[E2EEService] Could not fetch bundle for own device ${d}:`,
+            err,
+          );
+        }
+      }
     } catch (err) {
       console.warn("[E2EEService] Could not fetch keys for own devices:", err);
     }
