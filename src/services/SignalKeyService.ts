@@ -41,7 +41,7 @@ function toBase64(bytes: Uint8Array): string {
 
 export type KeyBundleContext = "register" | "login" | "recovery";
 
-function deriveIdentityPublicKey(secretKey: Uint8Array): Uint8Array {
+export function deriveIdentityPublicKey(secretKey: Uint8Array): Uint8Array {
   // nacl.box.keyPair() retourne une secretKey de 32 bytes.
   // slice(32, 64) sur 32 bytes = tableau vide → publicKey vide → identityKey ""
   // On utilise fromSecretKey pour reconstruire la paire correctement.
