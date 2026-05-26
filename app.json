@@ -18,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.roadmvn.whispr.preprod",
+      "bundleIdentifier": "com.anonymous.Whispr-Frontend",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -35,7 +35,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.roadmvn.whispr.preprod",
+      "package": "whispr.test1702",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "RECORD_AUDIO",
