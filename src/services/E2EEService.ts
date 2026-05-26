@@ -141,6 +141,18 @@ function isEnvelopeV1(value: unknown): value is E2EEEnvelopeV1 {
 let cachedIdentitySecretKey: Uint8Array | null = null;
 let cachedIdentityPublicKey: Uint8Array | null = null;
 
+// Module-level identity-cache invalidator. Must be called whenever the
+// on-disk identity key changes (re-login, key rotation, logout) so subsequent
+// encrypt/decrypt operations re-read the fresh key from secure storage
+// instead of returning the stale in-memory pair. Without this, a logout
+// + re-login on the same JS process keeps using the old identity until
+// the process is killed — silently desyncing the client from the
+// server's published public key.
+function resetIdentityCacheInternal(): void {
+  cachedIdentitySecretKey = null;
+  cachedIdentityPublicKey = null;
+}
+
 // Key bundle cache — avoids hammering the backend rate limiter on every send.
 // TTL: 5 min (bundles change only when a device rotates prekeys, which is rare).
 const KEY_BUNDLE_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -172,8 +184,7 @@ function setCachedBundle(
 
 export const __testing = {
   resetCache(): void {
-    cachedIdentitySecretKey = null;
-    cachedIdentityPublicKey = null;
+    resetIdentityCacheInternal();
     keyBundleCache.clear();
   },
 };
@@ -236,6 +247,16 @@ function deriveEd25519SigningKeypairFromSeed(
 }
 
 export const E2EEService = {
+  /**
+   * Drop the cached identity keypair so the next encrypt/decrypt re-reads
+   * it from secure storage. Call this anywhere the underlying identity
+   * key may have rotated — re-login, manual key reset, logout — to keep
+   * the in-memory state aligned with what's on disk and on the server.
+   */
+  resetIdentityCache(): void {
+    resetIdentityCacheInternal();
+  },
+
   isEncryptedPayload(content: string): boolean {
     if (typeof content !== "string") return false;
     if (!content.startsWith("{")) return false;

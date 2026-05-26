@@ -126,8 +126,15 @@ export const RecoveryCodesScreen: React.FC = () => {
                 color="#ef4444"
                 style={styles.warningIcon}
               />
-              <Text style={[styles.resumeBannerText, { fontSize: getFontSize("sm") }]}>
-                {"Tu n'as pas encore sauvegardé tes codes de récupération.\nNe perds pas cette clé secrète : elle permet de recouvrer l'accès à ton compte si tu changes de téléphone ou perds ton appareil."}
+              <Text
+                style={[
+                  styles.resumeBannerText,
+                  { fontSize: getFontSize("sm") },
+                ]}
+              >
+                {
+                  "Tu n'as pas encore sauvegardé tes codes de récupération.\nNe perds pas cette clé secrète : elle permet de recouvrer l'accès à ton compte si tu changes de téléphone ou perds ton appareil."
+                }
               </Text>
             </View>
           )}

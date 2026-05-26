@@ -9,6 +9,8 @@ const mockGoBack = jest.fn();
 const mockReset = jest.fn();
 const mockSignIn = jest.fn();
 
+let mockPurpose: string = "login";
+
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({
     navigate: mockNavigate,
@@ -19,7 +21,7 @@ jest.mock("@react-navigation/native", () => ({
     params: {
       phoneNumber: "+33612345678",
       verificationId: "vid123",
-      purpose: "login",
+      purpose: mockPurpose,
       demoCode: undefined,
     },
   }),
@@ -116,7 +118,10 @@ const mockedAuthService = AuthService as jest.Mocked<typeof AuthService>;
 const mockedTokenService = TokenService as jest.Mocked<typeof TokenService>;
 
 describe("OtpScreen", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    mockPurpose = "login";
+    jest.clearAllMocks();
+  });
 
   it("renders verify button", () => {
     const { getByText } = render(<OtpScreen />);
@@ -182,7 +187,6 @@ describe("OtpScreen", () => {
     );
   }, 10000);
 
-
   it("navigue vers TwoFactorVerifyLogin quand requires2FA est true", async () => {
     mockedAuthService.confirmVerification.mockResolvedValue({
       verified: true,
@@ -234,7 +238,10 @@ describe("OtpScreen", () => {
       },
       { timeout: 8000 },
     );
-    expect(mockNavigate).not.toHaveBeenCalledWith("TwoFactorVerifyLogin", expect.anything());
+    expect(mockNavigate).not.toHaveBeenCalledWith(
+      "TwoFactorVerifyLogin",
+      expect.anything(),
+    );
   }, 10000);
 
   it("redirige vers RecoveryCodes mode resume si recovery_codes_acknowledged est false", async () => {
@@ -318,6 +325,41 @@ describe("OtpScreen", () => {
         expect(mockReset).toHaveBeenCalledWith({
           index: 0,
           routes: [{ name: "ConversationsList" }],
+        });
+      },
+      { timeout: 8000 },
+    );
+  }, 10000);
+});
+
+describe("OtpScreen – recovery purpose", () => {
+  beforeEach(() => {
+    mockPurpose = "recovery";
+    jest.clearAllMocks();
+  });
+
+  it("navigates to AccountRecovered on successful recovery OTP", async () => {
+    mockedAuthService.confirmVerification.mockResolvedValue({ verified: true });
+    mockedAuthService.login.mockResolvedValue({
+      accessToken: "tok",
+      refreshToken: "ref",
+    });
+    mockedTokenService.decodeAccessToken.mockReturnValue({
+      sub: "user1",
+      deviceId: "dev1",
+    } as any);
+
+    const { getAllByDisplayValue } = render(<OtpScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getAllByDisplayValue("")[0], "123456");
+    });
+
+    await waitFor(
+      () => {
+        expect(mockReset).toHaveBeenCalledWith({
+          index: 0,
+          routes: [{ name: "AccountRecovered" }],
         });
       },
       { timeout: 8000 },

@@ -16,6 +16,7 @@ let AuthService: AuthServiceType;
 let mockedToken: any;
 let mockedDevice: any;
 let mockedSignal: any;
+let mockedE2EE: any;
 let mockedEmitSessionExpired: jest.Mock;
 let mockFetch: jest.Mock;
 
@@ -29,6 +30,9 @@ beforeEach(() => {
   );
   jest.doMock("../SignalKeyService", () =>
     require("../../__test-utils__/mockFactories").makeSignalKeyServiceMock(),
+  );
+  jest.doMock("../E2EEService", () =>
+    require("../../__test-utils__/mockFactories").makeE2EEServiceMock(),
   );
   jest.doMock("../NotificationService", () =>
     require("../../__test-utils__/mockFactories").makeNotificationServiceMock(),
@@ -46,6 +50,7 @@ beforeEach(() => {
   mockedToken = require("../TokenService").TokenService;
   mockedDevice = require("../DeviceService").DeviceService;
   mockedSignal = require("../SignalKeyService").SignalKeyService;
+  mockedE2EE = require("../E2EEService").E2EEService;
   mockedEmitSessionExpired = require("../sessionEvents")
     .emitSessionExpired as jest.Mock;
 
@@ -369,6 +374,21 @@ describe("AuthService.logout", () => {
     expect(order).toEqual(["unregister-resolved", "tokens-cleared"]);
   });
 
+  it("drops the E2EE identity cache so the next login isn't shadowed by stale keys", async () => {
+    // Without this reset, the in-memory identity keypair in E2EEService
+    // survives logout. A subsequent login regenerates the on-disk key but
+    // E2EEService.loadIdentityKeypair returns the cached pre-logout pair
+    // until the process is killed — the user's envelopes then advertise
+    // a sender.identity_key that no longer matches what the server
+    // publishes, so counterparts can't decrypt.
+    mockedToken.getAccessToken.mockResolvedValue("at");
+    mockFetch.mockResolvedValueOnce(mockResponse({ status: 204 }));
+
+    await AuthService.logout("dev-1", "user-1");
+
+    expect(mockedE2EE.resetIdentityCache).toHaveBeenCalledTimes(1);
+  });
+
   it("times out the unregister at 5s instead of blocking logout forever", async () => {
     jest.useFakeTimers();
     mockedToken.getAccessToken.mockResolvedValue("at");
@@ -548,7 +568,9 @@ describe("AuthService.acknowledgeRecoveryCodes", () => {
     mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
     mockFetch.mockResolvedValueOnce(mockResponse({ status: 204 }));
 
-    await expect(AuthService.acknowledgeRecoveryCodes()).resolves.toBeUndefined();
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
 
     const [url, init] = mockFetch.mock.calls[0];
     expect(url).toBe("https://api.test/auth/v1/recovery-codes/acknowledge");
@@ -562,13 +584,17 @@ describe("AuthService.acknowledgeRecoveryCodes", () => {
       mockResponse({ status: 404, body: { message: "Not Found" } }),
     );
 
-    await expect(AuthService.acknowledgeRecoveryCodes()).resolves.toBeUndefined();
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
   });
 
   it("retourne void sans appel réseau si pas de token", async () => {
     mockedToken.getAccessToken.mockResolvedValueOnce(null);
 
-    await expect(AuthService.acknowledgeRecoveryCodes()).resolves.toBeUndefined();
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
     expect(mockFetch).not.toHaveBeenCalled();
   });
 

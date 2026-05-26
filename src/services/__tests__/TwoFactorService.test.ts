@@ -169,7 +169,6 @@ describe("TwoFactorService response handling", () => {
   });
 });
 
-
 describe("TwoFactorService.useBackupCode", () => {
   it("POST /2fa/backup-codes/use avec verificationId et recoveryCode", async () => {
     mockFetch.mockResolvedValueOnce(

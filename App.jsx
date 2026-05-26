@@ -29,6 +29,8 @@ import { getAppQueryClient } from "./src/lib/queryClient";
 import { BottomTabBar } from "./src/components/Navigation/BottomTabBar";
 import { MiniProfileCardHost } from "./src/components/Profile";
 import { InAppNotificationProvider } from "./src/providers/InAppNotificationProvider";
+import Toast from "./src/components/Toast/Toast";
+import { useToastStore } from "./src/store/toastStore";
 import { hydrateReadReceiptsPref } from "./src/services/messaging/readReceiptsPref";
 import { startSignalKeyReplenisher } from "./src/services/signalKeyReplenisher";
 
@@ -36,6 +38,13 @@ enableScreens(false);
 
 // WHISPR-1023: keep splash visible until Inter fonts are loaded.
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+function GlobalToast() {
+  const { visible, message, type, hide } = useToastStore();
+  return (
+    <Toast visible={visible} message={message} type={type} onHide={hide} />
+  );
+}
 
 function AppShell() {
   const { settings } = useTheme();
@@ -91,6 +100,13 @@ function AppShell() {
           <StatusBar style="light" />
         </InAppNotificationProvider>
       </NavigationContainer>
+      {/*
+       * GlobalToast est rendu HORS de NavigationContainer pour éviter le
+       * clipping par les conteneurs overflow:hidden du stack navigator web.
+       * Il lit son état depuis useToastStore (zustand) alimenté par
+       * InAppNotificationProvider via showToast().
+       */}
+      <GlobalToast />
     </AuthProvider>
   );
 }
