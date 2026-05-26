@@ -182,19 +182,17 @@ describe("RecoveryCodesScreen — mode resume", () => {
   it("affiche le banner d'avertissement fort en mode resume", async () => {
     const { getByText } = render(<RecoveryCodesScreen />);
     await waitFor(() => {
-      expect(
-        getByText(/Tu n'as pas encore sauvegardé tes codes/),
-      ).toBeTruthy();
+      expect(getByText(/Tu n'as pas encore sauvegardé tes codes/)).toBeTruthy();
     });
   });
 
   it("n'affiche PAS le banner resume en mode normal", async () => {
     mockRouteParams = {};
-    const { queryByText, getByText: getByTextLocal } = render(<RecoveryCodesScreen />);
+    const { queryByText, getByText: getByTextLocal } = render(
+      <RecoveryCodesScreen />,
+    );
     await waitFor(() => getByTextLocal("auth.yourRecoveryCodes"));
-    expect(
-      queryByText(/Tu n'as pas encore sauvegardé tes codes/),
-    ).toBeNull();
+    expect(queryByText(/Tu n'as pas encore sauvegardé tes codes/)).toBeNull();
   });
 
   it("navigue vers ConversationsList en mode resume après confirmation", async () => {
@@ -224,7 +222,9 @@ describe("RecoveryCodesScreen — mode resume", () => {
       fireEvent.press(getByText("auth.continueToApp"));
     });
     await waitFor(() => {
-      expect(mockedAuthService.acknowledgeRecoveryCodes).toHaveBeenCalledTimes(1);
+      expect(mockedAuthService.acknowledgeRecoveryCodes).toHaveBeenCalledTimes(
+        1,
+      );
     });
   });
 

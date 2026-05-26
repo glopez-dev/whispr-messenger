@@ -1,4 +1,4 @@
-export type AuthPurpose = "login" | "register";
+export type AuthPurpose = "login" | "register" | "recovery";
 
 export interface VerificationRequestResponse {
   verificationId: string;

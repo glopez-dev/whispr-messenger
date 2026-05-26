@@ -162,6 +162,8 @@ export const PhoneInputScreen: React.FC = () => {
       } else if (mode === "register" && apiError.status === 409) {
         setError(getLocalizedText("auth.accountAlreadyExists"));
         setShowLogin(true);
+      } else if (mode === "recovery" && apiError.status === 400) {
+        setError(getLocalizedText("auth.noAccountFound"));
       } else {
         setError(getLocalizedText("auth.errorSendCode"));
       }
@@ -172,9 +174,11 @@ export const PhoneInputScreen: React.FC = () => {
   };
 
   const title =
-    mode === "login"
-      ? getLocalizedText("auth.seConnecter")
-      : getLocalizedText("auth.creerCompte");
+    mode === "register"
+      ? getLocalizedText("auth.creerCompte")
+      : mode === "recovery"
+        ? getLocalizedText("auth.recovery")
+        : getLocalizedText("auth.seConnecter");
 
   return (
     <LinearGradient
@@ -247,7 +251,9 @@ export const PhoneInputScreen: React.FC = () => {
                     },
                   ]}
                 >
-                  {getLocalizedText("auth.smsCode")}
+                  {mode === "recovery"
+                    ? getLocalizedText("auth.recoverySmsCode")
+                    : getLocalizedText("auth.smsCode")}
                 </Text>
               )}
             </View>
@@ -448,12 +454,14 @@ export const PhoneInputScreen: React.FC = () => {
             </View>
             {mode === "login" && (
               <TouchableOpacity
-                style={styles.recoveryCodeLink}
-                onPress={() => navigation.navigate("RecoveryCodeEntry")}
+                style={styles.recoveryLink}
+                onPress={() =>
+                  navigation.replace("PhoneInput", { mode: "recovery" })
+                }
                 activeOpacity={0.7}
               >
-                <Text style={styles.recoveryCodeLinkText}>
-                  {getLocalizedText("auth.useRecoveryCode")}
+                <Text style={styles.recoveryLinkText}>
+                  {getLocalizedText("auth.recoveryLink")}
                 </Text>
               </TouchableOpacity>
             )}
@@ -639,15 +647,14 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     fontWeight: "500",
   },
-  recoveryCodeLink: {
+  recoveryLink: {
     alignItems: "center",
     paddingVertical: spacing.sm,
     marginTop: "auto",
   },
-  recoveryCodeLinkText: {
-    color: "rgba(255, 255, 255, 0.55)",
+  recoveryLinkText: {
+    color: "rgba(255, 255, 255, 0.5)",
     fontSize: typography.fontSize.sm,
-    fontWeight: "500",
     textDecorationLine: "underline",
   },
 });

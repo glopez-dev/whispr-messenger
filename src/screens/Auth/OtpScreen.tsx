@@ -222,6 +222,11 @@ export const OtpScreen: React.FC = () => {
         if (purpose === "register") {
           // Flow register : toujours passer par RecoveryCodes (mode normal)
           navigation.reset({ index: 0, routes: [{ name: "RecoveryCodes" }] });
+        } else if (purpose === "recovery") {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "AccountRecovered" }],
+          });
         } else {
           // Login : si l'user n'a jamais validé ses codes → résume flow
           // Champ absent (vieux backend) = défaut true pour compat
