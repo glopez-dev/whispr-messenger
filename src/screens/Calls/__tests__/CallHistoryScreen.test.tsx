@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Platform } from "react-native";
-import { render, waitFor } from "@testing-library/react-native";
+import { render, waitFor, fireEvent } from "@testing-library/react-native";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("expo-blur", () => ({
@@ -60,33 +60,50 @@ beforeEach(() => {
 });
 
 describe("CallHistoryScreen", () => {
-  it("requests the calls list on mount", async () => {
+  it("demande la liste des appels au montage", async () => {
     render(<CallHistoryScreen />);
     await waitFor(() =>
       expect(mockListCalls).toHaveBeenCalledWith({ limit: 50 }),
     );
   });
 
-  it("renders the empty state when no call exists", async () => {
+  it("affiche le header et les filtres", async () => {
+    const { getByText } = render(<CallHistoryScreen />);
+    expect(getByText("Appels")).toBeTruthy();
+    expect(getByText("Tous")).toBeTruthy();
+    expect(getByText("Manqués")).toBeTruthy();
+  });
+
+  it("affiche l'état vide quand aucun appel n'existe", async () => {
     const { findByText } = render(<CallHistoryScreen />);
     expect(await findByText("Aucun appel pour le moment")).toBeTruthy();
   });
 
-  it("renders calls returned by the API and updates the stat counters", async () => {
+  it("affiche l'état vide Manqués quand filtre actif et aucun appel manqué", async () => {
+    const { getByText, findByText } = render(<CallHistoryScreen />);
+    await findByText("Aucun appel pour le moment");
+    fireEvent.press(getByText("Manqués"));
+    expect(await findByText("Aucun appel manqué")).toBeTruthy();
+  });
+
+  it("rend les appels retournés par l'API", async () => {
     mockListCalls.mockResolvedValue({
       data: [
         {
           id: "call-1",
           conversation_id: "conv-1",
           status: "ended",
-          started_at: "2026-01-01T10:00:00Z",
-          ended_at: "2026-01-01T10:05:00Z",
+          type: "audio",
+          initiator_id: "me",
+          started_at: new Date().toISOString(),
         },
         {
           id: "call-2",
           conversation_id: "conv-2",
           status: "missed",
-          started_at: "2026-01-01T10:10:00Z",
+          type: "video",
+          initiator_id: "other",
+          started_at: new Date().toISOString(),
         },
       ],
     });
@@ -98,7 +115,43 @@ describe("CallHistoryScreen", () => {
     );
   });
 
-  it("renders without crashing when the API throws", async () => {
+  it("le filtre Manqués n'affiche que les appels manqués", async () => {
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "call-1",
+          conversation_id: "conv-1",
+          status: "ended",
+          type: "audio",
+          initiator_id: "me",
+          started_at: new Date().toISOString(),
+          title: "Alice",
+        },
+        {
+          id: "call-2",
+          conversation_id: "conv-2",
+          status: "missed",
+          type: "audio",
+          initiator_id: "other",
+          started_at: new Date().toISOString(),
+          title: "Bob",
+        },
+      ],
+    });
+
+    const { getByText, queryByText } = render(<CallHistoryScreen />);
+    await waitFor(() => expect(mockListCalls).toHaveBeenCalled());
+    // Les deux doivent être visibles avec le filtre "Tous"
+    await waitFor(() =>
+      expect(queryByText("Aucun appel pour le moment")).toBeNull(),
+    );
+    // Passer sur le filtre Manqués
+    fireEvent.press(getByText("Manqués"));
+    // L'état vide ne doit pas apparaître (il y a un appel manqué)
+    await waitFor(() => expect(queryByText("Aucun appel manqué")).toBeNull());
+  });
+
+  it("rend sans planter quand l'API échoue", async () => {
     mockListCalls.mockRejectedValue(new Error("boom"));
     const { findByText } = render(<CallHistoryScreen />);
     expect(await findByText("Aucun appel pour le moment")).toBeTruthy();
@@ -114,7 +167,7 @@ describe("CallHistoryScreen sur web", () => {
     (Platform as { OS: string }).OS = originalOS;
   });
 
-  it("rend sans planter (fill du tour borné au child)", () => {
+  it("rend sans planter (layout web)", () => {
     expect(() => render(<CallHistoryScreen />)).not.toThrow();
   });
 });
