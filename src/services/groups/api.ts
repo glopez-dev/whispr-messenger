@@ -823,11 +823,15 @@ export const groupsAPI = {
 
   async getGroupSettings(
     groupId: string,
-    _params?: { conversationId?: string },
+    params?: { conversationId?: string },
   ): Promise<GroupSettings> {
     const headers = await getAuthHeaders();
+    const convId = params?.conversationId || groupId;
+    const conv = await fetchMessagingConversationPayload(convId, headers);
+    const userServiceGroupId =
+      conv?.externalGroupId || conv?.external_group_id || groupId;
     const res = await fetch(
-      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/settings`,
+      `${API_BASE_URL}/groups/${encodeURIComponent(userServiceGroupId)}/settings`,
       { headers },
     );
     if (!res.ok) {
@@ -839,11 +843,15 @@ export const groupsAPI = {
   async updateGroupSettings(
     groupId: string,
     updates: Partial<GroupSettings>,
-    _params?: { conversationId?: string },
+    params?: { conversationId?: string },
   ): Promise<GroupSettings> {
     const headers = await getAuthHeaders();
+    const convId = params?.conversationId || groupId;
+    const conv = await fetchMessagingConversationPayload(convId, headers);
+    const userServiceGroupId =
+      conv?.externalGroupId || conv?.external_group_id || groupId;
     const res = await fetch(
-      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/settings`,
+      `${API_BASE_URL}/groups/${encodeURIComponent(userServiceGroupId)}/settings`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...headers },
