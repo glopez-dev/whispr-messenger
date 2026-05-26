@@ -114,7 +114,7 @@ const SwipeableArchivedItem: React.FC<SwipeableArchivedItemProps> = ({
 export const ArchivedConversationsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
-  const { settings } = useTheme();
+  const { settings, getLocalizedText } = useTheme();
   const hasCustomBackground =
     settings.backgroundPreset === "custom" && !!settings.customBackgroundUri;
   const customBackgroundUri = settings.customBackgroundUri ?? null;
@@ -165,18 +165,18 @@ export const ArchivedConversationsScreen: React.FC = () => {
         fetchConversations();
         setToast({
           visible: true,
-          message: "Conversation désarchivée",
+          message: getLocalizedText("archived.unarchived"),
           type: "success",
         });
       } catch {
         setToast({
           visible: true,
-          message: "Impossible de désarchiver la conversation",
+          message: getLocalizedText("archived.unarchiveError"),
           type: "error",
         });
       }
     },
-    [unarchiveConversation, fetchConversations],
+    [unarchiveConversation, fetchConversations, getLocalizedText],
   );
 
   const onRefresh = useCallback(async () => {
@@ -237,15 +237,19 @@ export const ArchivedConversationsScreen: React.FC = () => {
             size={48}
             color="rgba(255, 255, 255, 0.5)"
           />
-          <Text style={styles.emptyTitle}>Erreur de chargement</Text>
+          <Text style={styles.emptyTitle}>
+            {getLocalizedText("archived.loadError")}
+          </Text>
           <Text style={styles.emptySubtitle}>
-            Vérifiez votre connexion puis réessayez.
+            {getLocalizedText("archived.loadErrorHint")}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => fetchArchived()}
           >
-            <Text style={styles.retryButtonText}>Réessayer</Text>
+            <Text style={styles.retryButtonText}>
+              {getLocalizedText("common.retry")}
+            </Text>
           </TouchableOpacity>
         </View>
       );
@@ -259,9 +263,11 @@ export const ArchivedConversationsScreen: React.FC = () => {
             size={48}
             color="rgba(255, 255, 255, 0.5)"
           />
-          <Text style={styles.emptyTitle}>Aucune conversation archivée</Text>
+          <Text style={styles.emptyTitle}>
+            {getLocalizedText("archived.empty")}
+          </Text>
           <Text style={styles.emptySubtitle}>
-            Les conversations que vous archivez apparaîtront ici.
+            {getLocalizedText("archived.emptyHint")}
           </Text>
         </View>
       );
@@ -350,7 +356,9 @@ export const ArchivedConversationsScreen: React.FC = () => {
                 color={colors.text.light}
               />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Archivées</Text>
+            <Text style={styles.headerTitle}>
+              {getLocalizedText("archived.title")}
+            </Text>
             <View style={styles.headerButton} />
           </View>
 

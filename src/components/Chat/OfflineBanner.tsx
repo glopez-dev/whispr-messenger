@@ -7,6 +7,7 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ConnectionState } from "../../services/messaging/websocket";
+import { useTheme } from "../../context/ThemeContext";
 
 interface OfflineBannerProps {
   connectionState: ConnectionState;
@@ -15,6 +16,7 @@ interface OfflineBannerProps {
 export const OfflineBanner: React.FC<OfflineBannerProps> = ({
   connectionState,
 }) => {
+  const { getLocalizedText } = useTheme();
   const opacity = useRef(new Animated.Value(0)).current;
   // Only show offline banner for reconnecting state or after we were previously
   // connected and then disconnected. Don't show during initial connection setup.
@@ -56,8 +58,8 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = ({
       />
       <Text style={styles.text}>
         {isReconnecting
-          ? "Reconnexion en cours"
-          : "Hors ligne — les messages seront envoyés à la reconnexion"}
+          ? getLocalizedText("connection.reconnecting")
+          : getLocalizedText("connection.offline")}
       </Text>
     </Animated.View>
   );

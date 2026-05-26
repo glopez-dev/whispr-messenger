@@ -71,27 +71,27 @@ function getStatusColor(status: ScheduledMessage["status"]): string {
   }
 }
 
-function getStatusLabel(status: ScheduledMessage["status"]): string {
-  switch (status) {
-    case "pending":
-      return "En attente";
-    case "sent":
-      return "Envoyé";
-    case "failed":
-      return "Échoué";
-    case "cancelled":
-      return "Annulé";
-    default:
-      return status;
-  }
-}
-
 export const ScheduledMessagesScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<ScheduledMessagesRouteProp>();
   const { conversationId } = route.params;
-  const { getThemeColors } = useTheme();
+  const { getThemeColors, getLocalizedText } = useTheme();
   const themeColors = getThemeColors();
+
+  const getStatusLabel = (status: ScheduledMessage["status"]): string => {
+    switch (status) {
+      case "pending":
+        return getLocalizedText("scheduled.statusPending");
+      case "sent":
+        return getLocalizedText("scheduled.statusSent");
+      case "failed":
+        return getLocalizedText("scheduled.statusFailed");
+      case "cancelled":
+        return getLocalizedText("scheduled.statusCancelled");
+      default:
+        return status;
+    }
+  };
 
   const [messages, setMessages] = useState<ScheduledMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,39 +130,49 @@ export const ScheduledMessagesScreen: React.FC = () => {
     loadMessages();
   }, [loadMessages]);
 
-  const handleCancel = useCallback((message: ScheduledMessage) => {
-    Alert.alert(
-      "Annuler le message programmé",
-      `Voulez-vous annuler l'envoi de ce message ?\n\n"${message.content.substring(0, 80)}${message.content.length > 80 ? "..." : ""}"`,
-      [
-        { text: "Non", style: "cancel" },
-        {
-          text: "Annuler le message",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              await SchedulingService.cancelScheduledMessage(message.id);
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === message.id
-                    ? { ...m, status: "cancelled" as const }
-                    : m,
-                ),
-              );
-            } catch (error) {
-              logger.error(
-                "ScheduledMessages",
-                "Error cancelling scheduled message",
-                error,
-              );
-              Alert.alert("Erreur", "Impossible d'annuler le message.");
-            }
+  const handleCancel = useCallback(
+    (message: ScheduledMessage) => {
+      const preview = `"${message.content.substring(0, 80)}${message.content.length > 80 ? "..." : ""}"`;
+      Alert.alert(
+        getLocalizedText("scheduled.cancelAlertTitle"),
+        `${getLocalizedText("scheduled.cancelAlertMessage")}\n\n${preview}`,
+        [
+          {
+            text: getLocalizedText("scheduled.cancelAlertNo"),
+            style: "cancel",
           },
-        },
-      ],
-    );
-  }, []);
+          {
+            text: getLocalizedText("scheduled.cancelAlertConfirm"),
+            style: "destructive",
+            onPress: async () => {
+              try {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await SchedulingService.cancelScheduledMessage(message.id);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === message.id
+                      ? { ...m, status: "cancelled" as const }
+                      : m,
+                  ),
+                );
+              } catch (error) {
+                logger.error(
+                  "ScheduledMessages",
+                  "Error cancelling scheduled message",
+                  error,
+                );
+                Alert.alert(
+                  getLocalizedText("notif.error"),
+                  getLocalizedText("scheduled.cancelError"),
+                );
+              }
+            },
+          },
+        ],
+      );
+    },
+    [getLocalizedText],
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: ScheduledMessage }) => {
@@ -203,13 +213,15 @@ export const ScheduledMessagesScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <Ionicons name="close-circle-outline" size={16} color="#F04882" />
-              <Text style={styles.cancelButtonText}>Annuler</Text>
+              <Text style={styles.cancelButtonText}>
+                {getLocalizedText("scheduled.cancelButton")}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
       );
     },
-    [handleCancel],
+    [handleCancel, getLocalizedText, getStatusLabel],
   );
 
   const pendingCount = messages.filter((m) => m.status === "pending").length;
@@ -235,10 +247,12 @@ export const ScheduledMessagesScreen: React.FC = () => {
             />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>Messages programmés</Text>
+            <Text style={styles.headerTitle}>
+              {getLocalizedText("scheduled.title")}
+            </Text>
             {pendingCount > 0 && (
               <Text style={styles.headerSubtitle}>
-                {pendingCount} en attente
+                {pendingCount} {getLocalizedText("scheduled.pendingCount")}
               </Text>
             )}
           </View>
@@ -256,10 +270,11 @@ export const ScheduledMessagesScreen: React.FC = () => {
               size={64}
               color={withOpacity(colors.text.light, 0.2)}
             />
-            <Text style={styles.emptyTitle}>Aucun message programmé</Text>
+            <Text style={styles.emptyTitle}>
+              {getLocalizedText("scheduled.empty")}
+            </Text>
             <Text style={styles.emptySubtitle}>
-              Appuyez longuement sur le bouton d'envoi pour programmer un
-              message
+              {getLocalizedText("scheduled.emptyHint")}
             </Text>
           </View>
         ) : (

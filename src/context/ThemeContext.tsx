@@ -1069,6 +1069,51 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "confirm.deleteGroup.description":
       "Tous les messages, médias et l'historique seront perdus. Action irréversible. Tape SUPPRIMER pour confirmer.",
     "confirm.deleteGroup.action": "Supprimer définitivement",
+
+    // Scheduled messages
+    "scheduled.title": "Messages programmés",
+    "scheduled.pendingCount": "en attente",
+    "scheduled.empty": "Aucun message programmé",
+    "scheduled.emptyHint":
+      "Appuyez longuement sur le bouton d'envoi pour programmer un message",
+    "scheduled.cancelButton": "Annuler",
+    "scheduled.cancelAlertTitle": "Annuler le message programmé",
+    "scheduled.cancelAlertMessage":
+      "Voulez-vous annuler l'envoi de ce message ?",
+    "scheduled.cancelAlertConfirm": "Annuler le message",
+    "scheduled.cancelAlertNo": "Non",
+    "scheduled.cancelError": "Impossible d'annuler le message.",
+    "scheduled.statusPending": "En attente",
+    "scheduled.statusSent": "Envoyé",
+    "scheduled.statusFailed": "Échoué",
+    "scheduled.statusCancelled": "Annulé",
+
+    // Archived conversations
+    "archived.title": "Archivées",
+    "archived.unarchived": "Conversation désarchivée",
+    "archived.unarchiveError": "Impossible de désarchiver la conversation",
+    "archived.empty": "Aucune conversation archivée",
+    "archived.emptyHint": "Les conversations que vous archivez apparaîtront ici.",
+    "archived.loadError": "Erreur de chargement",
+    "archived.loadErrorHint": "Vérifiez votre connexion puis réessayez.",
+
+    // Connection status banner
+    "connection.reconnecting": "Reconnexion en cours",
+    "connection.offline":
+      "Hors ligne — les messages seront envoyés à la reconnexion",
+
+    // New conversation modal
+    "newConversation.errorLoadContacts": "Impossible de charger les contacts",
+    "newConversation.limitTitle": "Limite atteinte",
+    "newConversation.errorCreate": "Impossible de créer la conversation",
+    "newConversation.errorCreateGroup": "Impossible de créer le groupe",
+    "newConversation.invalidNameTitle": "Nom invalide",
+    "newConversation.createConversation": "Créer la conversation",
+    "newConversation.createGroup": "Créer le groupe",
+    "newConversation.groupNamePlaceholder": "Nom du groupe",
+    "newConversation.searchPlaceholder": "Rechercher un contact",
+    "newConversation.noContactsFound": "Aucun contact trouvé",
+    "newConversation.noContactsAvailable": "Aucun contact disponible",
   },
   en: {
     // Navigation
@@ -1444,6 +1489,51 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "confirm.deleteGroup.description":
       "All messages, media and history will be lost. This action cannot be undone. Type DELETE to confirm.",
     "confirm.deleteGroup.action": "Delete permanently",
+
+    // Scheduled messages
+    "scheduled.title": "Scheduled Messages",
+    "scheduled.pendingCount": "pending",
+    "scheduled.empty": "No scheduled messages",
+    "scheduled.emptyHint":
+      "Long-press the send button to schedule a message",
+    "scheduled.cancelButton": "Cancel",
+    "scheduled.cancelAlertTitle": "Cancel scheduled message",
+    "scheduled.cancelAlertMessage":
+      "Do you want to cancel sending this message?",
+    "scheduled.cancelAlertConfirm": "Cancel message",
+    "scheduled.cancelAlertNo": "No",
+    "scheduled.cancelError": "Unable to cancel the message.",
+    "scheduled.statusPending": "Pending",
+    "scheduled.statusSent": "Sent",
+    "scheduled.statusFailed": "Failed",
+    "scheduled.statusCancelled": "Cancelled",
+
+    // Archived conversations
+    "archived.title": "Archived",
+    "archived.unarchived": "Conversation unarchived",
+    "archived.unarchiveError": "Unable to unarchive conversation",
+    "archived.empty": "No archived conversations",
+    "archived.emptyHint": "Conversations you archive will appear here.",
+    "archived.loadError": "Loading error",
+    "archived.loadErrorHint": "Check your connection and try again.",
+
+    // Connection status banner
+    "connection.reconnecting": "Reconnecting…",
+    "connection.offline":
+      "Offline — messages will be sent when reconnected",
+
+    // New conversation modal
+    "newConversation.errorLoadContacts": "Unable to load contacts",
+    "newConversation.limitTitle": "Limit reached",
+    "newConversation.errorCreate": "Unable to create conversation",
+    "newConversation.errorCreateGroup": "Unable to create group",
+    "newConversation.invalidNameTitle": "Invalid name",
+    "newConversation.createConversation": "Create conversation",
+    "newConversation.createGroup": "Create group",
+    "newConversation.groupNamePlaceholder": "Group name",
+    "newConversation.searchPlaceholder": "Search a contact",
+    "newConversation.noContactsFound": "No contact found",
+    "newConversation.noContactsAvailable": "No contacts available",
   },
 };
 

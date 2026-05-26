@@ -70,14 +70,28 @@ jest.mock("@react-navigation/native", () => {
   };
 });
 
-jest.mock("../../../context/ThemeContext", () => ({
-  useTheme: () => ({
-    settings: { backgroundPreset: "default", customBackgroundUri: null },
-    getThemeColors: () => ({
-      text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
+jest.mock("../../../context/ThemeContext", () => {
+  const translations: Record<string, string> = {
+    "archived.title": "Archivées",
+    "archived.empty": "Aucune conversation archivée",
+    "archived.emptyHint":
+      "Les conversations que vous archivez apparaîtront ici.",
+    "archived.loadError": "Erreur de chargement",
+    "archived.loadErrorHint": "Vérifiez votre connexion puis réessayez.",
+    "archived.unarchived": "Conversation désarchivée",
+    "archived.unarchiveError": "Impossible de désarchiver la conversation",
+    "common.retry": "Réessayer",
+  };
+  return {
+    useTheme: () => ({
+      settings: { backgroundPreset: "default", customBackgroundUri: null },
+      getThemeColors: () => ({
+        text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
+      }),
+      getLocalizedText: (key: string) => translations[key] ?? key,
     }),
-  }),
-}));
+  };
+});
 
 let mockArchived: any = {
   status: "loaded",
