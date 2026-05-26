@@ -30,13 +30,14 @@ function loadVideoThumbnails(): ExpoVideoThumbnailsModule | null {
 }
 
 /**
- * On-device TFJS video check before sending a chat video. Only active when
- * the moderation model is v3 — v2 has no training signal for video content
- * and keeps the pre-WHISPR-1149 behaviour (no gate, always allowed).
+ * On-device TFJS video check before sending a chat video. Active for v3 and
+ * v4 — v2 has no training signal for video content and keeps the pre-WHISPR-1149
+ * behaviour (no gate, always allowed).
  *
- * When v3 is active we extract the frame at t=0 via `expo-video-thumbnails`
- * and run the same binary food gate on it. Fail-closed on thumbnail
- * extraction or inference errors, consistent with `gateChatImageBeforeSend`.
+ * When active we extract the frame at t=0 via `expo-video-thumbnails` and
+ * run the image gate on it with the currently-selected model. Fail-closed
+ * on thumbnail extraction or inference errors, consistent with
+ * `gateChatImageBeforeSend`.
  */
 export async function gateChatVideoBeforeSend(
   uri: string,
@@ -53,7 +54,7 @@ export async function gateChatVideoBeforeSend(
   }
 
   const version = await getModerationModelVersion();
-  if (version !== "v3") {
+  if (version !== "v3" && version !== "v4") {
     return { ok: true };
   }
 
@@ -82,7 +83,7 @@ export async function gateChatVideoBeforeSend(
   }
 
   try {
-    const r = await tfjsService.gate({ uri: thumbnailUri, version: "v3" });
+    const r = await tfjsService.gate({ uri: thumbnailUri, version });
     if (!r.allowed) {
       return {
         ok: false,

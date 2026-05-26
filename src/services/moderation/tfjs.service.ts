@@ -7,7 +7,11 @@ import { Platform, InteractionManager } from "react-native";
 import type { GateResult } from "./moderation.types";
 import { imageUriToFloatTensor_0_255 } from "./image-to-tensor";
 import { INPUT_SIZE } from "./moderation.constants";
-import { decideV2FromProbs, decideV3FromProbs } from "./tfjs.decide";
+import {
+  decideV2FromProbs,
+  decideV3FromProbs,
+  decideV4FromProbs,
+} from "./tfjs.decide";
 import {
   getModerationModelVersion,
   type ModerationModelVersion,
@@ -64,9 +68,11 @@ const v3ModelJsonAsset = require("../../../assets/models/v3-tfjs/model.json");
 const v3WeightAssets = [
   require("../../../assets/models/v3-tfjs/group1-shard1of1.bin"),
 ];
+const v4ModelJsonAsset = require("../../../assets/models/v4-tfjs/model.json");
+const v4WeightAssets = [
+  require("../../../assets/models/v4-tfjs/group1-shard1of1.bin"),
+];
 /* eslint-enable @typescript-eslint/no-require-imports */
-
-type LoadedModel = tf.GraphModel | tf.LayersModel;
 
 interface ModelJson {
   modelTopology: object;
@@ -77,26 +83,18 @@ interface ModelJson {
 }
 
 interface ModelSpec {
-  format: "graph" | "layers";
   modelJson: ModelJson;
   /** Metro/Expo `require()` of a binary asset returns a numeric module id. */
   weights: number[];
 }
 
 const SPECS: Record<ModerationModelVersion, ModelSpec> = {
-  v2: {
-    format: "graph",
-    modelJson: v2ModelJsonAsset,
-    weights: v2WeightAssets,
-  },
-  v3: {
-    format: "graph",
-    modelJson: v3ModelJsonAsset,
-    weights: v3WeightAssets,
-  },
+  v2: { modelJson: v2ModelJsonAsset, weights: v2WeightAssets },
+  v3: { modelJson: v3ModelJsonAsset, weights: v3WeightAssets },
+  v4: { modelJson: v4ModelJsonAsset, weights: v4WeightAssets },
 };
 
-const models: Partial<Record<ModerationModelVersion, LoadedModel>> = {};
+const models: Partial<Record<ModerationModelVersion, tf.GraphModel>> = {};
 const loading: Partial<Record<ModerationModelVersion, Promise<void>>> = {};
 let tfReady = false;
 
@@ -172,12 +170,7 @@ async function ensureModel(version: ModerationModelVersion): Promise<void> {
     try {
       await ensureTf();
       await yieldThread();
-      const spec = SPECS[version];
-      const io = bundledAssetIO(spec);
-      models[version] =
-        spec.format === "graph"
-          ? await tf.loadGraphModel(io)
-          : await tf.loadLayersModel(io);
+      models[version] = await tf.loadGraphModel(bundledAssetIO(SPECS[version]));
     } catch (err) {
       console.error(`[tfjs] ensureModel(${version}) failed:`, err);
       delete loading[version];
@@ -237,9 +230,9 @@ async function gate(params: {
     },
   );
 
-  return resolvedVersion === "v3"
-    ? decideV3FromProbs(data, threshold)
-    : decideV2FromProbs(data, threshold);
+  if (resolvedVersion === "v4") return decideV4FromProbs(data, threshold);
+  if (resolvedVersion === "v3") return decideV3FromProbs(data, threshold);
+  return decideV2FromProbs(data, threshold);
 }
 
 async function isAllowed(params: {
