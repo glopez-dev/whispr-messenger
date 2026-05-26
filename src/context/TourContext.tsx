@@ -24,17 +24,17 @@ const TourContext = createContext<TourContextType>({
 export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isTourActive, setIsTourActive] = useState(true);
+  const [isTourActive, setIsTourActive] = useState(false);
 
-  // charger la valeur persistée au montage
   useEffect(() => {
     AsyncStorage.getItem(TOUR_STORAGE_KEY)
       .then((stored) => {
-        if (stored !== null) {
-          setIsTourActive(stored === "true");
-        }
+        // null = premier lancement → activer ; sinon respecter la valeur persistée
+        setIsTourActive(stored === null || stored === "true");
       })
-      .catch(() => {});
+      .catch(() => {
+        setIsTourActive(true);
+      });
   }, []);
 
   const skipTour = useCallback(() => {
