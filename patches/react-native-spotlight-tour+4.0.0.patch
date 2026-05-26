@@ -1,0 +1,140 @@
+diff --git a/node_modules/react-native-spotlight-tour/dist/lib/components/attach-step/AttachStep.component.js b/node_modules/react-native-spotlight-tour/dist/lib/components/attach-step/AttachStep.component.js
+index 8615023..7925d4a 100644
+--- a/node_modules/react-native-spotlight-tour/dist/lib/components/attach-step/AttachStep.component.js
++++ b/node_modules/react-native-spotlight-tour/dist/lib/components/attach-step/AttachStep.component.js
+@@ -1,6 +1,7 @@
+ import { jsx as _jsx } from "react/jsx-runtime";
+ import { cloneElement, useCallback, useContext, useEffect, useRef, } from "react";
+-import { View } from "react-native";
++import { Platform, View } from "react-native";
++import { useSafeAreaInsets } from "react-native-safe-area-context";
+ import { SpotlightTourContext } from "../../SpotlightTour.context";
+ /**
+  * React functional component used to attach and step to another component by
+@@ -11,15 +12,21 @@ import { SpotlightTourContext } from "../../SpotlightTour.context";
+  */
+ export function AttachStep({ children, fill = false, index, style }) {
+     const { changeSpot, current } = useContext(SpotlightTourContext);
++    const insets = useSafeAreaInsets();
+     const ref = useRef(null);
+     const updateSpot = useCallback(() => {
+         const indexes = typeof index === "number" ? [index] : index;
+         if (current !== undefined && indexes.includes(current)) {
+             ref.current?.measureInWindow((x, y, width, height) => {
+-                changeSpot({ height, width, x, y });
++                // Android edge-to-edge fix: measureInWindow returns y from below
++                // the status bar / safe-area inset, while the spotlight Modal
++                // (statusBarTranslucent) anchors at the top of the screen.
++                // Add the safe-area top inset so the spot aligns with the target.
++                const yAdjusted = Platform.OS === "android" ? y + insets.top : y;
++                changeSpot({ height, width, x, y: yAdjusted });
+             });
+         }
+-    }, [changeSpot, current, JSON.stringify(index)]);
++    }, [changeSpot, current, insets.top, JSON.stringify(index)]);
+     const onLayout = useCallback((event) => {
+         updateSpot();
+         children.props.onLayout?.(event);
+diff --git a/node_modules/react-native-spotlight-tour/dist/lib/components/tour-overlay/TourOverlay.component.js b/node_modules/react-native-spotlight-tour/dist/lib/components/tour-overlay/TourOverlay.component.js
+index 0fbbd87..5c696bb 100644
+--- a/node_modules/react-native-spotlight-tour/dist/lib/components/tour-overlay/TourOverlay.component.js
++++ b/node_modules/react-native-spotlight-tour/dist/lib/components/tour-overlay/TourOverlay.component.js
+@@ -93,7 +93,7 @@ export const TourOverlay = forwardRef((props, ref) => {
+             });
+         },
+     }), [current, useNativeDriver]);
+-    return (_jsx(Modal, { animationType: "fade", presentationStyle: "overFullScreen", supportedOrientations: ["portrait", "landscape", "landscape-left", "landscape-right", "portrait-upside-down"], transparent: true, visible: current !== undefined, children: _jsxs(View, { testID: "Overlay View", style: Css.overlayView, children: [_jsxs(Svg, { testID: "Spot Svg", height: vh(100), width: vw(100), viewBox: `0 0 ${vw(100)} ${vh(100)}`, onPress: handleBackdropPress, shouldRasterizeIOS: true, renderToHardwareTextureAndroid: true, children: [_jsx(Defs, { children: _jsxs(Mask, { id: "mask", x: 0, y: 0, height: "100%", width: "100%", children: [_jsx(Rect, { height: vh(100), width: vw(100), fill: "#fff" }), _jsx(ShapeMask, { spot: spot, setReference: refs.setReference, motion: stepMotion, padding: shapeOptions.padding, useNativeDriver: useNativeDriver })] }) }), _jsx(Rect, { height: vh(100), width: vw(100), fill: color, mask: "url(#mask)", opacity: backdropOpacity })] }), current !== undefined && (_jsxs(Animated.View, { ref: refs.setFloating, testID: "Tooltip View", style: { ...floatingStyles, opacity: tooltipOpacity.current }, children: [_jsx(tourStep.render, { current: current, isFirst: current === 0, isLast: current === steps.length - 1, next: next, previous: previous, stop: stop, pause: pause, resume: resume, goTo: goTo }), floating.arrow !== false && (_jsx(View, { style: [
++    return (_jsx(Modal, { animationType: "fade", presentationStyle: "overFullScreen", statusBarTranslucent: true, supportedOrientations: ["portrait", "landscape", "landscape-left", "landscape-right", "portrait-upside-down"], transparent: true, visible: current !== undefined, children: _jsxs(View, { testID: "Overlay View", style: Css.overlayView, children: [_jsxs(Svg, { testID: "Spot Svg", height: vh(100), width: vw(100), viewBox: `0 0 ${vw(100)} ${vh(100)}`, onPress: handleBackdropPress, shouldRasterizeIOS: true, renderToHardwareTextureAndroid: true, children: [_jsx(Defs, { children: _jsxs(Mask, { id: "mask", x: 0, y: 0, height: "100%", width: "100%", children: [_jsx(Rect, { height: vh(100), width: vw(100), fill: "#fff" }), _jsx(ShapeMask, { spot: spot, setReference: refs.setReference, motion: stepMotion, padding: shapeOptions.padding, useNativeDriver: useNativeDriver })] }) }), _jsx(Rect, { height: vh(100), width: vw(100), fill: color, mask: "url(#mask)", opacity: backdropOpacity })] }), current !== undefined && (_jsxs(Animated.View, { ref: refs.setFloating, testID: "Tooltip View", style: { ...floatingStyles, opacity: tooltipOpacity.current }, children: [_jsx(tourStep.render, { current: current, isFirst: current === 0, isLast: current === steps.length - 1, next: next, previous: previous, stop: stop, pause: pause, resume: resume, goTo: goTo }), floating.arrow !== false && (_jsx(View, { style: [
+                                 Css.tooltipArrow,
+                                 arrowCss({
+                                     arrow: typeof floating.arrow !== "boolean"
+@@ -129,8 +129,17 @@ function makeFloatingOptions(arrowRef, props) {
+     };
+ }
+ function flipMiddleware(flipProps) {
+-    if (flipProps !== false) {
+-        return flip(flipProps === true ? undefined : flipProps);
++    // Default to disabled: floating-ui's flip auto-inverts placement when it
++    // thinks the tooltip won't fit. On Android the boundary detection is
++    // unreliable (Modal vs window coord mismatch) and causes "bottom" to flip
++    // to "top" on top-of-screen targets — making bubbles appear ABOVE the
++    // target instead of below. Honor explicit `flip: true` if the caller
++    // really wants the auto-flip behaviour.
++    if (flipProps === true) {
++        return flip();
++    }
++    if (flipProps && flipProps !== false) {
++        return flip(flipProps);
+     }
+     return undefined;
+ }
+diff --git a/node_modules/react-native-spotlight-tour/src/lib/components/attach-step/AttachStep.component.tsx b/node_modules/react-native-spotlight-tour/src/lib/components/attach-step/AttachStep.component.tsx
+index 8b47644..b680136 100644
+--- a/node_modules/react-native-spotlight-tour/src/lib/components/attach-step/AttachStep.component.tsx
++++ b/node_modules/react-native-spotlight-tour/src/lib/components/attach-step/AttachStep.component.tsx
+@@ -8,7 +8,8 @@ import {
+   useEffect,
+   useRef,
+ } from "react";
+-import { type LayoutChangeEvent, type StyleProp, View, type ViewStyle } from "react-native";
++import { type LayoutChangeEvent, Platform, type StyleProp, View, type ViewStyle } from "react-native";
++import { useSafeAreaInsets } from "react-native-safe-area-context";
+ 
+ import { SpotlightTourContext } from "../../SpotlightTour.context";
+ 
+@@ -69,6 +70,7 @@ export interface AttachStepProps {
+  */
+ export function AttachStep({ children, fill = false, index, style }: AttachStepProps): ReactElement {
+   const { changeSpot, current } = useContext(SpotlightTourContext);
++  const insets = useSafeAreaInsets();
+ 
+   const ref = useRef<View>(null);
+ 
+@@ -77,10 +79,16 @@ export function AttachStep({ children, fill = false, index, style }: AttachStepP
+ 
+     if (current !== undefined && indexes.includes(current)) {
+       ref.current?.measureInWindow((x, y, width, height) => {
+-        changeSpot({ height, width, x, y });
++        // Android edge-to-edge fix: with `edgeToEdgeEnabled: true` (Android 15),
++        // measureInWindow returns y from below the status bar / safe-area inset,
++        // while the spotlight Modal (with statusBarTranslucent) anchors at the
++        // top of the screen. Add the safe-area top inset so the spot aligns
++        // with the real target.
++        const yAdjusted = Platform.OS === "android" ? y + insets.top : y;
++        changeSpot({ height, width, x, y: yAdjusted });
+       });
+     }
+-  }, [changeSpot, current, JSON.stringify(index)]);
++  }, [changeSpot, current, insets.top, JSON.stringify(index)]);
+ 
+   const onLayout = useCallback((event: LayoutChangeEvent): void => {
+     updateSpot();
+diff --git a/node_modules/react-native-spotlight-tour/src/lib/components/tour-overlay/TourOverlay.component.tsx b/node_modules/react-native-spotlight-tour/src/lib/components/tour-overlay/TourOverlay.component.tsx
+index 127c1d6..fe92ffd 100644
+--- a/node_modules/react-native-spotlight-tour/src/lib/components/tour-overlay/TourOverlay.component.tsx
++++ b/node_modules/react-native-spotlight-tour/src/lib/components/tour-overlay/TourOverlay.component.tsx
+@@ -184,6 +184,7 @@ export const TourOverlay = forwardRef<TourOverlayRef, TourOverlayProps>((props,
+     <Modal
+       animationType="fade"
+       presentationStyle="overFullScreen"
++      statusBarTranslucent={true}
+       supportedOrientations={["portrait", "landscape", "landscape-left", "landscape-right", "portrait-upside-down"]}
+       transparent={true}
+       visible={current !== undefined}
+@@ -285,8 +286,14 @@ function makeFloatingOptions(arrowRef: RefObject<null | View>, props: Optional<T
+ }
+ 
+ function flipMiddleware(flipProps: Optional<boolean | FlipOptions>): Optional<Middleware> {
+-  if (flipProps !== false) {
+-    return flip(flipProps === true ? undefined : flipProps);
++  // Default to disabled — see dist/ patch for rationale. Auto-flip on Android
++  // misjudges the boundary and pushes "bottom" tooltips above top-of-screen
++  // targets.
++  if (flipProps === true) {
++    return flip();
++  }
++  if (flipProps && flipProps !== false) {
++    return flip(flipProps);
+   }
+ 
+   return undefined;
