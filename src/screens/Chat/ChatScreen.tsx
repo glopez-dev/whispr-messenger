@@ -1459,15 +1459,19 @@ export const ChatScreen: React.FC = () => {
           });
           setHasMore(messagesWithRelations.length === MESSAGES_PAGE_SIZE);
         } else {
-          // Initial load — merge with any messages already received via WS
+          // Initial load — merge with any messages already received via WS.
+          // API versions take priority over cache so decrypted content
+          // replaces any encrypted placeholders loaded from cache.
           setMessages((prev) => {
-            const existingIds = new Set(prev.map((m) => m.id));
-            const newcomers = messagesWithRelations.filter(
-              (m) => !existingIds.has(m.id),
+            const apiById = new Map(
+              messagesWithRelations.map((m) => [m.id, m]),
             );
-            const withReplies = resolveReplies(newcomers, prev);
-            const merged = [...prev, ...withReplies];
-            return merged.sort(
+            const wsOnly = prev.filter((m) => !apiById.has(m.id));
+            const withReplies = resolveReplies(
+              [...messagesWithRelations, ...wsOnly],
+              [...messagesWithRelations, ...wsOnly],
+            );
+            return withReplies.sort(
               (a, b) =>
                 new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime(),
             );

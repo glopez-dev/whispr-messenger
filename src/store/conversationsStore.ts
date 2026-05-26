@@ -339,7 +339,10 @@ export const useConversationsStore = create<
         data.map(async (conv) => ({
           ...conv,
           last_message: conv.last_message
-            ? await tryDecryptMessage(conv.last_message)
+            ? await tryDecryptMessage({
+                ...conv.last_message,
+                conversation_id: conv.last_message.conversation_id || conv.id,
+              })
             : conv.last_message,
         })),
       );
@@ -369,7 +372,10 @@ export const useConversationsStore = create<
         data.map(async (conv) => ({
           ...conv,
           last_message: conv.last_message
-            ? await tryDecryptMessage(conv.last_message)
+            ? await tryDecryptMessage({
+                ...conv.last_message,
+                conversation_id: conv.last_message.conversation_id || conv.id,
+              })
             : conv.last_message,
         })),
       );
