@@ -1,6 +1,7 @@
 import { TokenService } from "./TokenService";
 import { DeviceService } from "./DeviceService";
 import { SignalKeyService } from "./SignalKeyService";
+import { E2EEService } from "./E2EEService";
 import { getApiBaseUrl } from "./apiBase";
 import { emitSessionExpired } from "./sessionEvents";
 import { logger } from "../utils/logger";
@@ -96,10 +97,14 @@ export const AuthService = {
     phoneNumber: string,
     purpose: AuthPurpose,
   ): Promise<VerificationRequestResponse> {
-    return apiFetch<VerificationRequestResponse>(`/verify/${purpose}/request`, {
-      method: "POST",
-      body: JSON.stringify({ phoneNumber }),
-    });
+    const apiPurpose = purpose === "recovery" ? "login" : purpose;
+    return apiFetch<VerificationRequestResponse>(
+      `/verify/${apiPurpose}/request`,
+      {
+        method: "POST",
+        body: JSON.stringify({ phoneNumber }),
+      },
+    );
   },
 
   async confirmVerification(
@@ -107,10 +112,14 @@ export const AuthService = {
     code: string,
     purpose: AuthPurpose,
   ): Promise<VerificationConfirmResponse> {
-    return apiFetch<VerificationConfirmResponse>(`/verify/${purpose}/confirm`, {
-      method: "POST",
-      body: JSON.stringify({ verificationId, code }),
-    });
+    const apiPurpose = purpose === "recovery" ? "login" : purpose;
+    return apiFetch<VerificationConfirmResponse>(
+      `/verify/${apiPurpose}/confirm`,
+      {
+        method: "POST",
+        body: JSON.stringify({ verificationId, code }),
+      },
+    );
   },
 
   async register(verificationId: string): Promise<TokenPair> {
@@ -296,6 +305,12 @@ export const AuthService = {
       // Best-effort: clear local tokens even if server call fails
     });
     await TokenService.clearTokens();
+    // Drop the in-memory E2EE identity cache so the next login (which
+    // regenerates the identity keypair) is not shadowed by the cached
+    // pre-logout keys. Without this the same JS process keeps using the
+    // previous identity until killed, and counterparts can't decrypt the
+    // user's messages.
+    E2EEService.resetIdentityCache();
   },
 
   async validateSession(): Promise<{

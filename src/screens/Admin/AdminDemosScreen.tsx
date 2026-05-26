@@ -73,8 +73,9 @@ export const AdminDemosScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
           >
             <Text style={styles.intro}>
-              Demonstration des modeles de moderation IA pour les prospects. L'integration
-              backend est en cours - les boutons seront actives a la livraison de Zeyou et Maya.
+              Demonstration des modeles de moderation IA pour les prospects.
+              L'integration backend est en cours - les boutons seront actives a
+              la livraison de Zeyou et Maya.
             </Text>
 
             {DEMO_MODELS.map((model) => (
@@ -106,12 +107,27 @@ export const AdminDemosScreen: React.FC = () => {
                     accessibilityState={{ disabled: true }}
                     accessibilityHint="Disponible quand le modele sera deploye"
                   >
-                    <Ionicons name="image-outline" size={16} color="rgba(255,255,255,0.35)" />
-                    <Text style={[styles.demoButtonText, styles.demoButtonTextDisabled]}>Tester sur image</Text>
+                    <Ionicons
+                      name="image-outline"
+                      size={16}
+                      color="rgba(255,255,255,0.35)"
+                    />
+                    <Text
+                      style={[
+                        styles.demoButtonText,
+                        styles.demoButtonTextDisabled,
+                      ]}
+                    >
+                      Tester sur image
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.demoButton, styles.demoButtonSecondary, styles.demoButtonDisabled]}
+                    style={[
+                      styles.demoButton,
+                      styles.demoButtonSecondary,
+                      styles.demoButtonDisabled,
+                    ]}
                     disabled={true}
                     activeOpacity={1}
                     testID={`btn-text-${model.id}`}
