@@ -36,6 +36,18 @@ describe("moderation model-version helpers", () => {
     expect(v).toBe("v3");
   });
 
+  it("accepts v4 (rebuilt MobileNetV3 3-class graph-model)", async () => {
+    await AsyncStorage.setItem(MODERATION_MODEL_STORAGE_KEY, "v4");
+    const v = await getModerationModelVersion();
+    expect(v).toBe("v4");
+  });
+
+  it("persists v4 on set and exposes it via the synchronous cache", async () => {
+    await setModerationModelVersion("v4");
+    expect(getModerationModelVersionSync()).toBe("v4");
+    expect(await AsyncStorage.getItem(MODERATION_MODEL_STORAGE_KEY)).toBe("v4");
+  });
+
   it("ignores garbage values in storage and keeps the default", async () => {
     await AsyncStorage.setItem(MODERATION_MODEL_STORAGE_KEY, "garbage");
     const v = await getModerationModelVersion();

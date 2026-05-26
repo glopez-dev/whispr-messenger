@@ -1412,11 +1412,13 @@ export const SettingsScreen: React.FC = () => {
           <SettingSection title="Debug" icon="bug-outline">
             <SettingItem
               label="Modèle de modération"
-              subtitle="Bascule entre le modèle v2 (EfficientNet 9-classes) et v3 (MobileNetV3 healthy/not_food/unhealthy, avec gate vidéo)"
+              subtitle="v2 EfficientNet 9-classes · v3 MobileNetV3 3-classes (healthy/not_food/unhealthy) · v4 MobileNetV3 binary food/not_food"
               value={
-                moderationModel === "v3"
-                  ? "v3 · MobileNetV3 3-classes"
-                  : "v2 · EfficientNet 9-classes"
+                moderationModel === "v4"
+                  ? "v4 · MobileNetV3 binary"
+                  : moderationModel === "v3"
+                    ? "v3 · MobileNetV3 3-classes"
+                    : "v2 · EfficientNet 9-classes"
               }
               onPress={() => setShowModerationModelModal(true)}
               icon="cube-outline"
@@ -1555,6 +1557,7 @@ export const SettingsScreen: React.FC = () => {
           options={[
             { label: "v2 · EfficientNet 9-classes", value: "v2" },
             { label: "v3 · MobileNetV3 3-classes (+ vidéo)", value: "v3" },
+            { label: "v4 · MobileNetV3 binary food/not_food", value: "v4" },
           ]}
           selectedValue={moderationModel}
           onSelect={async (value) => {

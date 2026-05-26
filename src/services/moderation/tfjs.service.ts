@@ -64,9 +64,11 @@ const v3ModelJsonAsset = require("../../../assets/models/v3-tfjs/model.json");
 const v3WeightAssets = [
   require("../../../assets/models/v3-tfjs/group1-shard1of1.bin"),
 ];
+const v4ModelJsonAsset = require("../../../assets/models/v4-tfjs/model.json");
+const v4WeightAssets = [
+  require("../../../assets/models/v4-tfjs/group1-shard1of1.bin"),
+];
 /* eslint-enable @typescript-eslint/no-require-imports */
-
-type LoadedModel = tf.GraphModel | tf.LayersModel;
 
 interface ModelJson {
   modelTopology: object;
@@ -77,26 +79,21 @@ interface ModelJson {
 }
 
 interface ModelSpec {
-  format: "graph" | "layers";
   modelJson: ModelJson;
   /** Metro/Expo `require()` of a binary asset returns a numeric module id. */
   weights: number[];
 }
 
 const SPECS: Record<ModerationModelVersion, ModelSpec> = {
-  v2: {
-    format: "graph",
-    modelJson: v2ModelJsonAsset,
-    weights: v2WeightAssets,
-  },
-  v3: {
-    format: "graph",
-    modelJson: v3ModelJsonAsset,
-    weights: v3WeightAssets,
-  },
+  v2: { modelJson: v2ModelJsonAsset, weights: v2WeightAssets },
+  v3: { modelJson: v3ModelJsonAsset, weights: v3WeightAssets },
+  // v4: 3-class MobileNetV3Small softmax (healthy/not_food/unhealthy),
+  // regenerated via `scripts/rebuild_v4_from_tfjs.py` as a TFJS graph-model.
+  // Routes through `decideV3FromProbs` since the class layout matches v3.
+  v4: { modelJson: v4ModelJsonAsset, weights: v4WeightAssets },
 };
 
-const models: Partial<Record<ModerationModelVersion, LoadedModel>> = {};
+const models: Partial<Record<ModerationModelVersion, tf.GraphModel>> = {};
 const loading: Partial<Record<ModerationModelVersion, Promise<void>>> = {};
 let tfReady = false;
 
@@ -172,12 +169,7 @@ async function ensureModel(version: ModerationModelVersion): Promise<void> {
     try {
       await ensureTf();
       await yieldThread();
-      const spec = SPECS[version];
-      const io = bundledAssetIO(spec);
-      models[version] =
-        spec.format === "graph"
-          ? await tf.loadGraphModel(io)
-          : await tf.loadLayersModel(io);
+      models[version] = await tf.loadGraphModel(bundledAssetIO(SPECS[version]));
     } catch (err) {
       console.error(`[tfjs] ensureModel(${version}) failed:`, err);
       delete loading[version];
@@ -237,9 +229,12 @@ async function gate(params: {
     },
   );
 
-  return resolvedVersion === "v3"
-    ? decideV3FromProbs(data, threshold)
-    : decideV2FromProbs(data, threshold);
+  // v4 ships the HuggingFace 3-class softmax — same class layout as v3
+  // (healthy / not_food / unhealthy), so route through the v3 decision.
+  if (resolvedVersion === "v3" || resolvedVersion === "v4") {
+    return decideV3FromProbs(data, threshold);
+  }
+  return decideV2FromProbs(data, threshold);
 }
 
 async function isAllowed(params: {

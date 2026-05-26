@@ -2,6 +2,9 @@
 node_modules/
 yarn.lock
 
+# Local Python venv for one-off model conversion (scripts/convert_v4_to_tfjs_graph.py)
+.venv-tfjs/
+
 # Expo
 .expo/
 .expo-shared/

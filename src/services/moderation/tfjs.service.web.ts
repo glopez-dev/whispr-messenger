@@ -18,6 +18,8 @@ let tfConverter: TFConverter | null = null;
 const MODEL_URLS: Record<ModerationModelVersion, string> = {
   v2: "/models/tfjs/model.json",
   v3: "/models/v3-tfjs/model.json",
+  // v4: 3-class graph-model rebuilt via scripts/rebuild_v4_from_tfjs.py.
+  v4: "/models/v4-tfjs/model.json",
 };
 
 type LoadedModel = Awaited<ReturnType<TFConverter["loadGraphModel"]>>;
@@ -78,9 +80,10 @@ async function gate(params: {
   input.dispose();
   output.dispose();
 
-  return resolvedVersion === "v3"
-    ? decideV3FromProbs(data, threshold)
-    : decideV2FromProbs(data, threshold);
+  if (resolvedVersion === "v3" || resolvedVersion === "v4") {
+    return decideV3FromProbs(data, threshold);
+  }
+  return decideV2FromProbs(data, threshold);
 }
 
 async function isAllowed(params: {
