@@ -15,36 +15,6 @@ import {
 export const OTHER_CONFIDENCE_CEILING = 0.85;
 export const SECONDARY_FOOD_THRESHOLD = 0.15;
 export const V3_UNHEALTHY_THRESHOLD_DEFAULT = 0.5;
-export const V4_FOOD_THRESHOLD_DEFAULT = 0.5;
-
-/**
- * V4 decision: MobileNetV3-Small with a single sigmoid head trained on a
- * binary `food` vs `not_food` task. Block when `p(food) >= threshold`
- * (default 0.5), mirroring the v2/v3 policy of letting only non-food
- * imagery through.
- */
-export function decideV4FromProbs(
-  data: ArrayLike<number>,
-  threshold = V4_FOOD_THRESHOLD_DEFAULT,
-): GateResult {
-  if (data.length !== 1) {
-    throw new Error(
-      `V4 output length mismatch: got ${data.length}, expected 1 (sigmoid).`,
-    );
-  }
-  const pFood = Number(data[0]);
-  const probs = { food: pFood, not_food: 1 - pFood };
-  const isFood = pFood >= threshold;
-
-  return {
-    allowed: !isFood,
-    reason: isFood ? "BLOCK_TRAINED_CLASS" : "OTHER_CLASS",
-    bestIndex: isFood ? 0 : 1,
-    bestProb: isFood ? pFood : 1 - pFood,
-    bestClass: isFood ? "food" : "not_food",
-    probs,
-  };
-}
 
 /**
  * V2 decision: 9-class softmax (8 food classes + "Other"), with a runner-up

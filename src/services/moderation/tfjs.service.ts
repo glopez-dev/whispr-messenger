@@ -7,11 +7,7 @@ import { Platform, InteractionManager } from "react-native";
 import type { GateResult } from "./moderation.types";
 import { imageUriToFloatTensor_0_255 } from "./image-to-tensor";
 import { INPUT_SIZE } from "./moderation.constants";
-import {
-  decideV2FromProbs,
-  decideV3FromProbs,
-  decideV4FromProbs,
-} from "./tfjs.decide";
+import { decideV2FromProbs, decideV3FromProbs } from "./tfjs.decide";
 import {
   getModerationModelVersion,
   type ModerationModelVersion,
@@ -91,6 +87,9 @@ interface ModelSpec {
 const SPECS: Record<ModerationModelVersion, ModelSpec> = {
   v2: { modelJson: v2ModelJsonAsset, weights: v2WeightAssets },
   v3: { modelJson: v3ModelJsonAsset, weights: v3WeightAssets },
+  // v4: 3-class MobileNetV3Small softmax (healthy/not_food/unhealthy),
+  // regenerated via `scripts/rebuild_v4_from_tfjs.py` as a TFJS graph-model.
+  // Routes through `decideV3FromProbs` since the class layout matches v3.
   v4: { modelJson: v4ModelJsonAsset, weights: v4WeightAssets },
 };
 
@@ -230,8 +229,11 @@ async function gate(params: {
     },
   );
 
-  if (resolvedVersion === "v4") return decideV4FromProbs(data, threshold);
-  if (resolvedVersion === "v3") return decideV3FromProbs(data, threshold);
+  // v4 ships the HuggingFace 3-class softmax — same class layout as v3
+  // (healthy / not_food / unhealthy), so route through the v3 decision.
+  if (resolvedVersion === "v3" || resolvedVersion === "v4") {
+    return decideV3FromProbs(data, threshold);
+  }
   return decideV2FromProbs(data, threshold);
 }
 

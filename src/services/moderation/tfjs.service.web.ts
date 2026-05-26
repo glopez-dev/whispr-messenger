@@ -1,11 +1,7 @@
 import type { GateResult } from "./moderation.types";
 import { imageUriToFloatTensor_0_255 } from "./image-to-tensor";
 import { INPUT_SIZE } from "./moderation.constants";
-import {
-  decideV2FromProbs,
-  decideV3FromProbs,
-  decideV4FromProbs,
-} from "./tfjs.decide";
+import { decideV2FromProbs, decideV3FromProbs } from "./tfjs.decide";
 import {
   getModerationModelVersion,
   type ModerationModelVersion,
@@ -22,6 +18,7 @@ let tfConverter: TFConverter | null = null;
 const MODEL_URLS: Record<ModerationModelVersion, string> = {
   v2: "/models/tfjs/model.json",
   v3: "/models/v3-tfjs/model.json",
+  // v4: 3-class graph-model rebuilt via scripts/rebuild_v4_from_tfjs.py.
   v4: "/models/v4-tfjs/model.json",
 };
 
@@ -83,8 +80,9 @@ async function gate(params: {
   input.dispose();
   output.dispose();
 
-  if (resolvedVersion === "v4") return decideV4FromProbs(data, threshold);
-  if (resolvedVersion === "v3") return decideV3FromProbs(data, threshold);
+  if (resolvedVersion === "v3" || resolvedVersion === "v4") {
+    return decideV3FromProbs(data, threshold);
+  }
   return decideV2FromProbs(data, threshold);
 }
 
