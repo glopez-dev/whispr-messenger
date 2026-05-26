@@ -117,7 +117,9 @@ export const OtpScreen: React.FC = () => {
    */
   const generateAndUploadSignalKeys = async (): Promise<void> => {
     try {
-      const bundle = await SignalKeyService.generateKeyBundle();
+      const bundle = await SignalKeyService.generateKeyBundle(
+        purpose === "register" ? "register" : "login",
+      );
 
       // Upload signed prekey (map camelCase DTO → snake_case API)
       await SignalKeysService.uploadSignedPrekey({
