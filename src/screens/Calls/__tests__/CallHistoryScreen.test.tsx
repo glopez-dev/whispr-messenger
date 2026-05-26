@@ -171,3 +171,201 @@ describe("CallHistoryScreen sur web", () => {
     expect(() => render(<CallHistoryScreen />)).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Tests unitaires des helpers d'affichage des dates
+// ---------------------------------------------------------------------------
+
+// On importe les helpers via un re-export temporaire pour les tester en isolation.
+// On les teste indirectement via le rendu de l'écran avec des dates contrôlées.
+
+describe("affichage des sous-textes de dates dans les lignes d'appel", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetConversation.mockResolvedValue(null);
+    mockGetConversationMembers.mockResolvedValue([]);
+    jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("affiche juste l'heure pour un appel d'aujourd'hui", async () => {
+    const now = new Date();
+    now.setHours(14, 30, 0, 0);
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "c1",
+          conversation_id: "conv-1",
+          status: "ended",
+          type: "audio",
+          initiator_id: "me",
+          started_at: now.toISOString(),
+          duration_seconds: 12,
+        },
+      ],
+    });
+    const { findByText } = render(<CallHistoryScreen />);
+    // sous-texte "12s · HH:MM" sans mention du jour
+    const subtext = await findByText(/^12s · \d{2}:\d{2}$/);
+    expect(subtext).toBeTruthy();
+    expect(subtext.props.children).not.toMatch(/hier|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche/i);
+  });
+
+  it("préfixe 'hier' pour un appel d'hier", async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(10, 0, 0, 0);
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "c2",
+          conversation_id: "conv-2",
+          status: "ended",
+          type: "audio",
+          initiator_id: "me",
+          started_at: yesterday.toISOString(),
+          duration_seconds: 60,
+        },
+      ],
+    });
+    const { findByText } = render(<CallHistoryScreen />);
+    const subtext = await findByText(/hier \d{2}:\d{2}/);
+    expect(subtext).toBeTruthy();
+  });
+
+  it("préfixe le jour de la semaine pour un appel de cette semaine", async () => {
+    const daysAgo3 = new Date();
+    daysAgo3.setDate(daysAgo3.getDate() - 3);
+    daysAgo3.setHours(9, 15, 0, 0);
+    const expectedWeekday = daysAgo3.toLocaleDateString("fr-FR", { weekday: "long" });
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "c3",
+          conversation_id: "conv-3",
+          status: "missed",
+          type: "audio",
+          initiator_id: "other",
+          started_at: daysAgo3.toISOString(),
+        },
+      ],
+    });
+    const { findByText } = render(<CallHistoryScreen />);
+    const subtext = await findByText(new RegExp(`Manqué · ${expectedWeekday} \\d{2}:\\d{2}`));
+    expect(subtext).toBeTruthy();
+  });
+
+  it("préfixe 'j mois.' pour un appel plus ancien", async () => {
+    const old = new Date();
+    old.setMonth(old.getMonth() - 1);
+    old.setHours(8, 0, 0, 0);
+    const expectedDay = old.getDate();
+    const expectedMonth = old.toLocaleDateString("fr-FR", { month: "short" });
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "c4",
+          conversation_id: "conv-4",
+          status: "ended",
+          type: "video",
+          initiator_id: "me",
+          started_at: old.toISOString(),
+          duration_seconds: 300,
+        },
+      ],
+    });
+    const { findByText } = render(<CallHistoryScreen />);
+    const subtext = await findByText(new RegExp(`5min \\d{2}s · ${expectedDay} ${expectedMonth} \\d{2}:\\d{2}`));
+    expect(subtext).toBeTruthy();
+  });
+});
+
+describe("section headers groupés par date", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetConversation.mockResolvedValue(null);
+    mockGetConversationMembers.mockResolvedValue([]);
+    jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("affiche 'Aujourd\\'hui' comme section header pour un appel du jour", async () => {
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "c1",
+          conversation_id: "conv-1",
+          status: "ended",
+          type: "audio",
+          initiator_id: "me",
+          started_at: new Date().toISOString(),
+        },
+      ],
+    });
+    const { findByText } = render(<CallHistoryScreen />);
+    expect(await findByText("Aujourd'hui")).toBeTruthy();
+  });
+
+  it("affiche 'Hier' comme section header pour un appel d'hier", async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "c2",
+          conversation_id: "conv-2",
+          status: "ended",
+          type: "audio",
+          initiator_id: "me",
+          started_at: yesterday.toISOString(),
+        },
+      ],
+    });
+    const { findByText } = render(<CallHistoryScreen />);
+    expect(await findByText("Hier")).toBeTruthy();
+  });
+
+  it("affiche le jour précis (ex: 'Mardi 21 mai') pour un appel de cette semaine", async () => {
+    const daysAgo2 = new Date();
+    daysAgo2.setDate(daysAgo2.getDate() - 2);
+    const weekday = daysAgo2.toLocaleDateString("fr-FR", { weekday: "long" });
+    const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    const day = daysAgo2.getDate();
+    const month = daysAgo2.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+    const expectedHeader = `${capitalizedWeekday} ${day} ${month}`;
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "c3",
+          conversation_id: "conv-3",
+          status: "ended",
+          type: "audio",
+          initiator_id: "me",
+          started_at: daysAgo2.toISOString(),
+        },
+      ],
+    });
+    const { findByText } = render(<CallHistoryScreen />);
+    expect(await findByText(expectedHeader)).toBeTruthy();
+  });
+
+  it("affiche le mois + année pour un appel plus ancien", async () => {
+    const old = new Date();
+    old.setMonth(old.getMonth() - 1);
+    const monthLong = old.toLocaleDateString("fr-FR", { month: "long" });
+    const capitalized = monthLong.charAt(0).toUpperCase() + monthLong.slice(1);
+    const expectedHeader = `${capitalized} ${old.getFullYear()}`;
+    mockListCalls.mockResolvedValue({
+      data: [
+        {
+          id: "c4",
+          conversation_id: "conv-4",
+          status: "ended",
+          type: "audio",
+          initiator_id: "me",
+          started_at: old.toISOString(),
+        },
+      ],
+    });
+    const { findByText } = render(<CallHistoryScreen />);
+    expect(await findByText(expectedHeader)).toBeTruthy();
+  });
+});

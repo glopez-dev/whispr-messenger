@@ -108,57 +108,94 @@ function formatCallTime(date: string): string {
 }
 
 /**
- * Retourne le libellé de section de date (Aujourd'hui / Hier / Cette semaine / Plus ancien).
+ * Retourne le jour normalisé (minuit) pour comparaison.
+ */
+function dayStart(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/**
+ * Retourne le libellé de section de date :
+ * - Aujourd'hui
+ * - Hier
+ * - Cette semaine : "Mardi 21 mai" (weekday + jour + mois court)
+ * - Plus ancien : "Avril 2026" (mois long + année)
  */
 function getSectionLabel(date: string): string {
   const target = new Date(date);
   const now = new Date();
-  const targetDay = new Date(
-    target.getFullYear(),
-    target.getMonth(),
-    target.getDate(),
-  ).getTime();
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  ).getTime();
-  const diffDays = Math.round((today - targetDay) / 86400000);
+  const diffDays = Math.round((dayStart(now) - dayStart(target)) / 86400000);
   if (diffDays === 0) return "Aujourd'hui";
   if (diffDays === 1) return "Hier";
-  if (diffDays < 7) return "Cette semaine";
-  return "Plus ancien";
+  if (diffDays < 7) {
+    // ex: "Mardi 21 mai"
+    const weekday = target.toLocaleDateString("fr-FR", { weekday: "long" });
+    const day = target.getDate();
+    const month = target.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+    return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${day} ${month}`;
+  }
+  // ex: "Avril 2026"
+  const monthLong = target.toLocaleDateString("fr-FR", { month: "long" });
+  return `${monthLong.charAt(0).toUpperCase()}${monthLong.slice(1)} ${target.getFullYear()}`;
 }
 
 /**
- * Texte secondaire sous le nom : "Manqué · il y a 2j" ou "12s · 14:30".
+ * Retourne la partie "jour" à insérer dans le sous-texte selon le contexte temporel :
+ * - Aujourd'hui : rien (juste l'heure)
+ * - Hier : "hier"
+ * - Cette semaine : weekday court ex "mar."
+ * - Plus ancien : "26 avr."
+ */
+function formatCallDayContext(date: string): string | null {
+  const target = new Date(date);
+  const now = new Date();
+  const diffDays = Math.round((dayStart(now) - dayStart(target)) / 86400000);
+  if (diffDays === 0) return null;
+  if (diffDays === 1) return "hier";
+  if (diffDays < 7) {
+    // ex: "mardi"
+    return target.toLocaleDateString("fr-FR", { weekday: "long" });
+  }
+  // ex: "26 avr."
+  const day = target.getDate();
+  const month = target.toLocaleDateString("fr-FR", { month: "short" });
+  return `${day} ${month}`;
+}
+
+/**
+ * Texte secondaire sous le nom avec le jour contextuel :
+ * - Aujourd'hui : "12s · 14:30" / "Manqué · 14:30"
+ * - Hier : "12s · hier 14:30" / "Manqué · hier 14:30"
+ * - Cette semaine : "12s · mardi 14:30"
+ * - Plus ancien : "12s · 26 avr. 14:30"
  */
 function buildCallSubtext(item: EnrichedCallHistoryItem): string {
   const time = formatCallTime(item.started_at);
+  const dayCtx = formatCallDayContext(item.started_at);
+  const timeWithDay = dayCtx ? `${dayCtx} ${time}` : time;
+
   if (item.status === "missed" || item.status === "declined") {
-    return `Manqué · ${time}`;
+    return `Manqué · ${timeWithDay}`;
   }
   if (item.status === "failed") {
-    return `Échec · ${time}`;
+    return `Échec · ${timeWithDay}`;
   }
   const dur =
     item.duration_seconds != null
       ? formatDuration(item.duration_seconds)
       : null;
-  return dur ? `${dur} · ${time}` : time;
+  return dur ? `${dur} · ${timeWithDay}` : timeWithDay;
 }
 
 function groupByDate(calls: EnrichedCallHistoryItem[]): SectionData[] {
-  const order = ["Aujourd'hui", "Hier", "Cette semaine", "Plus ancien"];
+  // Conserver l'ordre d'insertion (appels déjà triés du plus récent au plus ancien)
   const map = new Map<string, EnrichedCallHistoryItem[]>();
   for (const call of calls) {
     const label = getSectionLabel(call.started_at);
     if (!map.has(label)) map.set(label, []);
     map.get(label)!.push(call);
   }
-  return order
-    .filter((label) => map.has(label))
-    .map((label) => ({ title: label, data: map.get(label)! }));
+  return Array.from(map.entries()).map(([title, data]) => ({ title, data }));
 }
 
 function isMissed(status: CallStatus): boolean {
