@@ -251,13 +251,6 @@ export const AuthNavigator: React.FC = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // TODO: remove before ship — forces onboarding on every launch in dev
-    if (__DEV__) {
-      AsyncStorage.removeItem(ONBOARDING_KEY)
-        .then(() => setOnboardingDone(false))
-        .catch(() => setOnboardingDone(false));
-      return;
-    }
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then((v) => setOnboardingDone(v === "1"))
       .catch(() => setOnboardingDone(false));

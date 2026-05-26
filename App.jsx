@@ -20,6 +20,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthNavigator } from "./src/navigation/AuthNavigator";
+import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { linkingConfig } from "./src/navigation/linkingConfig";
 import { navigationRef } from "./src/navigation/navigationRef";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
@@ -170,7 +171,9 @@ export default function App() {
       <SafeAreaProvider>
         <QueryClientProvider client={getAppQueryClient()}>
           <ThemeProvider>
-            <AppShell />
+            <ErrorBoundary>
+              <AppShell />
+            </ErrorBoundary>
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
