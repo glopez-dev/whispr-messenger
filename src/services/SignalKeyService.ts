@@ -42,12 +42,10 @@ function toBase64(bytes: Uint8Array): string {
 export type KeyBundleContext = "register" | "login" | "recovery";
 
 function deriveIdentityPublicKey(secretKey: Uint8Array): Uint8Array {
-  // La clé secrète NaCl box est 64 octets ; les 32 premiers sont la seed
-  // Curve25519, les 32 suivants sont la clé publique dérivée.
-  // On peut reconstruire la paire via fromSecretKey si l'implémentation
-  // le supporte, sinon on dérive manuellement via keyPair.fromSeed n'existe
-  // pas pour box. tweetnacl expose publicKey dans secretKey[32..64].
-  return secretKey.slice(32, 64);
+  // nacl.box.keyPair() retourne une secretKey de 32 bytes.
+  // slice(32, 64) sur 32 bytes = tableau vide → publicKey vide → identityKey ""
+  // On utilise fromSecretKey pour reconstruire la paire correctement.
+  return nacl.box.keyPair.fromSecretKey(secretKey).publicKey;
 }
 
 export const SignalKeyService = {
