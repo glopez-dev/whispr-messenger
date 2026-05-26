@@ -1,54 +1,53 @@
+/**
+ * @danger-zone-mobile-layout
+ *
+ * DANGER ZONE - Layout web/iOS critique
+ *
+ * Bug historique : scroll bottom inaccessible sur Safari iOS PWA si la chaine flex
+ * ne porte pas le pattern WHISPR-1254 (height:100% + minHeight:0 web).
+ *
+ * AVANT TOUTE MODIF :
+ * 1. Tester live sur Safari iOS PWA (whispr-preprod.roadmvn.com).
+ * 2. Verifier scroll vers le bas + boutons visibles + retour fonctionnel.
+ * 3. Preserver les Platform.OS === 'web' ? minHeight:0 sur containers/scroll.
+ *
+ * Tickets historiques : WHISPR-1254, WHISPR-1291, WHISPR-1313, WHISPR-1335, WHISPR-1548
+ *
+ * Tag parsable : @danger-zone-mobile-layout (utilise par script CI grep pour detection).
+ */
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Platform } from "react-native";
+import {
+  Platform,
+  Pressable,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { RefreshControl } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AttachStep,
   SpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
-import { TourTooltip } from "../../components/Tour/TourTooltip";
-import { TourAutoStart } from "../../components/Tour/TourAutoStart";
-
-const CALLS_STEPS_COUNT = 2;
-
-const CALLS_TOUR_STEPS: TourStep[] = [
-  {
-    placement: "bottom",
-    offset: 10,
-    render: (props) => (
-      <TourTooltip
-        {...props}
-        title="Centre d'appels"
-        description="Retrouve ici tous tes appels audio et vidéo passés avec leur statut."
-        total={CALLS_STEPS_COUNT}
-      />
-    ),
-  },
-  {
-    placement: "bottom",
-    offset: 10,
-    render: (props) => (
-      <TourTooltip
-        {...props}
-        title="Statistiques"
-        description="Un aperçu de tes appels : total, manqués et connectés en un coup d'œil."
-        total={CALLS_STEPS_COUNT}
-      />
-    ),
-  },
-];
-import { Text, FlatList, StyleSheet, RefreshControl, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { callsApi } from "../../services/calls/callsApi";
-import type { Call, CallStatus } from "../../types/calls";
+import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+import { TourTooltip } from "../../components/Tour/TourTooltip";
+import { Avatar } from "../../components/Chat/Avatar";
 import { FLOATING_TAB_BAR_RESERVED_SPACE } from "../../components/Navigation/floatingTabBarLayout";
-import { colors, withOpacity } from "../../theme/colors";
+import { callsApi } from "../../services/calls/callsApi";
 import { messagingAPI } from "../../services/messaging/api";
 import { TokenService } from "../../services/TokenService";
+import { colors, withOpacity } from "../../theme/colors";
+import type { Call, CallStatus } from "../../types/calls";
 import type { Conversation } from "../../types/messaging";
-import { Avatar } from "../../components/Chat/Avatar";
 import { formatUsername, getConversationDisplayName } from "../../utils";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface EnrichedCallHistoryItem extends Call {
   title: string;
@@ -63,317 +62,55 @@ type ConversationMemberPreview = {
   avatar_url?: string;
 };
 
-/**
- * List of past calls for the current user. Pull-to-refresh rehydrates
- * from the calls-service /calls endpoint.
- */
-export const CallHistoryScreen: React.FC = () => {
-  const [calls, setCalls] = useState<EnrichedCallHistoryItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const insets = useSafeAreaInsets();
-  const stats = useMemo(
-    () => ({
-      total: calls.length,
-      missed: calls.filter((call) => call.status === "missed").length,
-      connected: calls.filter((call) => call.status === "ended").length,
-    }),
-    [calls],
-  );
+type FilterTab = "all" | "missed";
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await callsApi.list({ limit: 50 });
-      setCalls(await enrichCallsForDisplay(r.data));
-    } catch (err) {
-      console.error("Failed to load call history", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  return (
-    <SpotlightTourProvider
-      steps={CALLS_TOUR_STEPS}
-      overlayColor="#0B1124"
-      overlayOpacity={0.82}
-      placement="bottom"
-      offset={10}
-    >
-      {() => (
-        <>
-          <TourAutoStart />
-          <FlatList
-            data={calls}
-            keyExtractor={(c) => c.id}
-            refreshControl={
-              <RefreshControl
-                refreshing={loading}
-                onRefresh={load}
-                tintColor={colors.text.light}
-              />
-            }
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 8,
-              paddingBottom:
-                insets.bottom + FLOATING_TAB_BAR_RESERVED_SPACE + 16,
-            }}
-            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-            ListHeaderComponent={
-              <View style={styles.headerBlock}>
-                <AttachStep index={0} fill={Platform.OS !== "web"}>
-                  <BlurView
-                    intensity={45}
-                    tint="dark"
-                    style={styles.topHeaderBlur}
-                  >
-                    <View style={styles.topHeaderCard}>
-                      <View style={styles.topHeaderBadge}>
-                        <Ionicons
-                          name="call-outline"
-                          size={14}
-                          color={colors.primary.main}
-                        />
-                        <Text style={styles.topHeaderBadgeText}>
-                          Centre d'appels
-                        </Text>
-                      </View>
-                      <Text style={styles.topHeaderTitle}>Appels</Text>
-                      <Text style={styles.topHeaderSubtitle}>
-                        Historique audio et vidéo.
-                      </Text>
-                    </View>
-                  </BlurView>
-                </AttachStep>
-                <AttachStep index={1} fill={Platform.OS !== "web"}>
-                  <BlurView intensity={45} tint="dark" style={styles.heroBlur}>
-                    <View style={styles.heroCard}>
-                      <View style={styles.heroBadge}>
-                        <Ionicons
-                          name="sparkles-outline"
-                          size={14}
-                          color={colors.primary.main}
-                        />
-                        <Text style={styles.heroBadgeText}>
-                          Historique récent
-                        </Text>
-                      </View>
-                      <Text style={styles.heroTitle}>Vos appels</Text>
-                      <Text style={styles.heroSubtitle}>
-                        Retrouvez les appels récents avec un aperçu rapide des
-                        statuts et durées.
-                      </Text>
-                      <View style={styles.statsRow}>
-                        <StatPill
-                          icon="call-outline"
-                          label="Total"
-                          value={String(stats.total)}
-                        />
-                        <StatPill
-                          icon="checkmark-done-outline"
-                          label="Terminés"
-                          value={String(stats.connected)}
-                        />
-                        <StatPill
-                          icon="alert-circle-outline"
-                          label="Manqués"
-                          value={String(stats.missed)}
-                        />
-                      </View>
-                    </View>
-                  </BlurView>
-                </AttachStep>
-              </View>
-            }
-            renderItem={({ item }) => {
-              const meta = getStatusMeta(item.status);
-              return (
-                <BlurView intensity={35} tint="dark" style={styles.cardBlur}>
-                  <View style={styles.card}>
-                    <View style={styles.avatarBlock}>
-                      <Avatar
-                        uri={item.avatarUrl}
-                        name={item.title}
-                        size={54}
-                      />
-                      <View
-                        style={[
-                          styles.typeFloatingBadge,
-                          {
-                            backgroundColor:
-                              item.type === "video"
-                                ? withOpacity(colors.secondary.main, 0.9)
-                                : withOpacity(colors.primary.main, 0.88),
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name={
-                            item.type === "video"
-                              ? "videocam-outline"
-                              : "call-outline"
-                          }
-                          size={12}
-                          color={colors.text.light}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.cardBody}>
-                      <View style={styles.titleRow}>
-                        <Text style={styles.title} numberOfLines={1}>
-                          {item.title}
-                        </Text>
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            { backgroundColor: meta.backgroundColor },
-                          ]}
-                        >
-                          <Ionicons
-                            name={meta.icon}
-                            size={12}
-                            color={meta.textColor}
-                          />
-                          <Text
-                            style={[
-                              styles.statusBadgeText,
-                              { color: meta.textColor },
-                            ]}
-                          >
-                            {meta.label}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {!!item.subtitle && (
-                        <Text style={styles.subtitle} numberOfLines={1}>
-                          {item.subtitle}
-                        </Text>
-                      )}
-
-                      <Text style={styles.dateText}>
-                        {formatDate(item.started_at)}
-                      </Text>
-
-                      <View style={styles.metaInfoRow}>
-                        <View style={styles.metaInfoPill}>
-                          <Ionicons
-                            name={
-                              item.type === "video"
-                                ? "videocam-outline"
-                                : "call-outline"
-                            }
-                            size={13}
-                            color="rgba(255,255,255,0.7)"
-                          />
-                          <Text style={styles.metaText}>
-                            {item.type === "video"
-                              ? "Appel vidéo"
-                              : "Appel audio"}
-                          </Text>
-                        </View>
-                        <View style={styles.metaInfoPill}>
-                          <Ionicons
-                            name="calendar-outline"
-                            size={13}
-                            color="rgba(255,255,255,0.7)"
-                          />
-                          <Text style={styles.metaText}>
-                            {relativeDayLabel(item.started_at)}
-                          </Text>
-                        </View>
-                        {item.duration_seconds != null && (
-                          <View style={styles.metaInfoPill}>
-                            <Ionicons
-                              name="time-outline"
-                              size={13}
-                              color="rgba(255,255,255,0.7)"
-                            />
-                            <Text style={styles.metaText}>
-                              Durée {formatDuration(item.duration_seconds)}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                </BlurView>
-              );
-            }}
-            ListEmptyComponent={
-              <BlurView intensity={35} tint="dark" style={styles.emptyBlur}>
-                <View style={styles.emptyCard}>
-                  <View style={styles.emptyIcon}>
-                    <Ionicons
-                      name="call-outline"
-                      size={24}
-                      color="rgba(255,255,255,0.82)"
-                    />
-                  </View>
-                  <Text style={styles.emptyTitle}>
-                    Aucun appel pour le moment
-                  </Text>
-                  <Text style={styles.emptySubtitle}>
-                    Vos appels audio et vidéo apparaîtront ici.
-                  </Text>
-                </View>
-              </BlurView>
-            }
-          />
-        </>
-      )}
-    </SpotlightTourProvider>
-  );
-};
-
-const StatPill: React.FC<{
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-}> = ({ icon, label, value }) => (
-  <View style={styles.statPill}>
-    <Ionicons name={icon} size={16} color={colors.text.light} />
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
-const STATUS_LABELS: Record<CallStatus, string> = {
-  ringing: "Sonnerie",
-  connected: "En cours",
-  ended: "Terminé",
-  missed: "Manqué",
-  declined: "Refusé",
-  failed: "Échec",
-};
-
-function statusLabel(s: string): string {
-  return STATUS_LABELS[s as CallStatus] || s;
+interface SectionData {
+  title: string;
+  data: EnrichedCallHistoryItem[];
 }
+
+// ---------------------------------------------------------------------------
+// Tour steps
+// ---------------------------------------------------------------------------
+
+const CALLS_STEPS_COUNT = 1;
+
+const CALLS_TOUR_STEPS: TourStep[] = [
+  {
+    placement: "bottom",
+    offset: 10,
+    render: (props) => (
+      <TourTooltip
+        {...props}
+        title="Historique d'appels"
+        description="Retrouve ici tous tes appels audio et vidéo. Filtre par manqués ou lance un nouvel appel."
+        total={CALLS_STEPS_COUNT}
+      />
+    ),
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function formatDuration(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = sec % 60;
-  return m > 0 ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`;
+  return m > 0 ? `${m}min ${String(s).padStart(2, "0")}s` : `${s}s`;
 }
 
-function formatDate(date: string): string {
-  return new Date(date).toLocaleString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+function formatCallTime(date: string): string {
+  return new Date(date).toLocaleTimeString("fr-FR", {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-function relativeDayLabel(date: string): string {
+/**
+ * Retourne le libellé de section de date (Aujourd'hui / Hier / Cette semaine / Plus ancien).
+ */
+function getSectionLabel(date: string): string {
   const target = new Date(date);
   const now = new Date();
   const targetDay = new Date(
@@ -389,8 +126,48 @@ function relativeDayLabel(date: string): string {
   const diffDays = Math.round((today - targetDay) / 86400000);
   if (diffDays === 0) return "Aujourd'hui";
   if (diffDays === 1) return "Hier";
-  return target.toLocaleDateString("fr-FR", { weekday: "long" });
+  if (diffDays < 7) return "Cette semaine";
+  return "Plus ancien";
 }
+
+/**
+ * Texte secondaire sous le nom : "Manqué · il y a 2j" ou "12s · 14:30".
+ */
+function buildCallSubtext(item: EnrichedCallHistoryItem): string {
+  const time = formatCallTime(item.started_at);
+  if (item.status === "missed" || item.status === "declined") {
+    return `Manqué · ${time}`;
+  }
+  if (item.status === "failed") {
+    return `Échec · ${time}`;
+  }
+  const dur =
+    item.duration_seconds != null
+      ? formatDuration(item.duration_seconds)
+      : null;
+  return dur ? `${dur} · ${time}` : time;
+}
+
+function groupByDate(calls: EnrichedCallHistoryItem[]): SectionData[] {
+  const order = ["Aujourd'hui", "Hier", "Cette semaine", "Plus ancien"];
+  const map = new Map<string, EnrichedCallHistoryItem[]>();
+  for (const call of calls) {
+    const label = getSectionLabel(call.started_at);
+    if (!map.has(label)) map.set(label, []);
+    map.get(label)!.push(call);
+  }
+  return order
+    .filter((label) => map.has(label))
+    .map((label) => ({ title: label, data: map.get(label)! }));
+}
+
+function isMissed(status: CallStatus): boolean {
+  return status === "missed" || status === "declined" || status === "failed";
+}
+
+// ---------------------------------------------------------------------------
+// Data enrichment (unchanged logic, extracted for clarity)
+// ---------------------------------------------------------------------------
 
 async function getCurrentUserId(): Promise<string | null> {
   const token = await TokenService.getAccessToken();
@@ -404,22 +181,19 @@ function resolveConversationAvatar(
   currentUserId: string | null,
 ): string | undefined {
   if (conversation.type === "direct") {
-    const other = members.find(
-      (member) => member.id && member.id !== currentUserId,
-    );
+    const other = members.find((m) => m.id && m.id !== currentUserId);
     return other?.avatar_url || conversation.avatar_url;
   }
-
-  const meta = (conversation.metadata ?? {}) as Record<string, any>;
+  const meta = (conversation.metadata ?? {}) as Record<string, unknown>;
   return (
     conversation.avatar_url ||
-    meta.avatar_url ||
-    meta.group_avatar_url ||
-    meta.group_icon_url ||
-    meta.icon_url ||
-    meta.photo_url ||
-    meta.picture_url ||
-    meta.image_url
+    (meta.avatar_url as string | undefined) ||
+    (meta.group_avatar_url as string | undefined) ||
+    (meta.group_icon_url as string | undefined) ||
+    (meta.icon_url as string | undefined) ||
+    (meta.photo_url as string | undefined) ||
+    (meta.picture_url as string | undefined) ||
+    (meta.image_url as string | undefined)
   );
 }
 
@@ -428,29 +202,23 @@ async function enrichCallsForDisplay(
 ): Promise<EnrichedCallHistoryItem[]> {
   const currentUserId = await getCurrentUserId();
   const conversationIds = Array.from(
-    new Set(calls.map((call) => call.conversation_id).filter(Boolean)),
+    new Set(calls.map((c) => c.conversation_id).filter(Boolean)),
   );
   const conversationMap = new Map<
     string,
-    {
-      conversation: Conversation | null;
-      members: ConversationMemberPreview[];
-    }
+    { conversation: Conversation | null; members: ConversationMemberPreview[] }
   >();
 
   await Promise.all(
-    conversationIds.map(async (conversationId) => {
+    conversationIds.map(async (cid) => {
       try {
-        const conversation = await messagingAPI.getConversation(conversationId);
+        const conversation = await messagingAPI.getConversation(cid);
         const members = await messagingAPI
-          .getConversationMembers(conversationId)
+          .getConversationMembers(cid)
           .catch(() => []);
-        conversationMap.set(conversationId, { conversation, members });
+        conversationMap.set(cid, { conversation, members });
       } catch {
-        conversationMap.set(conversationId, {
-          conversation: null,
-          members: [],
-        });
+        conversationMap.set(cid, { conversation: null, members: [] });
       }
     }),
   );
@@ -472,7 +240,7 @@ async function enrichCallsForDisplay(
       return {
         ...call,
         title: getConversationDisplayName(conversation),
-        subtitle: "Room de groupe",
+        subtitle: "Groupe",
         avatarUrl: resolveConversationAvatar(
           conversation,
           members,
@@ -482,8 +250,7 @@ async function enrichCallsForDisplay(
     }
 
     const otherMember =
-      members.find((member) => member.id && member.id !== currentUserId) ??
-      members[0];
+      members.find((m) => m.id && m.id !== currentUserId) ?? members[0];
     const username = formatUsername(
       otherMember?.username ??
         conversation.username ??
@@ -500,8 +267,7 @@ async function enrichCallsForDisplay(
     return {
       ...call,
       title,
-      subtitle:
-        username && username !== title ? username : "Conversation directe",
+      subtitle: username && username !== title ? username : undefined,
       avatarUrl:
         otherMember?.avatar_url ||
         resolveConversationAvatar(conversation, members, currentUserId),
@@ -509,291 +275,404 @@ async function enrichCallsForDisplay(
   });
 }
 
-function getStatusMeta(status: CallStatus): {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  textColor: string;
-  backgroundColor: string;
-} {
-  switch (status) {
-    case "missed":
-      return {
-        label: "Manqué",
-        icon: "alert-circle-outline",
-        textColor: "#FFD0CF",
-        backgroundColor: "rgba(255,59,48,0.18)",
-      };
-    case "declined":
-      return {
-        label: "Refusé",
-        icon: "close-circle-outline",
-        textColor: "#FFD7B0",
-        backgroundColor: "rgba(240,72,130,0.16)",
-      };
-    case "ringing":
-      return {
-        label: "Sonnerie",
-        icon: "notifications-outline",
-        textColor: "#FFE6A7",
-        backgroundColor: "rgba(255,210,122,0.16)",
-      };
-    case "failed":
-      return {
-        label: "Échec",
-        icon: "warning-outline",
-        textColor: "#FFD0CF",
-        backgroundColor: "rgba(255,59,48,0.18)",
-      };
-    case "connected":
-    case "ended":
-    default:
-      return {
-        label: statusLabel(status),
-        icon: "checkmark-circle-outline",
-        textColor: "#C6FFD1",
-        backgroundColor: "rgba(33,192,4,0.16)",
-      };
-  }
-}
+// ---------------------------------------------------------------------------
+// CallRow — ligne compacte Signal/WhatsApp
+// ---------------------------------------------------------------------------
+
+const CallRow: React.FC<{ item: EnrichedCallHistoryItem }> = ({ item }) => {
+  const missed = isMissed(item.status);
+  const subtext = buildCallSubtext(item);
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      onPress={() => {
+        // TODO : intégrer callsStore.initiate quand un écran de sélection sera dispo
+      }}
+      onLongPress={() => {
+        // options : rappeler, supprimer…
+      }}
+      accessibilityLabel={`${item.title} - ${subtext}`}
+      accessibilityRole="button"
+    >
+      {/* Avatar */}
+      <View style={styles.avatarWrap} accessibilityElementsHidden>
+        <Avatar uri={item.avatarUrl} name={item.title} size={40} />
+      </View>
+
+      {/* Corps */}
+      <View style={styles.rowBody}>
+        <Text
+          style={[styles.rowName, missed && styles.rowNameMissed]}
+          numberOfLines={1}
+        >
+          {item.title}
+        </Text>
+        <View style={styles.subtextRow}>
+          <Ionicons
+            name={
+              missed
+                ? "arrow-down-outline"
+                : item.type === "video"
+                  ? "videocam-outline"
+                  : "call-outline"
+            }
+            size={13}
+            color={
+              missed ? colors.ui.error : withOpacity(colors.text.light, 0.55)
+            }
+            style={styles.subtextIcon}
+          />
+          <Text
+            style={[styles.rowSubtext, missed && styles.rowSubtextMissed]}
+            numberOfLines={1}
+          >
+            {subtext}
+          </Text>
+        </View>
+      </View>
+
+      {/* Icône type appel à droite (touch target >= 44px) */}
+      <Pressable
+        style={styles.callTypeBtn}
+        onPress={() => {
+          // rappel direct
+        }}
+        accessibilityLabel={`Rappeler ${item.title} en ${item.type === "video" ? "vidéo" : "audio"}`}
+        accessibilityRole="button"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons
+          name={item.type === "video" ? "videocam-outline" : "call-outline"}
+          size={20}
+          color={colors.primary.main}
+        />
+      </Pressable>
+    </Pressable>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Composant principal
+// ---------------------------------------------------------------------------
+
+export const CallHistoryScreen: React.FC = () => {
+  const [calls, setCalls] = useState<EnrichedCallHistoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState<FilterTab>("all");
+  const insets = useSafeAreaInsets();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await callsApi.list({ limit: 50 });
+      setCalls(await enrichCallsForDisplay(r.data));
+    } catch (err) {
+      console.error("Failed to load call history", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filtered = useMemo(
+    () =>
+      filter === "missed" ? calls.filter((c) => isMissed(c.status)) : calls,
+    [calls, filter],
+  );
+
+  const sections = useMemo(() => groupByDate(filtered), [filtered]);
+
+  return (
+    <SpotlightTourProvider
+      steps={CALLS_TOUR_STEPS}
+      overlayColor="#0B1124"
+      overlayOpacity={0.82}
+      placement="bottom"
+      offset={10}
+    >
+      {() => (
+        <View
+          style={[
+            styles.container,
+            Platform.OS === "web" ? { minHeight: 0 } : {},
+          ]}
+        >
+          <TourAutoStart />
+
+          {/* Header */}
+          <AttachStep index={0} fill={Platform.OS !== "web"}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Appels</Text>
+              <Pressable
+                style={styles.newCallBtn}
+                onPress={() => {
+                  // TODO : ouvrir sélecteur de contact
+                }}
+                accessibilityLabel="Nouvel appel"
+                accessibilityRole="button"
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+              >
+                <Ionicons name="add" size={24} color={colors.text.light} />
+              </Pressable>
+            </View>
+          </AttachStep>
+
+          {/* Filtres tabs */}
+          <View style={styles.filterRow}>
+            <Pressable
+              style={[
+                styles.filterTab,
+                filter === "all" && styles.filterTabActive,
+              ]}
+              onPress={() => setFilter("all")}
+              accessibilityLabel="Tous les appels"
+              accessibilityRole="tab"
+              accessibilityState={{ selected: filter === "all" }}
+            >
+              <Text
+                style={[
+                  styles.filterTabText,
+                  filter === "all" && styles.filterTabTextActive,
+                ]}
+              >
+                Tous
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.filterTab,
+                filter === "missed" && styles.filterTabActive,
+              ]}
+              onPress={() => setFilter("missed")}
+              accessibilityLabel="Appels manqués"
+              accessibilityRole="tab"
+              accessibilityState={{ selected: filter === "missed" }}
+            >
+              <Text
+                style={[
+                  styles.filterTabText,
+                  filter === "missed" && styles.filterTabTextActive,
+                ]}
+              >
+                Manqués
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Liste groupée par date */}
+          <SectionList
+            sections={sections}
+            keyExtractor={(item) => item.id}
+            refreshControl={
+              <RefreshControl
+                refreshing={loading}
+                onRefresh={load}
+                tintColor={colors.text.light}
+              />
+            }
+            style={[styles.list, Platform.OS === "web" ? { minHeight: 0 } : {}]}
+            contentContainerStyle={{
+              paddingBottom:
+                insets.bottom + FLOATING_TAB_BAR_RESERVED_SPACE + 16,
+            }}
+            stickySectionHeadersEnabled={false}
+            renderSectionHeader={({ section }) => (
+              <Text style={styles.sectionHeader}>{section.title}</Text>
+            )}
+            renderItem={({ item }) => <CallRow item={item} />}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            ListEmptyComponent={
+              <View style={styles.emptyWrap}>
+                <View style={styles.emptyIconWrap}>
+                  <Ionicons
+                    name="call-outline"
+                    size={28}
+                    color={withOpacity(colors.text.light, 0.55)}
+                  />
+                </View>
+                <Text style={styles.emptyTitle}>
+                  {filter === "missed"
+                    ? "Aucun appel manqué"
+                    : "Aucun appel pour le moment"}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                  {filter === "missed"
+                    ? "Tous tes appels ont eu une réponse."
+                    : "Tes appels audio et vidéo apparaîtront ici."}
+                </Text>
+              </View>
+            }
+          />
+        </View>
+      )}
+    </SpotlightTourProvider>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  headerBlock: {
-    marginBottom: 16,
-    gap: 12,
+  container: {
+    flex: 1,
   },
-  topHeaderBlur: {
-    borderRadius: 30,
-    overflow: "hidden",
-  },
-  topHeaderCard: {
-    borderRadius: 30,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-    backgroundColor: "rgba(11,17,36,0.18)",
-  },
-  topHeaderBadge: {
-    alignSelf: "flex-start",
+
+  // Header
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
-  topHeaderBadgeText: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-  },
-  topHeaderTitle: {
-    marginTop: 14,
+  headerTitle: {
     fontSize: 28,
     fontFamily: "Inter_700Bold",
     color: colors.text.light,
   },
-  topHeaderSubtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.72)",
-  },
-  heroBlur: {
-    borderRadius: 28,
-    overflow: "hidden",
-  },
-  heroCard: {
-    borderRadius: 28,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-    backgroundColor: "rgba(11,17,36,0.24)",
-  },
-  heroBadge: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
+  newCallBtn: {
+    width: 44,
+    height: 44,
     alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 22,
+    backgroundColor: withOpacity(colors.primary.main, 0.18),
+  },
+
+  // Filtres
+  filterRow: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
     gap: 8,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
   },
-  heroBadgeText: {
-    color: "rgba(255,255,255,0.82)",
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
-  },
-  heroTitle: {
-    marginTop: 14,
-    color: colors.text.light,
-    fontSize: 24,
-    lineHeight: 30,
-    fontFamily: "Inter_700Bold",
-  },
-  heroSubtitle: {
-    marginTop: 8,
-    color: "rgba(255,255,255,0.72)",
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: "Inter_400Regular",
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 18,
-  },
-  statPill: {
-    flex: 1,
-    minHeight: 78,
+  filterTab: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: withOpacity(colors.text.light, 0.08),
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  statValue: {
+  filterTabActive: {
+    backgroundColor: colors.primary.main,
+  },
+  filterTabText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: withOpacity(colors.text.light, 0.65),
+  },
+  filterTabTextActive: {
     color: colors.text.light,
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    marginTop: 8,
   },
-  statLabel: {
-    color: "rgba(255,255,255,0.68)",
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    marginTop: 4,
+
+  // Liste
+  list: {
+    flex: 1,
   },
-  cardBlur: {
-    borderRadius: 24,
-    overflow: "hidden",
+
+  // Section headers
+  sectionHeader: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: withOpacity(colors.text.light, 0.55),
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 6,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  card: {
+
+  // Ligne d'appel
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 24,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "rgba(11,17,36,0.22)",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minHeight: 64,
   },
-  avatarBlock: {
-    position: "relative",
+  rowPressed: {
+    backgroundColor: withOpacity(colors.text.light, 0.06),
+  },
+  avatarWrap: {
     marginRight: 14,
   },
-  typeFloatingBadge: {
-    position: "absolute",
-    right: -2,
-    bottom: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
+  rowBody: {
+    flex: 1,
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(11,17,36,0.88)",
   },
-  cardBody: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  title: {
-    flex: 1,
-    fontSize: 17,
-    color: colors.text.light,
+  rowName: {
+    fontSize: 16,
     fontFamily: "Inter_700Bold",
+    color: colors.text.light,
   },
-  subtitle: {
-    color: withOpacity(colors.text.light, 0.72),
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    marginTop: 4,
+  rowNameMissed: {
+    color: "#FF6B6B",
   },
-  statusBadge: {
+  subtextRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    marginTop: 3,
   },
-  statusBadgeText: {
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
+  subtextIcon: {
+    marginRight: 4,
   },
-  dateText: {
-    color: "rgba(255,255,255,0.74)",
+  rowSubtext: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    marginTop: 8,
+    color: withOpacity(colors.text.light, 0.55),
   },
-  metaInfoRow: {
-    flexDirection: "row",
-    gap: 8,
-    flexWrap: "wrap",
-    marginTop: 12,
+  rowSubtextMissed: {
+    color: "#FF9090",
   },
-  metaInfoPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: "rgba(255,255,255,0.07)",
-  },
-  metaText: {
-    color: "rgba(255,255,255,0.72)",
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-  },
-  emptyBlur: {
-    borderRadius: 28,
-    overflow: "hidden",
-    marginTop: 20,
-  },
-  emptyCard: {
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "rgba(11,17,36,0.22)",
-  },
-  emptyIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  callTypeBtn: {
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    marginBottom: 14,
+  },
+
+  // Séparateur
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 74, // aligner avec le texte (20px padding + 40px avatar + 14px gap)
+    backgroundColor: withOpacity(colors.text.light, 0.08),
+  },
+
+  // État vide
+  emptyWrap: {
+    alignItems: "center",
+    paddingTop: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: withOpacity(colors.text.light, 0.07),
+    marginBottom: 16,
   },
   emptyTitle: {
-    color: colors.text.light,
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
+    color: colors.text.light,
+    textAlign: "center",
   },
   emptySubtitle: {
-    color: "rgba(255,255,255,0.7)",
+    marginTop: 8,
     fontSize: 14,
     fontFamily: "Inter_400Regular",
+    color: withOpacity(colors.text.light, 0.6),
     textAlign: "center",
-    marginTop: 8,
     lineHeight: 20,
   },
 });
