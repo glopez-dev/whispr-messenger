@@ -649,9 +649,8 @@ describe("GroupDetailsScreen", () => {
         total: 2,
       } as any);
 
-      const { getByText, getAllByText, getAllByLabelText, queryByText } = render(
-        <GroupDetailsScreen />,
-      );
+      const { getByText, getAllByText, getAllByLabelText, queryByText } =
+        render(<GroupDetailsScreen />);
       await waitFor(() =>
         expect(getAllByText("Test Group").length).toBeGreaterThan(0),
       );

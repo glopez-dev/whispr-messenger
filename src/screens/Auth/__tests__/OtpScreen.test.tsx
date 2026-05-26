@@ -182,7 +182,6 @@ describe("OtpScreen", () => {
     );
   }, 10000);
 
-
   it("navigue vers TwoFactorVerifyLogin quand requires2FA est true", async () => {
     mockedAuthService.confirmVerification.mockResolvedValue({
       verified: true,
@@ -234,7 +233,10 @@ describe("OtpScreen", () => {
       },
       { timeout: 8000 },
     );
-    expect(mockNavigate).not.toHaveBeenCalledWith("TwoFactorVerifyLogin", expect.anything());
+    expect(mockNavigate).not.toHaveBeenCalledWith(
+      "TwoFactorVerifyLogin",
+      expect.anything(),
+    );
   }, 10000);
 
   it("redirige vers RecoveryCodes mode resume si recovery_codes_acknowledged est false", async () => {

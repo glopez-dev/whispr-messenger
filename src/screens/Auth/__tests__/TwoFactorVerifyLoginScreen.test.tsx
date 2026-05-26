@@ -95,7 +95,9 @@ jest.mock("../../../components/Toast/Toast", () => {
 });
 
 const mockedAuth = AuthService as jest.Mocked<typeof AuthService>;
-const mockedTwoFactor = TwoFactorService as jest.Mocked<typeof TwoFactorService>;
+const mockedTwoFactor = TwoFactorService as jest.Mocked<
+  typeof TwoFactorService
+>;
 const mockedToken = TokenService as jest.Mocked<typeof TokenService>;
 
 describe("TwoFactorVerifyLoginScreen", () => {

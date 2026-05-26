@@ -159,7 +159,6 @@ describe("SignalKeyService.generateKeyBundle", () => {
   });
 });
 
-
 describe("SignalKeyService.generateKeyBundle context-aware", () => {
   const mockGetIdentityPrivateKey = jest.fn();
 

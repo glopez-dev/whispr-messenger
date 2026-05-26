@@ -548,7 +548,9 @@ describe("AuthService.acknowledgeRecoveryCodes", () => {
     mockedToken.getAccessToken.mockResolvedValueOnce("access-tok");
     mockFetch.mockResolvedValueOnce(mockResponse({ status: 204 }));
 
-    await expect(AuthService.acknowledgeRecoveryCodes()).resolves.toBeUndefined();
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
 
     const [url, init] = mockFetch.mock.calls[0];
     expect(url).toBe("https://api.test/auth/v1/recovery-codes/acknowledge");
@@ -562,13 +564,17 @@ describe("AuthService.acknowledgeRecoveryCodes", () => {
       mockResponse({ status: 404, body: { message: "Not Found" } }),
     );
 
-    await expect(AuthService.acknowledgeRecoveryCodes()).resolves.toBeUndefined();
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
   });
 
   it("retourne void sans appel réseau si pas de token", async () => {
     mockedToken.getAccessToken.mockResolvedValueOnce(null);
 
-    await expect(AuthService.acknowledgeRecoveryCodes()).resolves.toBeUndefined();
+    await expect(
+      AuthService.acknowledgeRecoveryCodes(),
+    ).resolves.toBeUndefined();
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
