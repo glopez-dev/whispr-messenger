@@ -141,10 +141,40 @@ function isEnvelopeV1(value: unknown): value is E2EEEnvelopeV1 {
 let cachedIdentitySecretKey: Uint8Array | null = null;
 let cachedIdentityPublicKey: Uint8Array | null = null;
 
+// Key bundle cache — avoids hammering the backend rate limiter on every send.
+// TTL: 5 min (bundles change only when a device rotates prekeys, which is rare).
+const KEY_BUNDLE_CACHE_TTL_MS = 5 * 60 * 1000;
+const keyBundleCache = new Map<
+  string,
+  { identity_key: string; fetchedAt: number }
+>();
+
+function getCachedBundle(userId: string, deviceId: string): string | null {
+  const entry = keyBundleCache.get(`${userId}:${deviceId}`);
+  if (!entry) return null;
+  if (Date.now() - entry.fetchedAt > KEY_BUNDLE_CACHE_TTL_MS) {
+    keyBundleCache.delete(`${userId}:${deviceId}`);
+    return null;
+  }
+  return entry.identity_key;
+}
+
+function setCachedBundle(
+  userId: string,
+  deviceId: string,
+  identityKey: string,
+): void {
+  keyBundleCache.set(`${userId}:${deviceId}`, {
+    identity_key: identityKey,
+    fetchedAt: Date.now(),
+  });
+}
+
 export const __testing = {
   resetCache(): void {
     cachedIdentitySecretKey = null;
     cachedIdentityPublicKey = null;
+    keyBundleCache.clear();
   },
 };
 
@@ -237,7 +267,12 @@ export const E2EEService = {
           const bundles = await Promise.all(
             deviceIds.map(async (d) => {
               try {
+                const cached = getCachedBundle(uid, d);
+                if (cached) {
+                  return { user_id: uid, device_id: d, identity_key: cached };
+                }
                 const bundle = await SignalKeysService.getKeyBundle(uid, d);
+                setCachedBundle(uid, d, bundle.identity_key);
                 return {
                   user_id: uid,
                   device_id: d,
@@ -274,25 +309,31 @@ export const E2EEService = {
         (d) => d !== deviceId,
       );
 
-      const myOtherBundles = await Promise.all(
-        myOtherDeviceIds.map(async (d) => {
-          try {
-            const bundle = await SignalKeysService.getKeyBundle(userId, d);
-            return {
+      for (const d of myOtherDeviceIds) {
+        try {
+          const cached = getCachedBundle(userId, d);
+          if (cached) {
+            myOtherRecipients.push({
               user_id: userId,
               device_id: d,
-              identity_key: bundle.identity_key,
-            };
-          } catch (err) {
-            console.warn(
-              `[E2EEService] Could not fetch bundle for own device ${d}:`,
-              err,
-            );
-            return null;
+              identity_key: cached,
+            });
+            continue;
           }
-        }),
-      );
-      myOtherRecipients = myOtherBundles.filter((b): b is any => b !== null);
+          const bundle = await SignalKeysService.getKeyBundle(userId, d);
+          setCachedBundle(userId, d, bundle.identity_key);
+          myOtherRecipients.push({
+            user_id: userId,
+            device_id: d,
+            identity_key: bundle.identity_key,
+          });
+        } catch (err) {
+          console.warn(
+            `[E2EEService] Could not fetch bundle for own device ${d}:`,
+            err,
+          );
+        }
+      }
     } catch (err) {
       console.warn("[E2EEService] Could not fetch keys for own devices:", err);
     }
