@@ -105,6 +105,23 @@ export const TwoFactorService = {
       "/2fa/backup-codes/remaining",
     );
   },
+
+  // Utilisé depuis TwoFactorVerifyLoginScreen pour finaliser le login
+  // quand l'user ne peut pas saisir son TOTP (téléphone perdu, etc.).
+  // Retourne les tokens directement : le backend valide le code de secours
+  // et émet les JWT en une seule étape.
+  async useBackupCode(
+    code: string,
+    verificationId: string,
+  ): Promise<import("../types/auth").TokenPair> {
+    return apiFetch<import("../types/auth").TokenPair>(
+      "/2fa/backup-codes/use",
+      {
+        method: "POST",
+        body: JSON.stringify({ verificationId, recoveryCode: code }),
+      },
+    );
+  },
 };
 
 export default TwoFactorService;

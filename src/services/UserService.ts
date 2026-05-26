@@ -228,7 +228,7 @@ export class UserService {
         ? String(backgroundMediaUrl)
         : undefined,
       visualPreferences,
-      isOnline: Boolean(raw.isOnline ?? raw.is_online ?? true),
+      isOnline: Boolean(raw.isOnline ?? raw.is_online ?? false),
       lastSeen: raw.lastSeen ?? raw.last_seen ?? undefined,
       createdAt: String(raw.createdAt ?? raw.created_at ?? ""),
       updatedAt: String(raw.updatedAt ?? raw.updated_at ?? ""),

@@ -762,6 +762,32 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.skip": "Passer",
     "auth.linkedAccount": "Compte associé :",
     "auth.loginViaQR": "Se connecter via QR code",
+    "auth.recoveryLink": "Vous n'avez plus accès à ce numéro ?",
+    "auth.recovery": "Récupérer mon compte",
+    "auth.recoverySmsCode":
+      "Entrez le numéro lié à votre compte pour recevoir un code de vérification",
+    "auth.accountRecoveredTitle": "Compte récupéré",
+    "auth.accountRecoveredSubtitle":
+      "Votre identité a été vérifiée avec succès.",
+    "auth.accountRecoveredKeysInfo":
+      "Vos clés de chiffrement ont été regénérées",
+    "auth.accountRecoveredDevicesInfo":
+      "Vos autres appareils ont été déconnectés",
+    "auth.accountRecoveredCta": "Accéder à mes conversations",
+    "auth.yourRecoveryCodes": "Vos codes de récupération",
+    "auth.recoveryCodesWarning":
+      "Ces codes ne seront affichés qu'une seule fois. Conservez-les dans un endroit sûr (gestionnaire de mots de passe, impression papier).",
+    "auth.copyAllCodes": "Copier tous les codes",
+    "auth.codeCopied": "Codes copiés !",
+    "auth.iSavedMyCodes": "J'ai sauvegardé mes codes en lieu sûr",
+    "auth.continueToApp": "Continuer",
+    "auth.useRecoveryCode": "Vous n'avez plus accès à ce numéro ?",
+    "auth.enterRecoveryCode": "Entrez votre code de récupération",
+    "auth.recoveryCodePlaceholder": "XXXX-XXXX-XXXX",
+    "auth.redeemCode": "Utiliser ce code",
+    "auth.invalidRecoveryCode": "Code invalide ou déjà utilisé",
+    "auth.recoveryCodeRateLimit": "Trop de tentatives. Réessayez plus tard.",
+    "auth.recoveryCodeSuccess": "Compte récupéré avec succès",
 
     // Profile
     "profile.title": "Profil",
@@ -1019,6 +1045,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "common.next": "Suivant",
     "common.retry": "Réessayer",
     "common.optional": "optionnel",
+    "common.soon": "Bientôt",
     "common.copyError": "Impossible de copier dans le presse-papiers.",
 
     // Confirmation forte (typed-confirm)
@@ -1117,6 +1144,32 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "auth.skip": "Skip",
     "auth.linkedAccount": "Linked account:",
     "auth.loginViaQR": "Sign in with QR code",
+    "auth.recoveryLink": "No longer have access to this number?",
+    "auth.recovery": "Recover my account",
+    "auth.recoverySmsCode":
+      "Enter the number linked to your account to receive a verification code",
+    "auth.accountRecoveredTitle": "Account recovered",
+    "auth.accountRecoveredSubtitle":
+      "Your identity has been successfully verified.",
+    "auth.accountRecoveredKeysInfo":
+      "Your encryption keys have been regenerated",
+    "auth.accountRecoveredDevicesInfo":
+      "Your other devices have been signed out",
+    "auth.accountRecoveredCta": "Go to my conversations",
+    "auth.yourRecoveryCodes": "Your recovery codes",
+    "auth.recoveryCodesWarning":
+      "These codes will only be shown once. Keep them in a safe place (password manager, printed copy).",
+    "auth.copyAllCodes": "Copy all codes",
+    "auth.codeCopied": "Codes copied!",
+    "auth.iSavedMyCodes": "I've saved my codes in a safe place",
+    "auth.continueToApp": "Continue",
+    "auth.useRecoveryCode": "You no longer have access to this number?",
+    "auth.enterRecoveryCode": "Enter your recovery code",
+    "auth.recoveryCodePlaceholder": "XXXX-XXXX-XXXX",
+    "auth.redeemCode": "Use this code",
+    "auth.invalidRecoveryCode": "Invalid or already used code",
+    "auth.recoveryCodeRateLimit": "Too many attempts. Please try again later.",
+    "auth.recoveryCodeSuccess": "Account successfully recovered",
 
     // Profile
     "profile.title": "Profile",
@@ -1367,6 +1420,7 @@ const localizedTexts: Record<Language, Record<string, string>> = {
     "common.next": "Next",
     "common.retry": "Retry",
     "common.optional": "optional",
+    "common.soon": "Soon",
     "common.copyError": "Unable to copy to clipboard.",
 
     // Strong confirmation (typed-confirm)

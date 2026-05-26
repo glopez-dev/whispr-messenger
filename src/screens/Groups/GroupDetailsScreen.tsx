@@ -126,9 +126,9 @@ export const GroupDetailsScreen: React.FC = () => {
   const [settings, setSettings] = useState<GroupSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "info" | "members" | "settings"
-  >("info");
+  const [activeTab, setActiveTab] = useState<"info" | "members" | "settings">(
+    "info",
+  );
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showTransferAdminModal, setShowTransferAdminModal] = useState(false);
@@ -274,7 +274,7 @@ export const GroupDetailsScreen: React.FC = () => {
   const isAdmin = isOwner || currentUserMember?.role === "admin";
   const ownerCount = members.filter((m) => m.role === "owner").length;
   const adminCount = members.filter((m) => m.role === "admin").length;
-  const isLastAdmin = isAdmin && (ownerCount + adminCount) === 1;
+  const isLastAdmin = isAdmin && ownerCount + adminCount === 1;
   const otherMembers = members.filter((m) => m.user_id !== CURRENT_USER_ID);
 
   const handleLeaveGroup = useCallback(async () => {
@@ -929,8 +929,10 @@ export const GroupDetailsScreen: React.FC = () => {
               const owners = members.filter((m) => m.role === "owner").length;
               const admins = members.filter((m) => m.role === "admin").length;
               const parts: string[] = [];
-              if (owners > 0) parts.push(`${owners} propriétaire${owners > 1 ? "s" : ""}`);
-              if (admins > 0) parts.push(`${admins} administrateur${admins > 1 ? "s" : ""}`);
+              if (owners > 0)
+                parts.push(`${owners} propriétaire${owners > 1 ? "s" : ""}`);
+              if (admins > 0)
+                parts.push(`${admins} administrateur${admins > 1 ? "s" : ""}`);
               return parts.length > 0 ? parts.join(", ") : "0 administrateur";
             })()}
           </Text>
@@ -1003,22 +1005,10 @@ export const GroupDetailsScreen: React.FC = () => {
                 </Text>
                 {member.role === "owner" && (
                   <View
-                    style={[
-                      styles.roleBadge,
-                      { backgroundColor: "#B8860B" },
-                    ]}
+                    style={[styles.roleBadge, { backgroundColor: "#B8860B" }]}
                   >
-                    <Ionicons
-                      name="star"
-                      size={12}
-                      color="#FFD700"
-                    />
-                    <Text
-                      style={[
-                        styles.roleBadgeText,
-                        { color: "#FFD700" },
-                      ]}
-                    >
+                    <Ionicons name="star" size={12} color="#FFD700" />
+                    <Text style={[styles.roleBadgeText, { color: "#FFD700" }]}>
                       Propriétaire
                     </Text>
                   </View>
@@ -1095,24 +1085,24 @@ export const GroupDetailsScreen: React.FC = () => {
               // owner peut agir sur tout le monde sauf lui-même
               // admin peut agir uniquement sur les membres simples
               (isOwner || (isAdmin && member.role === "member")) && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e?.stopPropagation?.();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setMemberActionFor(member);
-                }}
-                style={styles.memberActionButton}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel={`Actions pour ${member.display_name}`}
-              >
-                <Ionicons
-                  name="ellipsis-vertical"
-                  size={20}
-                  color={withOpacity(colors.text.light, 0.7)}
-                />
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e?.stopPropagation?.();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setMemberActionFor(member);
+                  }}
+                  style={styles.memberActionButton}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Actions pour ${member.display_name}`}
+                >
+                  <Ionicons
+                    name="ellipsis-vertical"
+                    size={20}
+                    color={withOpacity(colors.text.light, 0.7)}
+                  />
+                </TouchableOpacity>
+              )}
           </AnimatedTouchableOpacity>
         ))}
       </View>
@@ -1906,27 +1896,27 @@ export const GroupDetailsScreen: React.FC = () => {
                 (isOwner
                   ? member.role !== "owner"
                   : isAdmin && member.role === "member") && (
-                <TouchableOpacity
-                  style={styles.memberActionRow}
-                  onPress={() => handleRemoveMember(member)}
-                  disabled={memberActionLoading}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="person-remove"
-                    size={20}
-                    color={colors.ui.error}
-                  />
-                  <Text
-                    style={[
-                      styles.memberActionRowText,
-                      { color: colors.ui.error },
-                    ]}
+                  <TouchableOpacity
+                    style={styles.memberActionRow}
+                    onPress={() => handleRemoveMember(member)}
+                    disabled={memberActionLoading}
+                    activeOpacity={0.7}
                   >
-                    Retirer du groupe
-                  </Text>
-                </TouchableOpacity>
-              )}
+                    <Ionicons
+                      name="person-remove"
+                      size={20}
+                      color={colors.ui.error}
+                    />
+                    <Text
+                      style={[
+                        styles.memberActionRowText,
+                        { color: colors.ui.error },
+                      ]}
+                    >
+                      Retirer du groupe
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
               <View style={styles.modalActions}>
                 <TouchableOpacity

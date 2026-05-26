@@ -519,7 +519,7 @@ export const messagingAPI = {
     );
 
     if (!response.ok) {
-      throw httpError("Failed to send message", response);
+      throw await richHttpError("Failed to send message", response);
     }
 
     return unwrap(response);

@@ -22,8 +22,8 @@ import { AuthService } from "../../services/AuthService";
 import { TokenService } from "../../services/TokenService";
 import { SignalKeyService } from "../../services/SignalKeyService";
 import { SignalKeysService } from "../../services/SecurityService";
+import { DeviceService } from "../../services/DeviceService";
 import { UserService } from "../../services/UserService";
-import { profileSetupFlag } from "../../services/profileSetupFlag";
 import { colors, spacing, typography } from "../../theme";
 import type { AuthStackParamList } from "../../navigation/AuthNavigator";
 
@@ -117,7 +117,9 @@ export const OtpScreen: React.FC = () => {
    */
   const generateAndUploadSignalKeys = async (): Promise<void> => {
     try {
-      const bundle = await SignalKeyService.generateKeyBundle();
+      const bundle = await SignalKeyService.generateKeyBundle(
+        purpose === "register" ? "register" : "login",
+      );
 
       // Upload signed prekey (map camelCase DTO → snake_case API)
       await SignalKeysService.uploadSignedPrekey({
@@ -177,6 +179,23 @@ export const OtpScreen: React.FC = () => {
           return;
         }
 
+        // Si le compte a la 2FA activée, préparer les clés et rediriger
+        // vers l'écran de vérification TOTP / backup code avant le login.
+        if (confirmResult.requires2FA) {
+          const [deviceInfo, signalKeyBundle] = await Promise.all([
+            DeviceService.getDeviceInfo(),
+            SignalKeyService.generateKeyBundle("login"),
+          ]);
+          navigation.navigate("TwoFactorVerifyLogin", {
+            verificationId,
+            deviceInfo,
+            signalKeyBundle,
+          });
+          setLoading(false);
+          submittingRef.current = false;
+          return;
+        }
+
         const tokens =
           purpose === "register"
             ? await AuthService.register(verificationId)
@@ -201,13 +220,28 @@ export const OtpScreen: React.FC = () => {
         generateAndUploadSignalKeys();
 
         if (purpose === "register") {
-          await profileSetupFlag.markPending();
-          navigation.reset({ index: 0, routes: [{ name: "ProfileSetup" }] });
-        } else {
+          // Flow register : toujours passer par RecoveryCodes (mode normal)
+          navigation.reset({ index: 0, routes: [{ name: "RecoveryCodes" }] });
+        } else if (purpose === "recovery") {
           navigation.reset({
             index: 0,
-            routes: [{ name: "ConversationsList" }],
+            routes: [{ name: "AccountRecovered" }],
           });
+        } else {
+          // Login : si l'user n'a jamais validé ses codes → résume flow
+          // Champ absent (vieux backend) = défaut true pour compat
+          const acknowledged = tokens.recovery_codes_acknowledged ?? true;
+          if (!acknowledged) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "RecoveryCodes", params: { mode: "resume" } }],
+            });
+          } else {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "ConversationsList" }],
+            });
+          }
         }
       } catch (err: unknown) {
         console.error("[OtpScreen] Registration/login failed:", err);

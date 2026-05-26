@@ -36,6 +36,7 @@ export interface ReactionRealtimePayload {
 
 interface UseWebSocketOptions {
   userId: string;
+  deviceId?: string;
   token: string;
   onNewMessage?: (message: Message) => void;
   onMessageUpdated?: (message: Message) => void;
@@ -79,7 +80,7 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
     setConnectionState(socket.connectionState);
 
     // connect() is a no-op if already connected
-    socket.connect(options.userId, options.token);
+    socket.connect(options.userId, options.token, options.deviceId);
 
     // channel() is idempotent — returns existing entry if already created.
     // join() adds to pendingTopics if socket isn't open yet; the onopen

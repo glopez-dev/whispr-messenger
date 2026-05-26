@@ -1,4 +1,4 @@
-export type AuthPurpose = "login" | "register";
+export type AuthPurpose = "login" | "register" | "recovery";
 
 export interface VerificationRequestResponse {
   verificationId: string;
@@ -13,6 +13,8 @@ export interface VerificationConfirmResponse {
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
+  /** false si l'user n'a jamais validé "J'ai sauvegardé mes codes". Absent = compat old backend → traité comme true. */
+  recovery_codes_acknowledged?: boolean;
 }
 
 export interface JwtPayload {

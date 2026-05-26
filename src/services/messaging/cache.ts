@@ -4,8 +4,11 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Conversation, MessageWithRelations } from "../../types/messaging";
+import type { InboxItem } from "../../types/inbox";
 
 const CACHE_KEY = "whispr.conversations.cache";
+const INBOX_CACHE_KEY = "whispr.inbox.cache";
+const INBOX_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const CACHE_TIMESTAMP_KEY = "whispr.conversations.cache.timestamp";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -155,6 +158,38 @@ export const cacheService = {
       await AsyncStorage.multiRemove(targets);
     } catch (error) {
       console.error("Error clearing all messages cache:", error);
+    }
+  },
+
+  async saveInbox(items: InboxItem[], unreadCount: number): Promise<void> {
+    try {
+      await AsyncStorage.setItem(
+        INBOX_CACHE_KEY,
+        JSON.stringify({
+          items,
+          unread_count: unreadCount,
+          cachedAt: Date.now(),
+        }),
+      );
+    } catch {}
+  },
+
+  async getInbox(): Promise<{
+    items: InboxItem[];
+    unread_count: number;
+  } | null> {
+    try {
+      const raw = await AsyncStorage.getItem(INBOX_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as {
+        items: InboxItem[];
+        unread_count: number;
+        cachedAt: number;
+      };
+      if (Date.now() - parsed.cachedAt > INBOX_CACHE_TTL) return null;
+      return { items: parsed.items, unread_count: parsed.unread_count };
+    } catch {
+      return null;
     }
   },
 };
