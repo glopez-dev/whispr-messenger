@@ -21,13 +21,35 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => ({ params: { conversationId: "conv-1" } }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
-  useTheme: () => ({
-    getThemeColors: () => ({
-      text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
+jest.mock("../../../context/ThemeContext", () => {
+  const translations: Record<string, string> = {
+    "scheduled.empty": "Aucun message programmé",
+    "scheduled.emptyHint":
+      "Appuyez longuement sur le bouton d'envoi pour programmer un message",
+    "scheduled.pendingCount": "en attente",
+    "scheduled.cancelButton": "Annuler",
+    "scheduled.cancelAlertTitle": "Annuler le message programmé",
+    "scheduled.cancelAlertMessage":
+      "Voulez-vous annuler l'envoi de ce message ?",
+    "scheduled.cancelAlertConfirm": "Annuler le message",
+    "scheduled.cancelAlertNo": "Non",
+    "scheduled.cancelError": "Impossible d'annuler le message.",
+    "scheduled.statusPending": "En attente",
+    "scheduled.statusSent": "Envoyé",
+    "scheduled.statusFailed": "Échoué",
+    "scheduled.statusCancelled": "Annulé",
+    "scheduled.title": "Messages programmés",
+    "notif.error": "Erreur",
+  };
+  return {
+    useTheme: () => ({
+      getThemeColors: () => ({
+        text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
+      }),
+      getLocalizedText: (key: string) => translations[key] ?? key,
     }),
-  }),
-}));
+  };
+});
 
 const mockGetScheduled = jest.fn();
 const mockCancelScheduled = jest.fn();

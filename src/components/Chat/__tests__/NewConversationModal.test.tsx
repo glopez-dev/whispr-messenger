@@ -32,6 +32,33 @@ jest.mock("../Avatar", () => ({
   Avatar: () => null,
 }));
 
+jest.mock("react-native-safe-area-context", () => ({
+  SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
+jest.mock("../../../context/ThemeContext", () => {
+  const translations: Record<string, string> = {
+    "notif.error": "Erreur",
+    "newConversation.errorLoadContacts": "Impossible de charger les contacts",
+    "newConversation.limitTitle": "Limite atteinte",
+    "newConversation.errorCreate": "Impossible de créer la conversation",
+    "newConversation.errorCreateGroup": "Impossible de créer le groupe",
+    "newConversation.invalidNameTitle": "Nom invalide",
+    "newConversation.createConversation": "Créer la conversation",
+    "newConversation.createGroup": "Créer le groupe",
+    "newConversation.groupNamePlaceholder": "Nom du groupe",
+    "newConversation.searchPlaceholder": "Rechercher un contact",
+    "newConversation.noContactsFound": "Aucun contact trouvé",
+    "newConversation.noContactsAvailable": "Aucun contact disponible",
+  };
+  return {
+    useTheme: () => ({
+      getLocalizedText: (key: string) => translations[key] ?? key,
+    }),
+  };
+});
+
 const mockGetContacts = jest.fn();
 const mockCreateDirect = jest.fn();
 const mockCreateGroup = jest.fn();
@@ -199,7 +226,7 @@ describe("NewConversationModal — direct conversation", () => {
   it("creates a direct conversation when exactly one contact is selected", async () => {
     mockCreateDirect.mockResolvedValueOnce({ id: "conv-9" });
     const onCreated = jest.fn();
-    const { getByText } = render(
+    const { getByText, getAllByText } = render(
       <NewConversationModal
         visible
         onClose={jest.fn()}
@@ -209,7 +236,9 @@ describe("NewConversationModal — direct conversation", () => {
     await waitFor(() => getByText("Alice Smith"));
 
     fireEvent.press(getByText("Alice Smith"));
-    fireEvent.press(getByText("Créer la conversation"));
+    // Header title and primary button share the same label — press the button (last)
+    const createButtons = getAllByText("Créer la conversation");
+    fireEvent.press(createButtons[createButtons.length - 1]);
     await flushAsync();
 
     expect(mockCreateDirect).toHaveBeenCalledWith("u-1");
@@ -218,7 +247,7 @@ describe("NewConversationModal — direct conversation", () => {
 
   it("alerts when the direct conversation creation fails", async () => {
     mockCreateDirect.mockRejectedValueOnce(new Error("forbidden"));
-    const { getByText } = render(
+    const { getByText, getAllByText } = render(
       <NewConversationModal
         visible
         onClose={jest.fn()}
@@ -228,7 +257,8 @@ describe("NewConversationModal — direct conversation", () => {
     await waitFor(() => getByText("Alice Smith"));
 
     fireEvent.press(getByText("Alice Smith"));
-    fireEvent.press(getByText("Créer la conversation"));
+    const createButtons = getAllByText("Créer la conversation");
+    fireEvent.press(createButtons[createButtons.length - 1]);
     await flushAsync();
 
     expect(alertSpy).toHaveBeenCalledWith("Erreur", "forbidden");

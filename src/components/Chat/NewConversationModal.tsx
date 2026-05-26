@@ -25,6 +25,7 @@ import { messagingAPI } from "../../services/messaging/api";
 import { Avatar } from "./Avatar";
 import { logger } from "../../utils/logger";
 import { formatUsername } from "../../utils";
+import { useTheme } from "../../context/ThemeContext";
 
 interface NewConversationModalProps {
   visible: boolean;
@@ -56,6 +57,7 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
   const [groupName, setGroupName] = useState("");
   const [groupNameTouched, setGroupNameTouched] = useState(false);
   const insets = useSafeAreaInsets();
+  const { getLocalizedText } = useTheme();
 
   const resetState = useCallback(() => {
     setSearchQuery("");
@@ -75,7 +77,10 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
       } catch (error) {
         logger.error("NewConversationModal", "Error loading contacts", error);
         if (!cancelled) {
-          Alert.alert("Erreur", "Impossible de charger les contacts");
+          Alert.alert(
+            getLocalizedText("notif.error"),
+            getLocalizedText("newConversation.errorLoadContacts"),
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -143,7 +148,7 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
         if (next.size >= 49) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           Alert.alert(
-            "Limite atteinte",
+            getLocalizedText("newConversation.limitTitle"),
             "Un groupe peut contenir au maximum 50 membres (créateur inclus)",
           );
           return prev;
@@ -174,8 +179,8 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
         const message =
           error instanceof Error
             ? error.message
-            : "Impossible de créer la conversation";
-        Alert.alert("Erreur", message);
+            : getLocalizedText("newConversation.errorCreate");
+        Alert.alert(getLocalizedText("notif.error"), message);
       } finally {
         setCreating(false);
       }
@@ -196,7 +201,10 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
         resetState();
       } catch {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert("Erreur", "Impossible de créer le groupe");
+        Alert.alert(
+          getLocalizedText("notif.error"),
+          getLocalizedText("newConversation.errorCreateGroup"),
+        );
       } finally {
         setCreating(false);
       }
@@ -216,7 +224,7 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
     if (trimmed.length < 3) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Alert.alert(
-        "Nom invalide",
+        getLocalizedText("newConversation.invalidNameTitle"),
         "Le nom du groupe doit contenir au moins 3 caractères",
       );
       return;
@@ -224,7 +232,7 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
     if (trimmed.length > 100) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Alert.alert(
-        "Nom invalide",
+        getLocalizedText("newConversation.invalidNameTitle"),
         "Le nom du groupe ne peut pas dépasser 100 caractères",
       );
       return;
@@ -285,7 +293,9 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
   );
 
   const primaryButtonLabel =
-    selectedIds.size <= 1 ? "Créer la conversation" : "Créer le groupe";
+    selectedIds.size <= 1
+      ? getLocalizedText("newConversation.createConversation")
+      : getLocalizedText("newConversation.createGroup");
 
   return (
     <Modal
@@ -323,7 +333,9 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
                     // que defaultGroupName ecrase ce que l'user va taper
                     if (!groupNameTouched) setGroupNameTouched(true);
                   }}
-                  placeholder="Nom du groupe"
+                  placeholder={getLocalizedText(
+                    "newConversation.groupNamePlaceholder",
+                  )}
                   placeholderTextColor="rgba(255, 255, 255, 0.5)"
                   maxLength={100}
                   returnKeyType="done"
@@ -337,7 +349,9 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
                 />
               </View>
             ) : (
-              <Text style={styles.headerTitle}>Nouvelle conversation</Text>
+              <Text style={styles.headerTitle}>
+                {getLocalizedText("newConversation.createConversation")}
+              </Text>
             )}
             <View style={styles.headerButton} />
           </View>
@@ -351,7 +365,9 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Rechercher un contact"
+              placeholder={getLocalizedText(
+                "newConversation.searchPlaceholder",
+              )}
               placeholderTextColor="rgba(255, 255, 255, 0.6)"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -416,8 +432,8 @@ export const NewConversationModal: React.FC<NewConversationModalProps> = ({
             <View style={styles.centered}>
               <Text style={styles.emptyText}>
                 {searchQuery.trim()
-                  ? "Aucun contact trouvé"
-                  : "Aucun contact disponible"}
+                  ? getLocalizedText("newConversation.noContactsFound")
+                  : getLocalizedText("newConversation.noContactsAvailable")}
               </Text>
             </View>
           ) : (
