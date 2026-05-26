@@ -3,8 +3,8 @@
  * Accessible uniquement aux administrateurs via AdminGate.
  *
  * Les deux modeles (Zeyou / Maya) ne sont pas encore implementes dans
- * moderation-service (seul NudeNet est en prod). Les boutons sont donc
- * des placeholders avec TODO explicite.
+ * moderation-service (seul NudeNet est en prod). Les boutons sont desactives
+ * en attendant l'integration - cf WHISPR-admin-demos.
  */
 
 import React from "react";
@@ -46,18 +46,6 @@ const DEMO_MODELS: DemoModel[] = [
 export const AdminDemosScreen: React.FC = () => {
   const navigation = useNavigation<any>();
 
-  // TODO(WHISPR-admin-demos): brancher sur les vrais endpoints moderation-service
-  // quand Zeyou et Maya seront deployes. Pour l'instant ces boutons sont des stubs.
-  const handleTestImage = (modelId: string) => {
-    console.log(`[AdminDemos] Test image - modele: ${modelId}`);
-    // TODO: ouvrir un picker image + appeler POST /moderation/demo/image?model=<modelId>
-  };
-
-  const handleTestText = (modelId: string) => {
-    console.log(`[AdminDemos] Test texte - modele: ${modelId}`);
-    // TODO: ouvrir une saisie texte + appeler POST /moderation/demo/text?model=<modelId>
-  };
-
   return (
     <LinearGradient
       colors={colors.background.gradient.app}
@@ -85,8 +73,9 @@ export const AdminDemosScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
           >
             <Text style={styles.intro}>
-              Demonstration des modeles de moderation IA pour les prospects. Les
-              boutons sont des placeholders en attente de l'integration backend.
+              Demonstration des modeles de moderation IA pour les prospects.
+              L'integration backend est en cours - les boutons seront actives a
+              la livraison de Zeyou et Maya.
             </Text>
 
             {DEMO_MODELS.map((model) => (
@@ -102,29 +91,100 @@ export const AdminDemosScreen: React.FC = () => {
                     color={colors.primary.main}
                   />
                   <Text style={styles.cardTitle}>{model.title}</Text>
+                  <View style={styles.comingSoonBadge}>
+                    <Text style={styles.comingSoonText}>Bientôt</Text>
+                  </View>
                 </View>
 
                 <Text style={styles.cardDescription}>{model.description}</Text>
 
                 <View style={styles.buttonRow}>
                   <TouchableOpacity
-                    style={styles.demoButton}
-                    onPress={() => handleTestImage(model.id)}
-                    activeOpacity={0.7}
+                    style={[styles.demoButton, styles.demoButtonDisabled]}
+                    disabled={true}
+                    activeOpacity={1}
                     testID={`btn-image-${model.id}`}
+                    accessibilityState={{ disabled: true }}
+                    accessibilityHint="Disponible quand le modele sera deploye"
                   >
-                    <Ionicons name="image-outline" size={16} color="#FFFFFF" />
-                    <Text style={styles.demoButtonText}>Tester sur image</Text>
+                    <Ionicons
+                      name="image-outline"
+                      size={16}
+                      color="rgba(255,255,255,0.35)"
+                    />
+                    <Text
+                      style={[
+                        styles.demoButtonText,
+                        styles.demoButtonTextDisabled,
+                      ]}
+                    >
+                      Tester sur image
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.demoButton, styles.demoButtonSecondary]}
-                    onPress={() => handleTestText(model.id)}
-                    activeOpacity={0.7}
+                    style={[
+                      styles.demoButton,
+                      styles.demoButtonSecondary,
+                      styles.demoButtonDisabled,
+                    ]}
+                    disabled={true}
+                    activeOpacity={1}
                     testID={`btn-text-${model.id}`}
+                    accessibilityState={{ disabled: true }}
+                    accessibilityHint="Disponible quand le modele sera deploye"
                   >
                     <Ionicons
                       name="text-outline"
+                      size={16}
+                      color="rgba(255,255,255,0.25)"
+                    />
+                    <Text
+                      style={[
+                        styles.demoButtonText,
+                        styles.demoButtonTextSecondary,
+                        styles.demoButtonTextDisabled,
+                      ]}
+                    >
+                      Tester sur texte
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+
+            {__DEV__ && (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Ionicons name="key-outline" size={22} color="#f59e0b" />
+                  <Text style={[styles.cardTitle, { color: "#f59e0b" }]}>
+                    Preview — Recovery Backup Codes
+                  </Text>
+                </View>
+                <Text style={styles.cardDescription}>
+                  Écrans de récupération par code de backup (données mockées,
+                  DEV uniquement).
+                </Text>
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={styles.demoButton}
+                    onPress={() => navigation.navigate("RecoveryCodes")}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name="shield-checkmark-outline"
+                      size={16}
+                      color="#fff"
+                    />
+                    <Text style={styles.demoButtonText}>RecoveryCodes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.demoButton, styles.demoButtonSecondary]}
+                    onPress={() => navigation.navigate("RecoveryCodeEntry")}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name="enter-outline"
                       size={16}
                       color="rgba(255,255,255,0.8)"
                     />
@@ -134,12 +194,12 @@ export const AdminDemosScreen: React.FC = () => {
                         styles.demoButtonTextSecondary,
                       ]}
                     >
-                      Tester sur texte
+                      CodeEntry
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
-            ))}
+            )}
 
             <View style={styles.bottomSpacer} />
           </ScrollView>
@@ -230,6 +290,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.2)",
   },
+  demoButtonDisabled: {
+    opacity: 0.45,
+  },
   demoButtonText: {
     fontSize: 13,
     fontWeight: "600",
@@ -237,6 +300,23 @@ const styles = StyleSheet.create({
   },
   demoButtonTextSecondary: {
     color: "rgba(255, 255, 255, 0.8)",
+  },
+  demoButtonTextDisabled: {
+    color: "rgba(255, 255, 255, 0.35)",
+  },
+  comingSoonBadge: {
+    marginLeft: "auto",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  comingSoonText: {
+    fontSize: 11,
+    color: "rgba(255, 255, 255, 0.6)",
+    fontWeight: "500",
   },
   bottomSpacer: {
     height: 40,

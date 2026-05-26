@@ -143,6 +143,7 @@ export class SocketConnection {
   private maxReconnectAttempts = 20;
   private shouldReconnect = false;
   private lastUserId: string | null = null;
+  private lastDeviceId: string | null = null;
   // Long-lived access token captured at connect()-time, used as a fallback
   // for the WS handshake if the dedicated /tokens/ws-token endpoint is
   // unreachable (network error or backend not yet rolled out). WHISPR-1214.
@@ -174,7 +175,11 @@ export class SocketConnection {
     return !!this.socket && this.socket.readyState === WebSocket.OPEN;
   }
 
-  async connect(userId: string, token: string): Promise<void> {
+  async connect(
+    userId: string,
+    token: string,
+    deviceId?: string,
+  ): Promise<void> {
     if (
       this.socket &&
       (this.socket.readyState === WebSocket.OPEN ||
@@ -187,6 +192,7 @@ export class SocketConnection {
 
     this.lastUserId = userId;
     this.lastToken = token;
+    this.lastDeviceId = deviceId ?? null;
     this.lastCloseCode = 0;
     this.shouldReconnect = true;
 
@@ -206,9 +212,12 @@ export class SocketConnection {
     }
 
     // Explicitly request v2 serializer so both sides agree on array format
+    const deviceParam = deviceId
+      ? `&device_id=${encodeURIComponent(deviceId)}`
+      : "";
     const url = `${getWsBaseUrl()}/messaging/socket/websocket?user_id=${encodeURIComponent(
       userId,
-    )}&token=${encodeURIComponent(wsToken)}&vsn=2.0.0`;
+    )}&token=${encodeURIComponent(wsToken)}${deviceParam}&vsn=2.0.0`;
 
     this.socket = new WebSocket(url);
     this.connecting = false;
@@ -439,7 +448,11 @@ export class SocketConnection {
 
         this.lastToken = token;
         this.socket = null;
-        this.connect(this.lastUserId!, this.lastToken);
+        this.connect(
+          this.lastUserId!,
+          this.lastToken,
+          this.lastDeviceId ?? undefined,
+        );
       } catch (err) {
         logger.warn("WS", "Token refresh failed during reconnect", err);
         this.shouldReconnect = false;
@@ -447,6 +460,29 @@ export class SocketConnection {
         emitSessionExpired("ws_token_refresh_failed");
       }
     }, delay);
+  }
+
+  /**
+   * Nudge the socket to reconnect immediately, bypassing the backoff timer.
+   * Called by useNetworkMonitor when the OS reports network reachability
+   * has been restored. Resets the attempt counter so the next connect
+   * attempt starts from the base delay rather than an inflated one.
+   * No-op if already connected or if there are no saved credentials.
+   */
+  nudge(): void {
+    if (
+      this._connectionState === "connected" ||
+      this.connecting ||
+      !this.shouldReconnect ||
+      !this.lastUserId
+    )
+      return;
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnectAttempt = 0;
+    this.scheduleReconnect();
   }
 
   disconnect(): void {

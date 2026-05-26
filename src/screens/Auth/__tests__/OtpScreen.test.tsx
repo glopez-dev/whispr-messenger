@@ -86,6 +86,18 @@ jest.mock("../../../services/SignalKeyService", () => ({
     }),
   },
 }));
+jest.mock("../../../services/DeviceService", () => ({
+  DeviceService: {
+    getDeviceInfo: jest.fn().mockResolvedValue({
+      deviceId: "dev1",
+      deviceName: "iPhone",
+      deviceType: "mobile",
+      model: "iPhone14",
+      osVersion: "17.0",
+      appVersion: "1.0.0",
+    }),
+  },
+}));
 jest.mock("../../../services/SecurityService", () => ({
   SignalKeysService: {
     uploadSignedPrekey: jest.fn().mockResolvedValue({}),
@@ -170,6 +182,150 @@ describe("OtpScreen", () => {
     await waitFor(
       () => {
         expect(getByText("auth.codeIncorrect")).toBeTruthy();
+      },
+      { timeout: 8000 },
+    );
+  }, 10000);
+
+  it("navigue vers TwoFactorVerifyLogin quand requires2FA est true", async () => {
+    mockedAuthService.confirmVerification.mockResolvedValue({
+      verified: true,
+      requires2FA: true,
+    });
+
+    const { getAllByDisplayValue } = render(<OtpScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getAllByDisplayValue("")[0], "123456");
+    });
+
+    await waitFor(
+      () => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          "TwoFactorVerifyLogin",
+          expect.objectContaining({ verificationId: "vid123" }),
+        );
+      },
+      { timeout: 8000 },
+    );
+    // login ne doit PAS être appelé
+    expect(mockedAuthService.login).not.toHaveBeenCalled();
+  }, 10000);
+
+  it("flow normal login quand requires2FA est absent", async () => {
+    mockedAuthService.confirmVerification.mockResolvedValue({ verified: true });
+    mockedAuthService.login.mockResolvedValue({
+      accessToken: "tok",
+      refreshToken: "ref",
+    });
+    mockedTokenService.decodeAccessToken.mockReturnValue({
+      sub: "user1",
+      deviceId: "dev1",
+    } as any);
+
+    const { getAllByDisplayValue } = render(<OtpScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getAllByDisplayValue("")[0], "123456");
+    });
+
+    await waitFor(
+      () => {
+        expect(mockReset).toHaveBeenCalledWith({
+          index: 0,
+          routes: [{ name: "ConversationsList" }],
+        });
+      },
+      { timeout: 8000 },
+    );
+    expect(mockNavigate).not.toHaveBeenCalledWith(
+      "TwoFactorVerifyLogin",
+      expect.anything(),
+    );
+  }, 10000);
+
+  it("redirige vers RecoveryCodes mode resume si recovery_codes_acknowledged est false", async () => {
+    mockedAuthService.confirmVerification.mockResolvedValue({ verified: true });
+    mockedAuthService.login.mockResolvedValue({
+      accessToken: "tok",
+      refreshToken: "ref",
+      recovery_codes_acknowledged: false,
+    } as any);
+    mockedTokenService.decodeAccessToken.mockReturnValue({
+      sub: "user1",
+      deviceId: "dev1",
+    } as any);
+
+    const { getAllByDisplayValue } = render(<OtpScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getAllByDisplayValue("")[0], "123456");
+    });
+
+    await waitFor(
+      () => {
+        expect(mockReset).toHaveBeenCalledWith({
+          index: 0,
+          routes: [{ name: "RecoveryCodes", params: { mode: "resume" } }],
+        });
+      },
+      { timeout: 8000 },
+    );
+  }, 10000);
+
+  it("flow normal si recovery_codes_acknowledged est true", async () => {
+    mockedAuthService.confirmVerification.mockResolvedValue({ verified: true });
+    mockedAuthService.login.mockResolvedValue({
+      accessToken: "tok",
+      refreshToken: "ref",
+      recovery_codes_acknowledged: true,
+    } as any);
+    mockedTokenService.decodeAccessToken.mockReturnValue({
+      sub: "user1",
+      deviceId: "dev1",
+    } as any);
+
+    const { getAllByDisplayValue } = render(<OtpScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getAllByDisplayValue("")[0], "123456");
+    });
+
+    await waitFor(
+      () => {
+        expect(mockReset).toHaveBeenCalledWith({
+          index: 0,
+          routes: [{ name: "ConversationsList" }],
+        });
+      },
+      { timeout: 8000 },
+    );
+  }, 10000);
+
+  it("compat: champ absent dans la response → flow normal (default true)", async () => {
+    mockedAuthService.confirmVerification.mockResolvedValue({ verified: true });
+    // Pas de recovery_codes_acknowledged dans la response
+    mockedAuthService.login.mockResolvedValue({
+      accessToken: "tok",
+      refreshToken: "ref",
+    });
+    mockedTokenService.decodeAccessToken.mockReturnValue({
+      sub: "user1",
+      deviceId: "dev1",
+    } as any);
+
+    const { getAllByDisplayValue } = render(<OtpScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getAllByDisplayValue("")[0], "123456");
+    });
+
+    await waitFor(
+      () => {
+        expect(mockReset).toHaveBeenCalledWith({
+          index: 0,
+          routes: [{ name: "ConversationsList" }],
+        });
       },
       { timeout: 8000 },
     );

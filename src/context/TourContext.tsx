@@ -1,4 +1,13 @@
-import React, { createContext, useCallback, useContext, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+const TOUR_STORAGE_KEY = "@whispr:tour_active";
 
 type TourContextType = {
   isTourActive: boolean;
@@ -17,8 +26,26 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isTourActive, setIsTourActive] = useState(true);
 
-  const skipTour = useCallback(() => setIsTourActive(false), []);
-  const replayTour = useCallback(() => setIsTourActive(true), []);
+  // charger la valeur persistée au montage
+  useEffect(() => {
+    AsyncStorage.getItem(TOUR_STORAGE_KEY)
+      .then((stored) => {
+        if (stored !== null) {
+          setIsTourActive(stored === "true");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const skipTour = useCallback(() => {
+    setIsTourActive(false);
+    AsyncStorage.setItem(TOUR_STORAGE_KEY, "false").catch(() => {});
+  }, []);
+
+  const replayTour = useCallback(() => {
+    setIsTourActive(true);
+    AsyncStorage.setItem(TOUR_STORAGE_KEY, "true").catch(() => {});
+  }, []);
 
   return (
     <TourContext.Provider value={{ isTourActive, replayTour, skipTour }}>

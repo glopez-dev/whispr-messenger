@@ -72,7 +72,12 @@ jest.mock("../../../hooks/useWebSocket", () => ({
   }),
 }));
 jest.mock("../../../services/TokenService", () => ({
-  TokenService: { getAccessToken: jest.fn().mockResolvedValue("tok") },
+  TokenService: {
+    getAccessToken: jest.fn().mockResolvedValue("tok"),
+    decodeAccessToken: jest
+      .fn()
+      .mockReturnValue({ sub: "user-1", deviceId: "device-1" }),
+  },
 }));
 jest.mock("../../../services/messaging/api", () => ({
   messagingAPI: {

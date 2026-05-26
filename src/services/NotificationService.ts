@@ -74,13 +74,13 @@ async function apiFetch<T>(
   return response.json() as Promise<T>;
 }
 
+// Champs réels retournés par notification-service (user_settings schema)
 export interface NotificationSettings {
-  push_enabled: boolean;
-  message_previews: boolean;
-  sound_enabled: boolean;
-  vibration_enabled: boolean;
-  show_sender_name: boolean;
-  quiet_hours_enabled: boolean;
+  message_push_enabled: boolean;
+  message_email_enabled: boolean;
+  system_push_enabled: boolean;
+  marketing_push_enabled: boolean;
+  mentions_only: boolean;
   quiet_hours_start?: string; // HH:mm
   quiet_hours_end?: string; // HH:mm
 }

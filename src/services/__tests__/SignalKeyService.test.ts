@@ -40,6 +40,7 @@ jest.mock("tweetnacl", () => {
 
 jest.mock("tweetnacl-util", () => ({
   encodeBase64: jest.fn((bytes: Uint8Array) => `b64(${bytes.length})`),
+  decodeBase64: jest.fn((s: string) => new Uint8Array(64).fill(0xab)),
 }));
 
 import { SignalKeyService } from "../SignalKeyService";
@@ -155,5 +156,62 @@ describe("SignalKeyService.generateKeyBundle", () => {
     expoCrypto.getRandomBytes.mockImplementation(
       (n: number) => new Uint8Array(n),
     );
+  });
+});
+
+describe("SignalKeyService.generateKeyBundle context-aware", () => {
+  const mockGetIdentityPrivateKey = jest.fn();
+
+  beforeEach(() => {
+    mockGetIdentityPrivateKey.mockReset();
+    // Injecter getIdentityPrivateKey dans le mock TokenService existant
+    const TokenService = jest.requireMock("../TokenService").TokenService;
+    TokenService.getIdentityPrivateKey = mockGetIdentityPrivateKey;
+  });
+
+  it("register context : génère et persiste une nouvelle paire quelle que soit la clé existante", async () => {
+    mockGetIdentityPrivateKey.mockResolvedValue("existing-key-base64");
+
+    await SignalKeyService.generateKeyBundle("register");
+
+    // generateKeyBundle doit TOUJOURS écraser en register
+    expect(mockSaveIdentityPrivateKey).toHaveBeenCalledTimes(1);
+    // nacl.box.keyPair appelé pour identity + signedPreKey + 100 one-time
+    expect(mockedNacl.box.keyPair).toHaveBeenCalledTimes(102);
+  });
+
+  it("login context : réutilise la clé existante sans écraser le storage", async () => {
+    // decodeBase64 retournera un Uint8Array valide de 64 octets
+    const { decodeBase64 } = jest.requireMock("tweetnacl-util");
+    decodeBase64.mockReturnValue(new Uint8Array(64).fill(0xab));
+    mockGetIdentityPrivateKey.mockResolvedValue("existing-b64-key");
+
+    await SignalKeyService.generateKeyBundle("login");
+
+    // clé existante présente → pas d'overwrite
+    expect(mockSaveIdentityPrivateKey).not.toHaveBeenCalled();
+    // nacl.box.keyPair appelé seulement pour signedPreKey + 100 one-time (pas identity)
+    expect(mockedNacl.box.keyPair).toHaveBeenCalledTimes(101);
+  });
+
+  it("login context sans clé stockée : génère et persiste une nouvelle clé", async () => {
+    const { decodeBase64 } = jest.requireMock("tweetnacl-util");
+    decodeBase64.mockReturnValue(new Uint8Array(64).fill(0xab));
+    mockGetIdentityPrivateKey.mockResolvedValue(null);
+
+    await SignalKeyService.generateKeyBundle("login");
+
+    expect(mockSaveIdentityPrivateKey).toHaveBeenCalledTimes(1);
+    // identity + signedPreKey + 100 one-time
+    expect(mockedNacl.box.keyPair).toHaveBeenCalledTimes(102);
+  });
+
+  it("recovery context : génère et persiste une nouvelle paire", async () => {
+    mockGetIdentityPrivateKey.mockResolvedValue("old-key");
+
+    await SignalKeyService.generateKeyBundle("recovery");
+
+    expect(mockSaveIdentityPrivateKey).toHaveBeenCalledTimes(1);
+    expect(mockedNacl.box.keyPair).toHaveBeenCalledTimes(102);
   });
 });
