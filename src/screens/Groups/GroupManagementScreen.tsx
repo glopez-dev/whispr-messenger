@@ -152,18 +152,20 @@ export const GroupManagementScreen: React.FC = () => {
   }, [conversation, groupDetails?.picture_url]);
 
   const uploadGroupIcon = useCallback(
-    async (localUri: string) => {
+    async (localUri: string, assetMimeType?: string) => {
       const fileName = localUri.split("/").pop() || "group-icon.jpg";
       const lower = fileName.toLowerCase();
-      const fileType = lower.endsWith(".png")
-        ? "image/png"
-        : lower.endsWith(".gif")
-          ? "image/gif"
-          : lower.endsWith(".webp")
-            ? "image/webp"
-            : lower.endsWith(".heic") || lower.endsWith(".heif")
-              ? "image/heic"
-              : "image/jpeg";
+      const fileType =
+        assetMimeType ??
+        (lower.endsWith(".png")
+          ? "image/png"
+          : lower.endsWith(".gif")
+            ? "image/gif"
+            : lower.endsWith(".webp")
+              ? "image/webp"
+              : lower.endsWith(".heic") || lower.endsWith(".heif")
+                ? "image/heic"
+                : "image/jpeg");
 
       const doUpload = async (
         context: "group_icon" | "avatar" | "message",
@@ -325,10 +327,49 @@ export const GroupManagementScreen: React.FC = () => {
     }
   }, [groupId, newDescription, isAdmin]);
 
+  const pickFromLibrary = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission requise", "L'accès à la galerie est nécessaire");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setSaving(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const asset = result.assets[0];
+      setGroupDetails((prev) =>
+        prev ? { ...prev, picture_url: asset.uri } : prev,
+      );
+      await uploadGroupIcon(asset.uri, asset.mimeType ?? undefined);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  }, [uploadGroupIcon]);
+
   const handleChangePhoto = useCallback(async () => {
     if (!isAdmin) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Alert.alert multi-button ne fonctionne pas sur web — ouvrir directement la galerie
+    if (Platform.OS === "web") {
+      try {
+        await pickFromLibrary();
+      } catch (error) {
+        logger.error("GroupManagementScreen", "Error selecting photo", error);
+        await loadGroupData();
+        Alert.alert("Erreur", "Impossible de sélectionner la photo");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
 
     Alert.alert(
       "Changer la photo",
@@ -339,35 +380,7 @@ export const GroupManagementScreen: React.FC = () => {
           text: "Galerie",
           onPress: async () => {
             try {
-              const { status } =
-                await ImagePicker.requestMediaLibraryPermissionsAsync();
-              if (status !== "granted") {
-                Alert.alert(
-                  "Permission requise",
-                  "L'accès à la galerie est nécessaire",
-                );
-                return;
-              }
-
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: "images",
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.8,
-              });
-
-              if (!result.canceled && result.assets[0]) {
-                setSaving(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                const localUri = result.assets[0].uri;
-                setGroupDetails((prev) =>
-                  prev ? { ...prev, picture_url: localUri } : prev,
-                );
-                await uploadGroupIcon(localUri);
-                Haptics.notificationAsync(
-                  Haptics.NotificationFeedbackType.Success,
-                );
-              }
+              await pickFromLibrary();
             } catch (error) {
               logger.error(
                 "GroupManagementScreen",
@@ -405,11 +418,11 @@ export const GroupManagementScreen: React.FC = () => {
               if (!result.canceled && result.assets[0]) {
                 setSaving(true);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                const localUri = result.assets[0].uri;
+                const asset = result.assets[0];
                 setGroupDetails((prev) =>
-                  prev ? { ...prev, picture_url: localUri } : prev,
+                  prev ? { ...prev, picture_url: asset.uri } : prev,
                 );
-                await uploadGroupIcon(localUri);
+                await uploadGroupIcon(asset.uri, asset.mimeType ?? undefined);
                 Haptics.notificationAsync(
                   Haptics.NotificationFeedbackType.Success,
                 );
@@ -431,7 +444,7 @@ export const GroupManagementScreen: React.FC = () => {
       ],
       { cancelable: true },
     );
-  }, [groupId, isAdmin, loadGroupData, uploadGroupIcon]);
+  }, [groupId, isAdmin, loadGroupData, pickFromLibrary, uploadGroupIcon]);
 
   const handleRemoveMember = useCallback(
     (member: GroupMember) => {
