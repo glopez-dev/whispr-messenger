@@ -399,7 +399,7 @@ describe("ChatScreen — action menu (edit / delete / pin / forward / report)", 
   it("edit dispatches editMessage when the menu fires onEdit", async () => {
     await openActionsOn(sampleMessage);
     const menu = lastProps("MessageActionsMenu");
-    if (!menu) return; // menu rendered only when actions opened
+    expect(menu).toBeDefined();
     await act(async () => {
       menu.onEdit?.(sampleMessage);
     });
@@ -413,29 +413,27 @@ describe("ChatScreen — action menu (edit / delete / pin / forward / report)", 
   it("delete dispatches deleteMessage", async () => {
     await openActionsOn(sampleMessage);
     const menu = lastProps("MessageActionsMenu");
-    if (!menu) return;
+    expect(menu).toBeDefined();
+    expect(typeof menu.onDelete).toBe("function");
     await act(async () => {
       await menu.onDelete?.(sampleMessage, false);
     });
-    // The function might call delete only after a confirm — at minimum the
-    // close branch was exercised.
-    expect(menu).toBeDefined();
   });
 
   it("pin dispatches pinMessage / unpinMessage", async () => {
     await openActionsOn(sampleMessage);
     const menu = lastProps("MessageActionsMenu");
-    if (!menu) return;
+    expect(menu).toBeDefined();
+    expect(typeof menu.onPin).toBe("function");
     await act(async () => {
       await menu.onPin?.(sampleMessage);
     });
-    expect(menu).toBeDefined();
   });
 
   it("forward opens the forward modal", async () => {
     await openActionsOn(sampleMessage);
     const menu = lastProps("MessageActionsMenu");
-    if (!menu) return;
+    expect(menu).toBeDefined();
     await act(async () => {
       menu.onForward?.(sampleMessage);
     });
@@ -445,7 +443,7 @@ describe("ChatScreen — action menu (edit / delete / pin / forward / report)", 
   it("report opens the report sheet", async () => {
     await openActionsOn(sampleMessage);
     const menu = lastProps("MessageActionsMenu");
-    if (!menu) return;
+    expect(menu).toBeDefined();
     await act(async () => {
       menu.onReport?.(sampleMessage);
     });
@@ -455,11 +453,11 @@ describe("ChatScreen — action menu (edit / delete / pin / forward / report)", 
   it("closes when onClose fires", async () => {
     await openActionsOn(sampleMessage);
     const menu = lastProps("MessageActionsMenu");
-    if (!menu) return;
+    expect(menu).toBeDefined();
+    expect(typeof menu.onClose).toBe("function");
     await act(async () => {
       menu.onClose?.();
     });
-    expect(menu).toBeDefined();
   });
 });
 
