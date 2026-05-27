@@ -116,8 +116,9 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
     thumbE2eeKeys,
   );
 
-  // Use decrypted URIs if available, fallback to resolved URIs
-  const finalMainUri = mainUri || resolvedMainUri;
+  // Use decrypted URIs if available, fallback to resolved URIs.
+  // Coerce empty strings to undefined so <Image source={{ uri: "" }}> never fires.
+  const finalMainUri = mainUri || resolvedMainUri || undefined;
   // Important : pour une vidéo E2EE sans thumbnail séparé, `resolvedThumbUri`
   // pointe vers la même ressource que le main (cf. MessageBubble qui passe
   // thumbnail_url=media_url par défaut). On considère alors qu'on n'a PAS
