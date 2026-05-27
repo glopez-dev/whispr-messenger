@@ -160,6 +160,38 @@ describe("callsStore — track publish on connect", () => {
     );
   });
 
+  // WHISPR-1200 (web) — initiate() doit aussi tagguer ses echecs pour que
+  // ChatScreen affiche la vraie cause au lieu d'un toast generique.
+  it("tags initiate-api errors so the UI can surface them (WHISPR-1200)", async () => {
+    const callsApi = require("../../services/calls/callsApi").callsApi as {
+      initiate: jest.Mock;
+    };
+    callsApi.initiate.mockRejectedValueOnce(new Error("500 server error"));
+
+    await expect(
+      useCallsStore.getState().initiate("conv-1", "audio", ["u2"]),
+    ).rejects.toThrow(/^initiate-api: /);
+  });
+
+  it("tags livekit-connect errors on initiate so the UI can surface them (WHISPR-1200)", async () => {
+    const callsApi = require("../../services/calls/callsApi").callsApi as {
+      initiate: jest.Mock;
+    };
+    callsApi.initiate.mockResolvedValueOnce({
+      call_id: "c1",
+      status: "ringing",
+      livekit_url: "wss://lk",
+      livekit_token: "tok",
+    });
+    mockProvider.connect.mockRejectedValueOnce(
+      new Error("ConnectionError: ws closed"),
+    );
+
+    await expect(
+      useCallsStore.getState().initiate("conv-1", "audio", ["u2"]),
+    ).rejects.toThrow(/^livekit-connect: /);
+  });
+
   // WHISPR-1198 — reset() est appelé par AuthContext.signOut pour empêcher
   // les fuites d'état d'appel entre deux comptes successifs sur le device.
   describe("reset (WHISPR-1198)", () => {

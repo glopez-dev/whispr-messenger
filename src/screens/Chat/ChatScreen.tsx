@@ -2556,9 +2556,35 @@ export const ChatScreen: React.FC = () => {
         }
         navigation.navigate("InCall");
       } catch (err) {
+        // WHISPR-1200 : afficher la vraie cause au lieu d'un message generique.
+        // callsStore.initiate tague chaque etape avec un prefixe stable
+        // (initiate-permissions / initiate-api / livekit-connect).
+        console.error("[Calls] initiate failed:", err);
+        const raw = err instanceof Error ? err.message : String(err);
+        const message = (() => {
+          if (raw.startsWith("initiate-permissions:")) {
+            return raw.replace(/^initiate-permissions:\s*/, "");
+          }
+          if (raw.startsWith("initiate-api:")) {
+            return `Impossible de joindre le serveur d'appels : ${raw.replace(/^initiate-api:\s*/, "")}`;
+          }
+          if (raw.startsWith("livekit-connect:")) {
+            const detail = raw.replace(/^livekit-connect:\s*/, "");
+            if (/timeout/i.test(detail))
+              return "Connexion appel timeout. Reseau trop lent ?";
+            if (/NotAllowedError|permission/i.test(detail))
+              return "Permission micro/camera refusee.";
+            if (/token|auth/i.test(detail))
+              return "Token LiveKit invalide. Reconnectez-vous.";
+            if (/WebRTC|getUserMedia|not supported/i.test(detail))
+              return "WebRTC pas supporte ou bloque sur ce navigateur.";
+            return `Echec connexion appel : ${detail}`;
+          }
+          return `Echec de l'appel : ${raw}`;
+        })();
         setCallsToast({
           visible: true,
-          message: "Impossible de démarrer l'appel. Vérifiez votre connexion.",
+          message,
           type: "error",
         });
       }

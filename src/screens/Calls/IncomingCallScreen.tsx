@@ -15,8 +15,34 @@ import { systemCallProvider } from "../../services/calls/systemCallProvider";
 
 type Nav = StackNavigationProp<AuthStackParamList>;
 
-const showAcceptError = (message: string) => {
+// Mappe un message tague par callsStore (`accept-api: ...`, `livekit-connect: ...`)
+// vers un texte intelligible pour l'utilisateur. Sans ce mapping, les toasts
+// affichent le tag technique brut et le user ne comprend pas la cause.
+const humanizeAcceptError = (raw: string): string => {
+  if (raw.startsWith("accept-permissions:")) {
+    return raw.replace(/^accept-permissions:\s*/, "");
+  }
+  if (raw.startsWith("accept-api:")) {
+    return `Impossible de joindre le serveur d'appels : ${raw.replace(/^accept-api:\s*/, "")}`;
+  }
+  if (raw.startsWith("livekit-connect:")) {
+    const detail = raw.replace(/^livekit-connect:\s*/, "");
+    if (/timeout/i.test(detail))
+      return "Connexion appel timeout. Reseau trop lent ?";
+    if (/NotAllowedError|permission/i.test(detail))
+      return "Permission micro/camera refusee.";
+    if (/token|auth/i.test(detail))
+      return "Token LiveKit invalide. Reconnectez-vous.";
+    if (/WebRTC|getUserMedia|not supported/i.test(detail))
+      return "WebRTC pas supporte ou bloque sur ce navigateur.";
+    return `Echec connexion appel : ${detail}`;
+  }
+  return raw;
+};
+
+const showAcceptError = (rawMessage: string) => {
   const title = "Impossible de prendre l'appel";
+  const message = humanizeAcceptError(rawMessage);
   if (Platform.OS === "web") {
     // window.alert est synchrone sur web ; Alert.alert RN ne s'affiche pas.
     if (typeof window !== "undefined") window.alert(`${title}\n\n${message}`);
