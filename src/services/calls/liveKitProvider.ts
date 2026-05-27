@@ -14,6 +14,10 @@ export class CallsLiveKit {
   private room: Room | null = null;
 
   async connect(config: LiveKitConfig): Promise<Room> {
+    // Logs explicites pour debug DevTools sur web PWA : sans visibilite cote
+    // user, room.connect() echoue en silence et l'UI reste coincee.
+    // eslint-disable-next-line no-console
+    console.debug("[LiveKit] connecting to", config.url);
     this.room = new Room({
       adaptiveStream: true,
       dynacast: true,
@@ -21,7 +25,29 @@ export class CallsLiveKit {
         resolution: { width: 640, height: 480, frameRate: 24 },
       },
     });
-    await this.room.connect(config.url, config.token);
+    try {
+      await this.room.connect(config.url, config.token);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[LiveKit] room.connect failed", {
+        url: config.url,
+        name: (err as { name?: string })?.name,
+        message: (err as Error)?.message,
+        stack: (err as Error)?.stack,
+      });
+      // Re-throw : on enrichit avec le name pour que callsStore tagge le toast
+      // (NotAllowedError / ConnectionError / etc.).
+      const original = err as Error & { name?: string };
+      const enriched = new Error(
+        original.name && original.name !== "Error"
+          ? `${original.name}: ${original.message}`
+          : original.message,
+      );
+      (enriched as Error & { cause?: unknown }).cause = err;
+      throw enriched;
+    }
+    // eslint-disable-next-line no-console
+    console.debug("[LiveKit] connected, room state:", this.room.state);
     return this.room;
   }
 

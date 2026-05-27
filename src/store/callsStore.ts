@@ -77,15 +77,33 @@ export const useCallsStore = create<CallsState>((set, get) => ({
     // pour éviter une NotAllowedError après que la room LiveKit est créée.
     const perm = await requestWebMediaPermissions(type === "video");
     if (!perm.granted) {
-      throw new Error(perm.message ?? "Permission refusée");
+      const message = perm.message ?? "Permission refusée";
+      console.error("[Calls] initiate-permissions failed:", message);
+      throw new Error(`initiate-permissions: ${message}`);
     }
 
-    const resp = await callsApi.initiate(conversationId, type, participants);
+    // WHISPR-1200 : tagging par etape pour que l'UI puisse afficher la vraie
+    // cause (API down, LiveKit injoignable, WebRTC bloque) au lieu d'un
+    // message generique du genre "verifiez votre connexion".
+    let resp;
+    try {
+      resp = await callsApi.initiate(conversationId, type, participants);
+    } catch (err) {
+      console.error("[Calls] initiate-api failed:", err);
+      throw new Error(`initiate-api: ${(err as Error).message}`);
+    }
+
     const provider = getCallsLiveKit();
-    const room = await provider.connect({
-      url: resp.livekit_url,
-      token: resp.livekit_token,
-    });
+    let room;
+    try {
+      room = await provider.connect({
+        url: resp.livekit_url,
+        token: resp.livekit_token,
+      });
+    } catch (err) {
+      console.error("[Calls] livekit-connect failed:", err);
+      throw new Error(`livekit-connect: ${(err as Error).message}`);
+    }
     // Publish local tracks immediately so mute/flip/camera controls have
     // something to act on. Without this, setMicrophoneEnabled(false) is a
     // no-op (no published track) and the user thinks the button is broken.
@@ -97,7 +115,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
     } catch (err) {
       // Permission denied or device unavailable — keep the call going so the
       // user still sees the UI, the controls will toggle on retry.
-      console.warn("Failed to publish local tracks", err);
+      console.warn("[Calls] failed to publish local tracks", err);
     }
     set({
       active: {
@@ -121,9 +139,9 @@ export const useCallsStore = create<CallsState>((set, get) => ({
     // incohérent (call accepté côté serveur mais WebRTC bloqué navigateur).
     const perm = await requestWebMediaPermissions(inc.type === "video");
     if (!perm.granted) {
-      throw new Error(
-        `accept-permissions: ${perm.message ?? "Permission refusée"}`,
-      );
+      const message = perm.message ?? "Permission refusée";
+      console.error("[Calls] accept-permissions failed:", message);
+      throw new Error(`accept-permissions: ${message}`);
     }
 
     // WHISPR-1200 : on tague chaque étape pour que la couche UI puisse
@@ -133,6 +151,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
     try {
       resp = await callsApi.accept(inc.callId);
     } catch (err) {
+      console.error("[Calls] accept-api failed:", err);
       throw new Error(`accept-api: ${(err as Error).message}`);
     }
     const provider = getCallsLiveKit();
@@ -143,6 +162,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
         token: resp.livekit_token,
       });
     } catch (err) {
+      console.error("[Calls] livekit-connect failed:", err);
       throw new Error(`livekit-connect: ${(err as Error).message}`);
     }
     try {
@@ -151,7 +171,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
         await provider.enableCamera(true);
       }
     } catch (err) {
-      console.warn("Failed to publish local tracks", err);
+      console.warn("[Calls] failed to publish local tracks", err);
     }
     set({
       active: {

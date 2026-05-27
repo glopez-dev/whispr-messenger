@@ -108,9 +108,12 @@ describe("IncomingCallScreen", () => {
       await Promise.resolve();
       expect(mockAcceptIncoming).toHaveBeenCalledTimes(1);
       expect(mockReset).not.toHaveBeenCalled();
+      // Le tag technique `livekit-connect: ...` est traduit en texte humain
+      // par humanizeAcceptError avant affichage. Le tag reste log via
+      // console.error pour le debug DevTools.
       expect(alertSpy).toHaveBeenCalledWith(
         "Impossible de prendre l'appel",
-        "livekit-connect: WebSocket failed",
+        "Echec connexion appel : WebSocket failed",
       );
       expect(mockSetIncoming).toHaveBeenCalledWith(null);
       expect(mockGoBack).toHaveBeenCalled();
