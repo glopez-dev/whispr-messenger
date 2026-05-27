@@ -29,6 +29,12 @@ function messagesTimestampKey(conversationId: string): string {
   return `${MESSAGES_CACHE_TIMESTAMP_PREFIX}${normalizeKeyPart(conversationId)}`;
 }
 
+// Synchronous in-memory mirror of the messages cache. Lets the chat screen
+// hydrate its initial state without waiting on AsyncStorage, which on iOS
+// can take >100ms for non-trivial payloads and lose the race against the
+// API/decrypt path.
+const MESSAGES_MEMORY_CACHE = new Map<string, MessageWithRelations[]>();
+
 export const cacheService = {
   /**
    * Save conversations to cache with timestamp
@@ -94,6 +100,7 @@ export const cacheService = {
             .filter((m) => m && typeof m.id === "string")
             .slice(0, MESSAGES_CACHE_MAX)
         : [];
+      MESSAGES_MEMORY_CACHE.set(conversationId, trimmed);
       await AsyncStorage.setItem(
         messagesKey(conversationId),
         JSON.stringify(trimmed),
@@ -105,6 +112,16 @@ export const cacheService = {
     } catch (error) {
       console.error("Error saving messages cache:", error);
     }
+  },
+
+  /**
+   * Synchronous read from the in-memory mirror. Returns the most recent
+   * messages saved during this session, or null if nothing was cached yet.
+   * Use this to seed the initial state of a screen without awaiting disk.
+   */
+  getMessagesSync(conversationId: string): MessageWithRelations[] | null {
+    if (!conversationId) return null;
+    return MESSAGES_MEMORY_CACHE.get(conversationId) ?? null;
   },
 
   async getMessages(
@@ -127,7 +144,9 @@ export const cacheService = {
       }
 
       const parsed = JSON.parse(data) as MessageWithRelations[];
-      return Array.isArray(parsed) ? parsed : null;
+      if (!Array.isArray(parsed)) return null;
+      MESSAGES_MEMORY_CACHE.set(conversationId, parsed);
+      return parsed;
     } catch (error) {
       console.error("Error reading messages cache:", error);
       return null;
@@ -137,6 +156,7 @@ export const cacheService = {
   async clearMessages(conversationId: string): Promise<void> {
     try {
       if (!conversationId) return;
+      MESSAGES_MEMORY_CACHE.delete(conversationId);
       await Promise.all([
         AsyncStorage.removeItem(messagesKey(conversationId)),
         AsyncStorage.removeItem(messagesTimestampKey(conversationId)),
@@ -148,6 +168,7 @@ export const cacheService = {
 
   async clearAllMessages(): Promise<void> {
     try {
+      MESSAGES_MEMORY_CACHE.clear();
       const keys = await AsyncStorage.getAllKeys();
       const targets = keys.filter(
         (k) =>

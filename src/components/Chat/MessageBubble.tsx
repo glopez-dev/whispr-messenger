@@ -236,7 +236,7 @@ interface MessageBubbleProps {
   resolveMemberName?: (userId: string) => string;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   message,
   isSent,
   currentUserId,
@@ -1051,40 +1051,43 @@ const styles = StyleSheet.create({
   },
 });
 
-export default memo(MessageBubble, (prevProps, nextProps) => {
-  return (
-    prevProps.message.id === nextProps.message.id &&
-    prevProps.message.content === nextProps.message.content &&
-    prevProps.message.status === nextProps.message.status &&
-    prevProps.message.edited_at === nextProps.message.edited_at &&
-    prevProps.message.is_deleted === nextProps.message.is_deleted &&
-    prevProps.senderName === nextProps.senderName &&
-    prevProps.senderAvatarUrl === nextProps.senderAvatarUrl &&
-    prevProps.isConsecutive === nextProps.isConsecutive &&
-    prevProps.isLastInBurst === nextProps.isLastInBurst &&
-    prevProps.showSenderAvatar === nextProps.showSenderAvatar &&
-    prevProps.onReactionDetailsPress === nextProps.onReactionDetailsPress &&
-    prevProps.pendingAppeal?.status === nextProps.pendingAppeal?.status &&
-    (prevProps.message.metadata as any)?.blockedByModeration ===
-      (nextProps.message.metadata as any)?.blockedByModeration &&
-    (prevProps.message.metadata as any)?.appealRejected ===
-      (nextProps.message.metadata as any)?.appealRejected &&
-    (prevProps.message.metadata as any)?.media_url ===
-      (nextProps.message.metadata as any)?.media_url &&
-    prevProps.isLastSentByMe === nextProps.isLastSentByMe &&
-    prevProps.isGroupConversation === nextProps.isGroupConversation &&
-    prevProps.otherMembersCount === nextProps.otherMembersCount &&
-    // delivery_statuses only feeds MessageStatusLabel, which renders solely
-    // for the last-sent bubble — skip the deep compare elsewhere.
-    (!nextProps.isLastSentByMe ||
-      deliveryStatusesEqual(
-        prevProps.message.delivery_statuses,
-        nextProps.message.delivery_statuses,
-      )) &&
-    JSON.stringify(prevProps.message.reactions) ===
-      JSON.stringify(nextProps.message.reactions)
-  );
-});
+export const MessageBubble = memo(
+  MessageBubbleComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.message.id === nextProps.message.id &&
+      prevProps.message.content === nextProps.message.content &&
+      prevProps.message.status === nextProps.message.status &&
+      prevProps.message.edited_at === nextProps.message.edited_at &&
+      prevProps.message.is_deleted === nextProps.message.is_deleted &&
+      prevProps.senderName === nextProps.senderName &&
+      prevProps.senderAvatarUrl === nextProps.senderAvatarUrl &&
+      prevProps.isConsecutive === nextProps.isConsecutive &&
+      prevProps.isLastInBurst === nextProps.isLastInBurst &&
+      prevProps.showSenderAvatar === nextProps.showSenderAvatar &&
+      prevProps.onReactionDetailsPress === nextProps.onReactionDetailsPress &&
+      prevProps.pendingAppeal?.status === nextProps.pendingAppeal?.status &&
+      (prevProps.message.metadata as any)?.blockedByModeration ===
+        (nextProps.message.metadata as any)?.blockedByModeration &&
+      (prevProps.message.metadata as any)?.appealRejected ===
+        (nextProps.message.metadata as any)?.appealRejected &&
+      (prevProps.message.metadata as any)?.media_url ===
+        (nextProps.message.metadata as any)?.media_url &&
+      prevProps.isLastSentByMe === nextProps.isLastSentByMe &&
+      prevProps.isGroupConversation === nextProps.isGroupConversation &&
+      prevProps.otherMembersCount === nextProps.otherMembersCount &&
+      // delivery_statuses only feeds MessageStatusLabel, which renders solely
+      // for the last-sent bubble — skip the deep compare elsewhere.
+      (!nextProps.isLastSentByMe ||
+        deliveryStatusesEqual(
+          prevProps.message.delivery_statuses,
+          nextProps.message.delivery_statuses,
+        )) &&
+      JSON.stringify(prevProps.message.reactions) ===
+        JSON.stringify(nextProps.message.reactions)
+    );
+  },
+);
 
 function deliveryStatusesEqual(
   a: MessageWithRelations["delivery_statuses"],

@@ -311,6 +311,8 @@ export const AuthService = {
     // previous identity until killed, and counterparts can't decrypt the
     // user's messages.
     E2EEService.resetIdentityCache();
+    E2EEService.resetPlaintextCache();
+    await E2EEService.resetDecryptedMediaCache();
   },
 
   async validateSession(): Promise<{

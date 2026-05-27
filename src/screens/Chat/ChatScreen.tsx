@@ -317,8 +317,16 @@ export const ChatScreen: React.FC = () => {
   useEffect(() => {
     e2eeEnabledRef.current = e2eeEnabled;
   }, [e2eeEnabled]);
-  const [messages, setMessages] = useState<MessageWithRelations[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Seed from the in-memory cache so the initial render shows the previous
+  // session's messages immediately — AsyncStorage is too slow to win the
+  // race against loadMessages and would otherwise leave the screen blank for
+  // ~100-200ms while the API/decrypt path runs.
+  const [messages, setMessages] = useState<MessageWithRelations[]>(
+    () => cacheService.getMessagesSync(conversationId) ?? [],
+  );
+  const [loading, setLoading] = useState(
+    () => (cacheService.getMessagesSync(conversationId) ?? []).length === 0,
+  );
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -1483,15 +1491,52 @@ export const ChatScreen: React.FC = () => {
         } else {
           // Initial load — merge with any messages already received via WS.
           // API versions take priority over cache so decrypted content
-          // replaces any encrypted placeholders loaded from cache.
+          // replaces any encrypted placeholders loaded from cache. When the
+          // cache already holds the exact same fields the bubble cares about,
+          // reuse its reference so memo(MessageBubble) can skip the re-render.
           setMessages((prev) => {
-            const apiById = new Map(
-              messagesWithRelations.map((m) => [m.id, m]),
-            );
+            const prevById = new Map(prev.map((m) => [m.id, m]));
+            const reconciled = messagesWithRelations.map((api) => {
+              const cached = prevById.get(api.id);
+              if (!cached) return api;
+              const sameContent = cached.content === api.content;
+              const sameStatus = cached.status === api.status;
+              const sameEdited = cached.edited_at === api.edited_at;
+              const sameDeleted = cached.is_deleted === api.is_deleted;
+              const cachedMeta = cached.metadata as
+                | Record<string, any>
+                | undefined;
+              const apiMeta = api.metadata as Record<string, any> | undefined;
+              const sameMeta =
+                cachedMeta?.media_url === apiMeta?.media_url &&
+                cachedMeta?.blockedByModeration ===
+                  apiMeta?.blockedByModeration &&
+                cachedMeta?.appealRejected === apiMeta?.appealRejected;
+              // `undefined` and `[]` are semantically the same here: the
+              // preload writes messages without reactions/attachments, so the
+              // cache may store `undefined` while the API normalizes to `[]`.
+              const cachedReactions = cached.reactions ?? [];
+              const apiReactions = api.reactions ?? [];
+              const sameReactions =
+                JSON.stringify(cachedReactions) ===
+                JSON.stringify(apiReactions);
+              if (
+                sameContent &&
+                sameStatus &&
+                sameEdited &&
+                sameDeleted &&
+                sameMeta &&
+                sameReactions
+              ) {
+                return cached;
+              }
+              return api;
+            });
+            const apiById = new Map(reconciled.map((m) => [m.id, m]));
             const wsOnly = prev.filter((m) => !apiById.has(m.id));
             const withReplies = resolveReplies(
-              [...messagesWithRelations, ...wsOnly],
-              [...messagesWithRelations, ...wsOnly],
+              [...reconciled, ...wsOnly],
+              [...reconciled, ...wsOnly],
             );
             return withReplies.sort(
               (a, b) =>
@@ -3462,50 +3507,56 @@ export const ChatScreen: React.FC = () => {
                 </KeyboardAvoidingView>
               );
             })()}
-            <MessageActionsMenu
-              visible={showActionsMenu}
-              message={selectedMessage}
-              isSent={selectedMessage?.sender_id === userId}
-              isPinned={pinnedMessages.some(
-                (m) => (m.messageId ?? m.message?.id) === selectedMessage?.id,
-              )}
-              onClose={() => {
-                setShowActionsMenu(false);
-                setSelectedMessage(null);
-              }}
-              onReply={handleStartReply}
-              onEdit={handleEditMessage}
-              onDelete={handleDeleteMessage}
-              onReact={handleStartReaction}
-              onPin={handlePinMessage}
-              onForward={handleForwardMessage}
-              onReport={handleOpenReportSheet}
-            />
-            <ReportMessageSheet
-              visible={showReportSheet}
-              message={reportSheetMessage}
-              conversationId={conversationId}
-              conversationTitle={
-                conversation
-                  ? getConversationDisplayName(conversation)
-                  : "Conversation"
-              }
-              onClose={() => {
-                setShowReportSheet(false);
-                setReportSheetMessage(null);
-              }}
-            />
-            <ForwardMessageModal
-              visible={showForwardModal}
-              conversations={allConversations}
-              currentConversationId={conversationId}
-              sending={forwardSending}
-              onClose={() => {
-                setShowForwardModal(false);
-                setForwardingMessage(null);
-              }}
-              onSelect={handleForwardSelect}
-            />
+            {showActionsMenu && (
+              <MessageActionsMenu
+                visible={showActionsMenu}
+                message={selectedMessage}
+                isSent={selectedMessage?.sender_id === userId}
+                isPinned={pinnedMessages.some(
+                  (m) => (m.messageId ?? m.message?.id) === selectedMessage?.id,
+                )}
+                onClose={() => {
+                  setShowActionsMenu(false);
+                  setSelectedMessage(null);
+                }}
+                onReply={handleStartReply}
+                onEdit={handleEditMessage}
+                onDelete={handleDeleteMessage}
+                onReact={handleStartReaction}
+                onPin={handlePinMessage}
+                onForward={handleForwardMessage}
+                onReport={handleOpenReportSheet}
+              />
+            )}
+            {showReportSheet && (
+              <ReportMessageSheet
+                visible={showReportSheet}
+                message={reportSheetMessage}
+                conversationId={conversationId}
+                conversationTitle={
+                  conversation
+                    ? getConversationDisplayName(conversation)
+                    : "Conversation"
+                }
+                onClose={() => {
+                  setShowReportSheet(false);
+                  setReportSheetMessage(null);
+                }}
+              />
+            )}
+            {showForwardModal && (
+              <ForwardMessageModal
+                visible={showForwardModal}
+                conversations={allConversations}
+                currentConversationId={conversationId}
+                sending={forwardSending}
+                onClose={() => {
+                  setShowForwardModal(false);
+                  setForwardingMessage(null);
+                }}
+                onSelect={handleForwardSelect}
+              />
+            )}
             {showReactionPicker && (
               <ReactionPicker
                 visible={showReactionPicker}
@@ -3516,13 +3567,15 @@ export const ChatScreen: React.FC = () => {
                 onReactionSelect={handleReactionSelectFromPicker}
               />
             )}
-            <ReactionReactorsModal
-              visible={reactionReactorsModal !== null}
-              emoji={reactionReactorsModal?.emoji ?? ""}
-              reactors={reactionModalList}
-              resolveName={resolveReactorDisplayName}
-              onClose={() => setReactionReactorsModal(null)}
-            />
+            {reactionReactorsModal !== null && (
+              <ReactionReactorsModal
+                visible={reactionReactorsModal !== null}
+                emoji={reactionReactorsModal?.emoji ?? ""}
+                reactors={reactionModalList}
+                resolveName={resolveReactorDisplayName}
+                onClose={() => setReactionReactorsModal(null)}
+              />
+            )}
             {appealModal ? (
               <BlockedImageAppealModal
                 visible={appealModal.visible}
@@ -3561,170 +3614,176 @@ export const ChatScreen: React.FC = () => {
               onNext={handleSearchNext}
               onPrevious={handleSearchPrevious}
             />
-            <ScheduleDateTimePicker
-              visible={showSchedulePicker}
-              onClose={() => {
-                setShowSchedulePicker(false);
-                setScheduleMessageText("");
-              }}
-              onConfirm={handleScheduleConfirm}
-            />
-            <Modal
-              visible={showInfoModal && conversation?.type !== "group"}
-              transparent
-              animationType="slide"
-              statusBarTranslucent
-              onRequestClose={() => {
-                setShowInfoModal(false);
-              }}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                  <LinearGradient
-                    colors={colors.background.gradient.app}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.modalGradient}
-                  >
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.modalTitle}>
-                        Informations de la conversation
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          Haptics.impactAsync(
-                            Haptics.ImpactFeedbackStyle.Light,
-                          );
-                          setShowInfoModal(false);
-                        }}
-                        style={styles.closeButton}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons
-                          name="close"
-                          size={24}
-                          color={colors.text.light}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    <ScrollView
-                      style={styles.modalBody}
-                      showsVerticalScrollIndicator={false}
+            {showSchedulePicker && (
+              <ScheduleDateTimePicker
+                visible={showSchedulePicker}
+                onClose={() => {
+                  setShowSchedulePicker(false);
+                  setScheduleMessageText("");
+                }}
+                onConfirm={handleScheduleConfirm}
+              />
+            )}
+            {showInfoModal && (
+              <Modal
+                visible={showInfoModal && conversation?.type !== "group"}
+                transparent
+                animationType="slide"
+                statusBarTranslucent
+                onRequestClose={() => {
+                  setShowInfoModal(false);
+                }}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <LinearGradient
+                      colors={colors.background.gradient.app}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.modalGradient}
                     >
-                      <View style={styles.infoSectionMain}>
-                        <Avatar
-                          size={80}
-                          uri={conversation?.avatar_url}
-                          name={
-                            conversation
+                      <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>
+                          Informations de la conversation
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            Haptics.impactAsync(
+                              Haptics.ImpactFeedbackStyle.Light,
+                            );
+                            setShowInfoModal(false);
+                          }}
+                          style={styles.closeButton}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name="close"
+                            size={24}
+                            color={colors.text.light}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      <ScrollView
+                        style={styles.modalBody}
+                        showsVerticalScrollIndicator={false}
+                      >
+                        <View style={styles.infoSectionMain}>
+                          <Avatar
+                            size={80}
+                            uri={conversation?.avatar_url}
+                            name={
+                              conversation
+                                ? getConversationDisplayName(conversation)
+                                : "Contact"
+                            }
+                            showOnlineBadge={conversation?.type === "direct"}
+                            isOnline={false}
+                          />
+                          <Text style={styles.infoName}>
+                            {conversation
                               ? getConversationDisplayName(conversation)
-                              : "Contact"
-                          }
-                          showOnlineBadge={conversation?.type === "direct"}
-                          isOnline={false}
-                        />
-                        <Text style={styles.infoName}>
-                          {conversation
-                            ? getConversationDisplayName(conversation)
-                            : "Contact"}
-                        </Text>
-                        {conversation?.type === "direct" && (
-                          <Text style={styles.infoStatus}>Hors ligne</Text>
-                        )}
-                      </View>
-                      <View style={styles.infoSection}>
-                        <Text style={styles.infoLabel}>TYPE</Text>
-                        <Text style={styles.infoValue}>
-                          {conversation?.type === "group"
-                            ? "Groupe"
-                            : "Conversation directe"}
-                        </Text>
-                      </View>
-                      {conversation?.type === "direct" ? (
-                        <View style={styles.infoSection}>
-                          <Text style={styles.infoLabel}>CONFIDENTIALITÉ</Text>
-                          <View style={styles.infoToggleRow}>
-                            <Text style={styles.infoValue}>
-                              Chiffrement E2E
-                            </Text>
-                            <Switch
-                              value={e2eeEnabled}
-                              onValueChange={handleToggleE2EE}
-                              disabled={e2eeToggleBusy}
-                              trackColor={{
-                                false: "rgba(255, 255, 255, 0.15)",
-                                true: colors.primary.main,
-                              }}
-                              thumbColor={colors.text.light}
-                            />
-                          </View>
+                              : "Contact"}
+                          </Text>
+                          {conversation?.type === "direct" && (
+                            <Text style={styles.infoStatus}>Hors ligne</Text>
+                          )}
                         </View>
-                      ) : null}
-                      <View style={styles.infoSection}>
-                        <Text style={styles.infoLabel}>MESSAGES</Text>
-                        <Text style={styles.infoValue}>
-                          {messages.length} message
-                          {messages.length > 1 ? "s" : ""}
-                        </Text>
-                      </View>
-                      <View style={styles.infoSectionActions}>
-                        <Text style={styles.infoLabel}>ACTIONS</Text>
-                        <TouchableOpacity
-                          style={styles.infoActionRow}
-                          onPress={() => {
-                            setShowInfoModal(false);
-                            setShowSearch(true);
-                          }}
-                          activeOpacity={0.7}
-                          accessibilityRole="button"
-                          accessibilityLabel="Rechercher dans la conversation"
-                        >
-                          <Ionicons
-                            name="search"
-                            size={20}
-                            color={colors.text.light}
-                            style={styles.infoActionIcon}
-                          />
-                          <Text style={styles.infoActionLabel}>
-                            Rechercher des messages
+                        <View style={styles.infoSection}>
+                          <Text style={styles.infoLabel}>TYPE</Text>
+                          <Text style={styles.infoValue}>
+                            {conversation?.type === "group"
+                              ? "Groupe"
+                              : "Conversation directe"}
                           </Text>
-                          <Ionicons
-                            name="chevron-forward"
-                            size={20}
-                            color={withOpacity(colors.text.light, 0.4)}
-                          />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.infoActionRow}
-                          onPress={() => {
-                            setShowInfoModal(false);
-                            handleScheduledPress();
-                          }}
-                          activeOpacity={0.7}
-                          accessibilityRole="button"
-                          accessibilityLabel="Messages programmés"
-                        >
-                          <Ionicons
-                            name="timer-outline"
-                            size={20}
-                            color={colors.text.light}
-                            style={styles.infoActionIcon}
-                          />
-                          <Text style={styles.infoActionLabel}>
-                            Messages programmés
+                        </View>
+                        {conversation?.type === "direct" ? (
+                          <View style={styles.infoSection}>
+                            <Text style={styles.infoLabel}>
+                              CONFIDENTIALITÉ
+                            </Text>
+                            <View style={styles.infoToggleRow}>
+                              <Text style={styles.infoValue}>
+                                Chiffrement E2E
+                              </Text>
+                              <Switch
+                                value={e2eeEnabled}
+                                onValueChange={handleToggleE2EE}
+                                disabled={e2eeToggleBusy}
+                                trackColor={{
+                                  false: "rgba(255, 255, 255, 0.15)",
+                                  true: colors.primary.main,
+                                }}
+                                thumbColor={colors.text.light}
+                              />
+                            </View>
+                          </View>
+                        ) : null}
+                        <View style={styles.infoSection}>
+                          <Text style={styles.infoLabel}>MESSAGES</Text>
+                          <Text style={styles.infoValue}>
+                            {messages.length} message
+                            {messages.length > 1 ? "s" : ""}
                           </Text>
-                          <Ionicons
-                            name="chevron-forward"
-                            size={20}
-                            color={withOpacity(colors.text.light, 0.4)}
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    </ScrollView>
-                  </LinearGradient>
+                        </View>
+                        <View style={styles.infoSectionActions}>
+                          <Text style={styles.infoLabel}>ACTIONS</Text>
+                          <TouchableOpacity
+                            style={styles.infoActionRow}
+                            onPress={() => {
+                              setShowInfoModal(false);
+                              setShowSearch(true);
+                            }}
+                            activeOpacity={0.7}
+                            accessibilityRole="button"
+                            accessibilityLabel="Rechercher dans la conversation"
+                          >
+                            <Ionicons
+                              name="search"
+                              size={20}
+                              color={colors.text.light}
+                              style={styles.infoActionIcon}
+                            />
+                            <Text style={styles.infoActionLabel}>
+                              Rechercher des messages
+                            </Text>
+                            <Ionicons
+                              name="chevron-forward"
+                              size={20}
+                              color={withOpacity(colors.text.light, 0.4)}
+                            />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.infoActionRow}
+                            onPress={() => {
+                              setShowInfoModal(false);
+                              handleScheduledPress();
+                            }}
+                            activeOpacity={0.7}
+                            accessibilityRole="button"
+                            accessibilityLabel="Messages programmés"
+                          >
+                            <Ionicons
+                              name="timer-outline"
+                              size={20}
+                              color={colors.text.light}
+                              style={styles.infoActionIcon}
+                            />
+                            <Text style={styles.infoActionLabel}>
+                              Messages programmés
+                            </Text>
+                            <Ionicons
+                              name="chevron-forward"
+                              size={20}
+                              color={withOpacity(colors.text.light, 0.4)}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </ScrollView>
+                    </LinearGradient>
+                  </View>
                 </View>
-              </View>
-            </Modal>
+              </Modal>
+            )}
             <Toast
               visible={callsToast.visible}
               message={callsToast.message}

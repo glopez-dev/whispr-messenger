@@ -496,14 +496,6 @@ export function useResolvedMediaUrl(uri: string | undefined): ResolvedMediaUrl {
           revokeBlobUrl();
         };
       }
-
-      (async () => {
-        const diskCached = await readDiskCache(uri);
-        if (!diskCached || cancelled) return;
-        setResolvedUri(diskCached);
-        setLoading(false);
-        setError(false);
-      })().catch(() => {});
     }
 
     setLoading(true);
@@ -512,6 +504,21 @@ export function useResolvedMediaUrl(uri: string | undefined): ResolvedMediaUrl {
     (async () => {
       revokeBlobUrl();
       try {
+        // On native, consult the disk cache before hitting the network. A
+        // disk hit promotes itself back into the memory cache and short-
+        // circuits the stream fetch entirely — otherwise every mount
+        // re-downloaded the bytes even though we already had them on disk.
+        if (canUseNativeCache) {
+          const diskCached = await readDiskCache(uri);
+          if (cancelled) return;
+          if (diskCached) {
+            writeNativeCache(uri, diskCached);
+            setResolvedUri(diskCached);
+            setLoading(false);
+            setError(false);
+            return;
+          }
+        }
         let token = await TokenService.getAccessToken();
         const headers: Record<string, string> = {};
         if (token) headers["Authorization"] = `Bearer ${token}`;

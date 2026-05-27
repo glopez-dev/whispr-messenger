@@ -246,6 +246,41 @@ function deriveEd25519SigningKeypairFromSeed(
   return nacl.sign.keyPair.fromSeed(seed32);
 }
 
+// In-memory cache of decrypted plaintexts. Keyed on the conversation id
+// concatenated with the full ciphertext envelope — collisions are impossible
+// since nonces are random. Cleared on logout via resetPlaintextCache().
+const MAX_PLAINTEXT_CACHE = 500;
+const PLAINTEXT_CACHE = new Map<string, string>();
+
+function rememberPlaintext(key: string, value: string): void {
+  if (PLAINTEXT_CACHE.has(key)) PLAINTEXT_CACHE.delete(key);
+  PLAINTEXT_CACHE.set(key, value);
+  if (PLAINTEXT_CACHE.size <= MAX_PLAINTEXT_CACHE) return;
+  const oldestKey = PLAINTEXT_CACHE.keys().next().value;
+  if (oldestKey !== undefined) PLAINTEXT_CACHE.delete(oldestKey);
+}
+
+// FNV-1a hash for deterministic decrypted-media cache keys. Same algorithm
+// as in useResolvedMediaUrl.ts so paths stay scrutable across the codebase.
+function fnv1aHex(input: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+// In-memory cache of decrypted media URIs keyed on (uri + key + nonce). The
+// stored value points to a file on disk written by a previous decryption
+// pass — opening the same conversation a second time hits this map and
+// avoids the multi-hundred-ms decrypt/encode/write cycle per media bubble.
+const DECRYPTED_MEDIA_MEMORY = new Map<string, string>();
+
+const DECRYPTED_MEDIA_DIR =
+  (FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? "") +
+  "whispr-e2ee-decrypted";
+
 export const E2EEService = {
   /**
    * Drop the cached identity keypair so the next encrypt/decrypt re-reads
@@ -255,6 +290,26 @@ export const E2EEService = {
    */
   resetIdentityCache(): void {
     resetIdentityCacheInternal();
+  },
+
+  /**
+   * Wipe the decrypted-plaintext cache. Must be called on logout so a later
+   * login on the same device does not leak the previous account's messages.
+   */
+  resetPlaintextCache(): void {
+    PLAINTEXT_CACHE.clear();
+  },
+
+  /**
+   * Wipe the decrypted-media cache (memory + disk). Must be called on logout
+   * so plaintext bytes from the previous account do not survive a session
+   * change. Idempotent — safe to call even when no media has been decrypted.
+   */
+  async resetDecryptedMediaCache(): Promise<void> {
+    DECRYPTED_MEDIA_MEMORY.clear();
+    await FileSystem.deleteAsync(DECRYPTED_MEDIA_DIR, {
+      idempotent: true,
+    }).catch(() => {});
   },
 
   isEncryptedPayload(content: string): boolean {
@@ -465,6 +520,13 @@ export const E2EEService = {
     conversationId: string;
     content: string;
   }): Promise<string | null> {
+    // The ciphertext envelope is unique per encryption, so it's a safe cache
+    // key — two messages can never share the same ciphertext bytes. Caps the
+    // map at MAX_PLAINTEXT_CACHE entries to avoid unbounded growth.
+    const cacheKey = `${params.conversationId}:${params.content}`;
+    const cached = PLAINTEXT_CACHE.get(cacheKey);
+    if (cached !== undefined) return cached;
+
     const parsed = safeJsonParse(params.content);
     if (!isEnvelopeV1(parsed)) return null;
     if (parsed.conversation_id !== params.conversationId) return null;
@@ -490,7 +552,9 @@ export const E2EEService = {
     const plain = nacl.secretbox.open(msgBox, msgNonce, messageKey);
     if (!plain) return null;
 
-    return encodeUTF8(plain);
+    const result = encodeUTF8(plain);
+    rememberPlaintext(cacheKey, result);
+    return result;
   },
 
   async encryptMediaFile(uri: string): Promise<{
@@ -549,10 +613,14 @@ export const E2EEService = {
     keyB64: string,
     nonceB64: string,
   ): Promise<string> {
-    const key = fromBase64(keyB64);
-    const nonce = fromBase64(nonceB64);
+    // \x00 keeps the three parts unambiguous when hashed.
+    const cacheKey = `${uri}\x00${keyB64}\x00${nonceB64}`;
+    const cachedMem = DECRYPTED_MEDIA_MEMORY.get(cacheKey);
+    if (cachedMem) return cachedMem;
 
     if (Platform.OS === "web") {
+      const key = fromBase64(keyB64);
+      const nonce = fromBase64(nonceB64);
       const response = await fetch(uri);
       const blob = await response.blob();
       const arrayBuffer = await blob.arrayBuffer();
@@ -562,9 +630,23 @@ export const E2EEService = {
       if (!plain) throw new Error("DECRYPT_MEDIA_FAILED");
 
       const decryptedBlob = new Blob([plain as any]);
-      return URL.createObjectURL(decryptedBlob);
+      const decryptedUri = URL.createObjectURL(decryptedBlob);
+      DECRYPTED_MEDIA_MEMORY.set(cacheKey, decryptedUri);
+      return decryptedUri;
     }
 
+    await FileSystem.makeDirectoryAsync(DECRYPTED_MEDIA_DIR, {
+      intermediates: true,
+    }).catch(() => {});
+    const cachedFileUri = `${DECRYPTED_MEDIA_DIR}/${fnv1aHex(cacheKey)}`;
+    const info = await FileSystem.getInfoAsync(cachedFileUri);
+    if (info.exists) {
+      DECRYPTED_MEDIA_MEMORY.set(cacheKey, cachedFileUri);
+      return cachedFileUri;
+    }
+
+    const key = fromBase64(keyB64);
+    const nonce = fromBase64(nonceB64);
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
@@ -574,11 +656,10 @@ export const E2EEService = {
     if (!plain) throw new Error("DECRYPT_MEDIA_FAILED");
 
     const decryptedBase64 = toBase64(plain);
-    const decryptedUri = `${FileSystem.cacheDirectory || ""}dec-${Date.now()}`;
-    await FileSystem.writeAsStringAsync(decryptedUri, decryptedBase64, {
+    await FileSystem.writeAsStringAsync(cachedFileUri, decryptedBase64, {
       encoding: FileSystem.EncodingType.Base64,
     });
-
-    return decryptedUri;
+    DECRYPTED_MEDIA_MEMORY.set(cacheKey, cachedFileUri);
+    return cachedFileUri;
   },
 };
