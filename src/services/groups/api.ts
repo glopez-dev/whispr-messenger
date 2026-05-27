@@ -869,7 +869,7 @@ export const groupsAPI = {
       externalId,
     );
     if (!userServiceGroupId) {
-      return { ...DEFAULT_GROUP_SETTINGS };
+      return extractGroupSettingsFromConversation(conv);
     }
     const res = await fetch(
       `${API_BASE_URL}/groups/${encodeURIComponent(userServiceGroupId)}/settings`,
@@ -896,7 +896,29 @@ export const groupsAPI = {
       externalId,
     );
     if (!userServiceGroupId) {
-      throw new Error("Groupe non trouvé (identifiant introuvable)");
+      const currentMeta =
+        conv?.metadata && typeof conv.metadata === "object"
+          ? (conv.metadata as Record<string, unknown>)
+          : {};
+      const currentSettings = extractGroupSettingsFromConversation(conv);
+      const nextSettings: GroupSettings = { ...currentSettings, ...updates };
+      const res = await fetch(
+        `${MESSAGING_API_URL}/conversations/${encodeURIComponent(convId)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...headers },
+          body: JSON.stringify({
+            metadata: { ...currentMeta, group_settings: nextSettings },
+          }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(
+          `Impossible de mettre a jour les parametres (${res.status})${text ? `: ${text}` : ""}`,
+        );
+      }
+      return nextSettings;
     }
     const res = await fetch(
       `${API_BASE_URL}/groups/${encodeURIComponent(userServiceGroupId)}/settings`,

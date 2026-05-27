@@ -537,17 +537,40 @@ describe("groupsAPI.updateGroupSettings", () => {
     );
   });
 
-  it("throws when neither externalGroupId nor by-conversation returns a group", async () => {
-    // 1st call: conversation → no externalGroupId
+  it("falls back to PUT conversation metadata when neither externalGroupId nor by-conversation returns a group", async () => {
+    // 1st call: conversation → no externalGroupId, no existing metadata
     mockFetch.mockResolvedValueOnce(
       mockResponse({ body: { data: { id: "grp-1" } } }),
     );
     // 2nd call: by-conversation 404
     mockFetch.mockResolvedValueOnce(mockResponse({ status: 404 }));
+    // 3rd call: PUT conversation metadata
+    mockFetch.mockResolvedValueOnce(mockResponse({ body: { id: "grp-1" } }));
 
-    await expect(groupsAPI.updateGroupSettings("grp-1", {})).rejects.toThrow(
-      "Groupe non trouvé (identifiant introuvable)",
+    const result = await groupsAPI.updateGroupSettings("grp-1", {
+      message_permission: "admins_only",
+    });
+
+    const putCall = mockFetch.mock.calls[2];
+    expect(putCall[0]).toBe(`${MSG_BASE}/conversations/grp-1`);
+    expect(putCall[1].method).toBe("PUT");
+    const body = JSON.parse(putCall[1].body);
+    expect(body.metadata.group_settings.message_permission).toBe("admins_only");
+    expect(result.message_permission).toBe("admins_only");
+  });
+
+  it("throws when the metadata PUT fails", async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ body: { data: { id: "grp-1" } } }),
     );
+    mockFetch.mockResolvedValueOnce(mockResponse({ status: 404 }));
+    mockFetch.mockResolvedValueOnce(mockResponse({ status: 500 }));
+
+    await expect(
+      groupsAPI.updateGroupSettings("grp-1", {
+        message_permission: "admins_only",
+      }),
+    ).rejects.toThrow(/Impossible de mettre a jour les parametres \(500\)/);
   });
 
   it("throws when the PATCH fails", async () => {
