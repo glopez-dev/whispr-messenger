@@ -32,6 +32,7 @@ import { InAppNotificationProvider } from "./src/providers/InAppNotificationProv
 import Toast from "./src/components/Toast/Toast";
 import { useToastStore } from "./src/store/toastStore";
 import { hydrateReadReceiptsPref } from "./src/services/messaging/readReceiptsPref";
+import { hydrateTypingIndicatorPref } from "./src/services/messaging/typingIndicatorPref";
 import { startSignalKeyReplenisher } from "./src/services/signalKeyReplenisher";
 
 enableScreens(false);
@@ -154,6 +155,7 @@ export default function App() {
   // l ait deja en cache au premier message envoye/recu
   useEffect(() => {
     hydrateReadReceiptsPref().catch(() => {});
+    hydrateTypingIndicatorPref().catch(() => {});
   }, []);
 
   // WHISPR-1399 - check pre-keys au boot et a chaque foreground resume.

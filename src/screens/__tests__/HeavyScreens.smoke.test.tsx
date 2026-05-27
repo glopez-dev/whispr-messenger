@@ -241,6 +241,11 @@ jest.mock("../../services/messaging/readReceiptsPref", () => ({
   getReadReceiptsPref: () => true,
   setReadReceiptsPref: jest.fn(),
 }));
+jest.mock("../../services/messaging/typingIndicatorPref", () => ({
+  hydrateTypingIndicatorPref: jest.fn(),
+  getTypingIndicatorEnabled: () => true,
+  setTypingIndicatorEnabled: jest.fn(),
+}));
 jest.mock("../../services/contacts/api", () => ({
   contactsAPI: mockApiProxy,
 }));

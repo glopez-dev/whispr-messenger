@@ -120,6 +120,11 @@ jest.mock("../../services/messaging/readReceiptsPref", () => ({
   getReadReceiptsEnabled: () => mockReadReceiptsEnabled(),
 }));
 
+const mockTypingIndicatorEnabled = jest.fn(() => true);
+jest.mock("../../services/messaging/typingIndicatorPref", () => ({
+  getTypingIndicatorEnabled: () => mockTypingIndicatorEnabled(),
+}));
+
 import { renderHook, act } from "@testing-library/react-native";
 import { useWebSocket } from "../useWebSocket";
 import { AppState } from "react-native";
@@ -128,6 +133,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockIsConnected.mockReturnValue(true);
   mockReadReceiptsEnabled.mockReturnValue(true);
+  mockTypingIndicatorEnabled.mockReturnValue(true);
   mockIncomingValue = null;
   mockCurrentRoute = null;
   mockSystemIsSupported = false;
@@ -526,6 +532,26 @@ describe("useWebSocket — send actions", () => {
       result.current.sendTyping("conv-1", true);
     });
     expect(mockChannelPush).not.toHaveBeenCalled();
+  });
+
+  it("sendTyping(true) skipped when typing indicator setting is OFF", () => {
+    mockTypingIndicatorEnabled.mockReturnValue(false);
+    const { result } = renderHook(() => useWebSocket(baseOptions));
+    act(() => {
+      result.current.sendTyping("conv-1", true);
+    });
+    expect(mockChannelPush).not.toHaveBeenCalled();
+  });
+
+  it("sendTyping(false) still emitted when setting is OFF (clears remote state)", () => {
+    mockTypingIndicatorEnabled.mockReturnValue(false);
+    const { result } = renderHook(() => useWebSocket(baseOptions));
+    act(() => {
+      result.current.sendTyping("conv-1", false);
+    });
+    expect(mockChannelPush).toHaveBeenCalledWith("user_typing", {
+      typing: false,
+    });
   });
 
   it("markAsRead no-op when socket disconnected (even toggle ON)", () => {
