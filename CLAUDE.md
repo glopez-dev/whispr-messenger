@@ -23,7 +23,7 @@ GitNexus skills (code intelligence) are listed in the GitNexus block below.
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **mobile-app** (6632 symbols, 11486 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **whispr-messenger** (6701 symbols, 11634 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -46,10 +46,10 @@ This project is indexed by GitNexus as **mobile-app** (6632 symbols, 11486 relat
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/mobile-app/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/mobile-app/clusters` | All functional areas |
-| `gitnexus://repo/mobile-app/processes` | All execution flows |
-| `gitnexus://repo/mobile-app/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/whispr-messenger/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/whispr-messenger/clusters` | All functional areas |
+| `gitnexus://repo/whispr-messenger/processes` | All execution flows |
+| `gitnexus://repo/whispr-messenger/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
