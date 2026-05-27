@@ -441,20 +441,10 @@ export const CallHistoryScreen: React.FC = () => {
           <TourAutoStart />
 
           {/* Header */}
+          {/* WHISPR-1437 : bouton + masque le temps qu'un selecteur de contact pour nouvel appel soit livre */}
           <AttachStep index={0} fill={Platform.OS !== "web"}>
             <View style={styles.header}>
               <Text style={styles.headerTitle}>Appels</Text>
-              <Pressable
-                style={styles.newCallBtn}
-                onPress={() => {
-                  // TODO : ouvrir sélecteur de contact
-                }}
-                accessibilityLabel="Nouvel appel"
-                accessibilityRole="button"
-                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-              >
-                <Ionicons name="add" size={24} color={colors.text.light} />
-              </Pressable>
             </View>
           </AttachStep>
 
@@ -572,14 +562,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontFamily: "Inter_700Bold",
     color: colors.text.light,
-  },
-  newCallBtn: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 22,
-    backgroundColor: withOpacity(colors.primary.main, 0.18),
   },
 
   // Filtres
