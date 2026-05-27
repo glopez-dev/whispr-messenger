@@ -24,8 +24,19 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+
+let ExpoVideo: any = null;
+let triedLoadingVideo = false;
+function ensureVideoLoaded(): void {
+  if (ExpoVideo || triedLoadingVideo) return;
+  triedLoadingVideo = true;
+  try {
+    ExpoVideo = require("expo-av").Video;
+  } catch {}
+}
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -138,30 +149,26 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     transform: [{ rotate: `${toggleButtonRotation.value}deg` }],
   }));
 
-  // Request camera permissions
-  const requestCameraPermissions = useCallback(async () => {
+  const requestCameraPermissions = useCallback(async (needsMic = false) => {
     try {
-      const permissionResult =
-        await ImagePicker.requestCameraPermissionsAsync();
-
-      if (!permissionResult) {
-        console.error("[CameraCapture] Permission result is null");
-        Alert.alert("Erreur", "Impossible de vérifier les permissions.");
-        return false;
-      }
-
-      if (permissionResult.status !== "granted") {
-        console.warn(
-          "[CameraCapture] Permission denied:",
-          permissionResult.status,
-        );
+      const camPerm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!camPerm || camPerm.status !== "granted") {
         Alert.alert(
           "Permission requise",
           "Nous avons besoin de votre permission pour accéder à la caméra.",
         );
         return false;
       }
-
+      if (needsMic) {
+        const micPerm = await Audio.requestPermissionsAsync();
+        if (micPerm.status !== "granted") {
+          Alert.alert(
+            "Permission requise",
+            "Nous avons besoin de votre permission pour accéder au microphone pour enregistrer une vidéo.",
+          );
+          return false;
+        }
+      }
       return true;
     } catch (error: any) {
       console.error("[CameraCapture] Error requesting permissions:", error);
@@ -172,7 +179,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
   // Handle photo capture
   const handleTakePhoto = useCallback(async () => {
-    const hasPermission = await requestCameraPermissions();
+    const hasPermission = await requestCameraPermissions(false);
     if (!hasPermission) {
       return;
     }
@@ -228,7 +235,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       return;
     }
 
-    const hasPermission = await requestCameraPermissions();
+    const hasPermission = await requestCameraPermissions(true);
     if (!hasPermission) {
       return;
     }
@@ -245,7 +252,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ["videos"],
         allowsEditing: false,
-        quality: 0.9,
         cameraType: (cameraType === "front"
           ? "front"
           : "back") as ImagePicker.CameraType,
@@ -254,6 +260,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
       if (!result.canceled && result.assets && result.assets[0]) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        ensureVideoLoaded();
         setCapturedMedia({
           uri: result.assets[0].uri,
           type: "video",
@@ -451,6 +458,22 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
                               console.error(
                                 "[CameraCapture] Preview image error:",
                                 error,
+                              )
+                            }
+                          />
+                        </View>
+                      ) : ExpoVideo ? (
+                        <View style={styles.imageWrapper}>
+                          <ExpoVideo
+                            source={{ uri: capturedMedia.uri }}
+                            style={styles.previewImage}
+                            useNativeControls
+                            resizeMode="cover"
+                            isLooping={false}
+                            onError={(err: any) =>
+                              console.error(
+                                "[CameraCapture] Video preview error:",
+                                err,
                               )
                             }
                           />
