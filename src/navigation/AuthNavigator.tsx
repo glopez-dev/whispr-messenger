@@ -83,7 +83,7 @@ import type {
 import { prefetchResolvedMediaUris } from "../hooks/useResolvedMediaUrl";
 import { messagingAPI } from "../services/messaging/api";
 import { cacheService } from "../services/messaging/cache";
-import { E2EEService } from "../services/E2EEService";
+import { decryptMessagesForCache } from "./preloadMessagesCache";
 
 /** Durée minimale du splash in-app (ms), en parallèle avec validateSession. */
 const SPLASH_MIN_MS = 2000;
@@ -339,50 +339,7 @@ export const AuthNavigator: React.FC = () => {
             const id = uniqueConversationIds[cursor++];
             try {
               const data = await messagingAPI.getMessages(id, { limit: 30 });
-              const cached = Array.isArray(data)
-                ? await Promise.all(
-                    data.map(async (m: any) => {
-                      let displayContent = m?.content;
-                      let e2eeMetadata: Record<string, unknown> = {};
-                      if (
-                        typeof m?.content === "string" &&
-                        E2EEService.isEncryptedPayload(m.content)
-                      ) {
-                        const decrypted = await E2EEService.decryptTextMessage({
-                          conversationId: id,
-                          content: m.content,
-                        });
-                        if (decrypted === null) {
-                          displayContent = "Message chiffré";
-                        } else if (m?.message_type === "media") {
-                          try {
-                            const parsed = JSON.parse(decrypted);
-                            if (parsed.media_key && parsed.media_nonce) {
-                              displayContent = parsed.caption || "";
-                              e2eeMetadata = {
-                                media_key: parsed.media_key,
-                                media_nonce: parsed.media_nonce,
-                                e2ee: true,
-                              };
-                            } else {
-                              displayContent = decrypted;
-                            }
-                          } catch {
-                            displayContent = decrypted;
-                          }
-                        } else {
-                          displayContent = decrypted;
-                        }
-                      }
-                      return {
-                        ...m,
-                        content: displayContent,
-                        metadata: { ...(m?.metadata || {}), ...e2eeMetadata },
-                        status: m?.status || "sent",
-                      };
-                    }),
-                  )
-                : [];
+              const cached = await decryptMessagesForCache(id, data);
               await cacheService.saveMessages(id, cached as any);
             } catch {}
           }
