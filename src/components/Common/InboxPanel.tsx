@@ -1,6 +1,6 @@
 /**
- * InboxPanel - Panel bottom-sheet (75% mobile, modal centre web) pour l'inbox
- * de notifications. (WHISPR-1437)
+ * InboxPanel - Panel bottom-sheet (75% mobile, popup top-right web ancre a la
+ * cloche du header) pour l'inbox de notifications. (WHISPR-1437)
  *
  * - Liste les 20 derniers InboxItem avec pagination cursor.
  * - Mark item read au clic + navigation vers le screen pertinent.
@@ -236,7 +236,7 @@ export const InboxPanel: React.FC<InboxPanelProps> = ({ visible, onClose }) => {
     </View>
   );
 
-  // Sur web on centre la modal, sur mobile on fait un bottom-sheet 75%
+  // Sur web on ancre le popup top-right a l'icone cloche, sur mobile on fait un bottom-sheet 75%
   const isWeb = Platform.OS === "web";
 
   return (
@@ -333,20 +333,20 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 22,
     paddingBottom: 20,
   },
-  // web
+  // web : panel ancré top-right pour matcher l'icone cloche en haut a droite
   webRoot: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
   webBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(11, 17, 36, 0.6)",
+    backgroundColor: "rgba(11, 17, 36, 0.4)",
   },
   webSheet: {
-    width: "90%",
-    maxWidth: 480,
-    maxHeight: "80%",
+    position: "absolute",
+    top: 70,
+    right: 16,
+    width: 360,
+    maxHeight: 480,
     backgroundColor: SHEET_BG,
     borderRadius: 22,
     paddingBottom: 16,
