@@ -54,7 +54,9 @@ build/
 CLAUDE.local.md
 .gitnexus
 .gstack/
-.claude/
+.claude/*
+!.claude/rules/
+!.claude/skills/
 .gitnexus/
 .playwright-mcp/
 AGENTS.md
