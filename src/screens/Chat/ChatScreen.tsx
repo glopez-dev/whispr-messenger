@@ -158,23 +158,17 @@ import {
   checkReactionLimits,
   userHasReaction,
 } from "../../utils/reactionEmoji";
-
-/** Cross-platform alert: falls back to window.alert on web where RN Alert is a no-op */
-function showAlert(title: string, message: string): void {
-  if (Platform.OS === "web") {
-    window.alert(`${title}\n\n${message}`);
-  } else {
-    Alert.alert(title, message);
-  }
-}
-
-// WHISPR-1074: FlatList items are either messages or date separators.
-// Centralising the union + guard removes the `(item as any).type === "date"`
-// casts sprinkled through the render paths.
-type DateSeparatorItem = { type: "date"; date: Date; id: string };
-type ChatListItem = MessageWithRelations | DateSeparatorItem;
-const isDateSeparator = (item: ChatListItem): item is DateSeparatorItem =>
-  (item as DateSeparatorItem).type === "date";
+import { showAlert } from "../../utils/alert";
+import { canonicalizeMimeType, resolveMimeType } from "../../utils/mime";
+import {
+  forceAudioUploadIdentity,
+  remapAudioUploadUri,
+} from "../../utils/audioUpload";
+import {
+  isDateSeparator,
+  type ChatListItem,
+  type DateSeparatorItem,
+} from "./helpers/dateSeparators";
 
 type ChatScreenRouteProp = StackScreenProps<
   AuthStackParamList,
@@ -190,109 +184,6 @@ const DEFAULT_MEDIA_CAPTION: Record<
   video: "Vidéo",
   audio: "Message vocal",
   file: "Fichier",
-};
-
-const DEFAULT_MIME_BY_KIND: Record<
-  "image" | "video" | "audio" | "file",
-  string
-> = {
-  image: "image/jpeg",
-  video: "video/mp4",
-  audio: "audio/mp4",
-  file: "application/octet-stream",
-};
-
-const EXTENSION_TO_MIME: Record<string, string> = {
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  gif: "image/gif",
-  webp: "image/webp",
-  heic: "image/heic",
-  mp4: "video/mp4",
-  mov: "video/quicktime",
-  avi: "video/x-msvideo",
-  pdf: "application/pdf",
-  doc: "application/msword",
-  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  m4a: "audio/mp4",
-  aac: "audio/aac",
-  mp3: "audio/mpeg",
-  wav: "audio/wav",
-  ogg: "audio/ogg",
-  caf: "audio/x-caf",
-};
-
-const resolveMimeType = (
-  extension: string,
-  kind: "image" | "video" | "audio" | "file",
-): string => EXTENSION_TO_MIME[extension] ?? DEFAULT_MIME_BY_KIND[kind];
-
-const canonicalizeMimeType = (mime: string): string => {
-  const normalized = mime.split(";")[0].trim().toLowerCase();
-  switch (normalized) {
-    case "audio/x-m4a":
-    case "audio/m4a":
-      return "audio/mp4";
-    default:
-      return normalized;
-  }
-};
-
-const forceAudioUploadIdentity = (
-  filename: string,
-  mimeType: string,
-): { filename: string; mimeType: string } => {
-  const normalizedMime = canonicalizeMimeType(mimeType);
-  if (!normalizedMime.startsWith("audio/")) {
-    return { filename, mimeType: normalizedMime };
-  }
-  const baseName = filename.replace(/\.[^/.]+$/, "");
-  return {
-    // iOS may still emit audio/x-m4a for `.m4a` filenames on multipart parts.
-    // Force a neutral `.mp4` container name so part MIME inference stays audio/mp4.
-    filename: `${baseName || "recording"}-${Date.now()}.mp4`,
-    mimeType: "audio/mp4",
-  };
-};
-
-const remapAudioUploadUri = async (
-  uri: string,
-  filename: string,
-  mimeType: string,
-): Promise<string> => {
-  if (Platform.OS === "web") {
-    return uri;
-  }
-  if (canonicalizeMimeType(mimeType) !== "audio/mp4") {
-    return uri;
-  }
-  if (!uri.startsWith("file://")) {
-    return uri;
-  }
-  if (/\.mp4$/i.test(uri)) {
-    return uri;
-  }
-
-  const cacheRoot =
-    (FileSystem as any).cacheDirectory ||
-    (FileSystem as any).documentDirectory ||
-    "";
-  if (!cacheRoot) {
-    return uri;
-  }
-
-  const targetUri = `${cacheRoot}${filename}`;
-  try {
-    await FileSystem.deleteAsync(targetUri, { idempotent: true }).catch(
-      () => {},
-    );
-    await FileSystem.copyAsync({ from: uri, to: targetUri });
-    return targetUri;
-  } catch (error) {
-    console.warn("[ChatScreen] Failed to remap audio upload URI:", error);
-    return uri;
-  }
 };
 
 export const ChatScreen: React.FC = () => {
