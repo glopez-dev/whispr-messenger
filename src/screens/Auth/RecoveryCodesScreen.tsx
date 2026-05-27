@@ -19,7 +19,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { AuthService } from "../../services/AuthService";
 import { profileSetupFlag } from "../../services/profileSetupFlag";
 import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "RecoveryCodes">;
 type RecoveryCodesRouteProp = RouteProp<AuthStackParamList, "RecoveryCodes">;

@@ -35,7 +35,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 
 import { Conversation } from "../../types/messaging";
 import { useConversationsStore } from "../../store/conversationsStore";
-import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { AuthStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 import ConversationItem from "../../components/Chat/ConversationItem";
 import { ConversationSkeleton } from "../../components/Chat/SkeletonLoader";

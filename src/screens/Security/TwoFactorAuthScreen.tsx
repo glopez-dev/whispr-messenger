@@ -42,7 +42,7 @@ import { useTheme } from "../../context/ThemeContext";
 import * as Haptics from "expo-haptics";
 import Toast from "../../components/Toast/Toast";
 import { TwoFactorService } from "../../services/TwoFactorService";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 export const TwoFactorAuthScreen: React.FC = () => {
   const navigation =

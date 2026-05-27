@@ -16,7 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 export const AboutContentScreen: React.FC = () => {
   const navigation = useNavigation<StackNavigationProp<AuthStackParamList>>();

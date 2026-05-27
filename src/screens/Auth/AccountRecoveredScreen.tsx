@@ -8,7 +8,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { Button } from "../../components";
 import { useTheme } from "../../context/ThemeContext";
 import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 type NavigationProp = StackNavigationProp<
   AuthStackParamList,

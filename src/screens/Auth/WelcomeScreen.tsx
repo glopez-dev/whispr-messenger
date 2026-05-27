@@ -15,7 +15,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { Button, Logo } from "../../components";
 import { useTheme } from "../../context/ThemeContext";
 import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 import { AuthLanguageSwitcher } from "./AuthLanguageSwitcher";
 
 const WAITLIST_URL = "https://whispr-preprod.roadmvn.com/waitlist";

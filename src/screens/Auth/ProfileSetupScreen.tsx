@@ -42,7 +42,7 @@ import { UserService } from "../../services";
 import { profileSetupFlag } from "../../services/profileSetupFlag";
 import { isValidUsername, normalizeUsername } from "../../utils";
 import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "ProfileSetup">;
 

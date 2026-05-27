@@ -23,7 +23,7 @@ import { TwoFactorService } from "../../services/TwoFactorService";
 import { TokenService } from "../../services/TokenService";
 import { UserService } from "../../services/UserService";
 import Toast from "../../components/Toast/Toast";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 type NavigationProp = StackNavigationProp<
   AuthStackParamList,

@@ -20,7 +20,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { AuthService } from "../../services/AuthService";
 import { TokenService } from "../../services/TokenService";
 import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 type NavigationProp = StackNavigationProp<
   AuthStackParamList,

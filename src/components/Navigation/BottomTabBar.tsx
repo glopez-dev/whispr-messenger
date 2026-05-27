@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { switchToRootTab } from "../../navigation/navigationRef";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 import { useConversationsStore } from "../../store/conversationsStore";
 import { useUIStore } from "../../store/uiStore";

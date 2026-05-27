@@ -132,7 +132,7 @@ import { generateClientRandom } from "../../utils/crypto";
 import { convertHeicToJpeg } from "../../utils/imageCompression";
 import { extractVideoPoster } from "../../utils/videoPoster";
 import { usePresenceStore } from "../../store/presenceStore";
-import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { AuthStackParamList } from "../../navigation/types";
 import { colors, withOpacity } from "../../theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { logger } from "../../utils/logger";
@@ -3856,7 +3856,9 @@ export const ChatScreen: React.FC = () => {
                             <Text
                               style={[
                                 styles.infoStatus,
-                                isOtherOnline && { color: colors.status.online },
+                                isOtherOnline && {
+                                  color: colors.status.online,
+                                },
                               ]}
                             >
                               {isOtherOnline

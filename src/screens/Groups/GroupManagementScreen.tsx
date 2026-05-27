@@ -50,7 +50,7 @@ import {
 } from "../../services/groups/api";
 import { contactsAPI, Contact } from "../../services/contacts/api";
 import { useAuth } from "../../context/AuthContext";
-import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { AuthStackParamList } from "../../navigation/types";
 import { useConversationsStore } from "../../store/conversationsStore";
 import { MediaService } from "../../services/MediaService";
 

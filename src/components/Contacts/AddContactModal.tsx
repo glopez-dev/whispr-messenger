@@ -25,7 +25,7 @@ import { contactsAPI } from "../../services/contacts/api";
 import { messagingAPI } from "../../services/messaging/api";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 import { Avatar } from "../Chat/Avatar";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
