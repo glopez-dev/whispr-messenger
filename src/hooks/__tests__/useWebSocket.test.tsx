@@ -149,8 +149,18 @@ describe("useWebSocket - delivery_status filter", () => {
     renderHook(() => useWebSocket({ ...baseOptions, onDeliveryStatus }));
 
     const handler = getRegisteredHandler("delivery_status");
-    handler({ message_id: "msg-1", status: "read" });
-    expect(onDeliveryStatus).toHaveBeenCalledWith("msg-1", "read");
+    handler({
+      message_id: "msg-1",
+      status: "read",
+      user_id: "u-1",
+      read_at: "2024-01-01T00:00:00Z",
+    });
+    expect(onDeliveryStatus).toHaveBeenCalledWith(
+      "msg-1",
+      "read",
+      "u-1",
+      "2024-01-01T00:00:00Z",
+    );
   });
 
   it("ignore delivery_status read quand toggle OFF", () => {
@@ -172,8 +182,20 @@ describe("useWebSocket - delivery_status filter", () => {
     handler({ message_id: "msg-1", status: "delivered" });
     handler({ message_id: "msg-2", status: "sent" });
     expect(onDeliveryStatus).toHaveBeenCalledTimes(2);
-    expect(onDeliveryStatus).toHaveBeenNthCalledWith(1, "msg-1", "delivered");
-    expect(onDeliveryStatus).toHaveBeenNthCalledWith(2, "msg-2", "sent");
+    expect(onDeliveryStatus).toHaveBeenNthCalledWith(
+      1,
+      "msg-1",
+      "delivered",
+      undefined,
+      undefined,
+    );
+    expect(onDeliveryStatus).toHaveBeenNthCalledWith(
+      2,
+      "msg-2",
+      "sent",
+      undefined,
+      undefined,
+    );
   });
 });
 

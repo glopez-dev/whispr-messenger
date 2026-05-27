@@ -718,13 +718,35 @@ export const ChatScreen: React.FC = () => {
         }
       }
     },
-    onDeliveryStatus: (messageId: string, status: string) => {
+    onDeliveryStatus: (
+      messageId: string,
+      status: string,
+      userId?: string,
+      readAt?: string,
+    ) => {
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId
-            ? { ...msg, status: status as "sent" | "delivered" | "read" }
-            : msg,
-        ),
+        prev.map((msg) => {
+          if (msg.id !== messageId) return msg;
+          const updated = {
+            ...msg,
+            status: status as MessageWithRelations["status"],
+          };
+          if (status === "read" && userId) {
+            const existing = updated.delivery_statuses ?? [];
+            const idx = existing.findIndex((d) => d.user_id === userId);
+            const entry = {
+              id: idx >= 0 ? existing[idx].id : `${messageId}-${userId}`,
+              message_id: messageId,
+              user_id: userId,
+              read_at: readAt ?? new Date().toISOString(),
+            };
+            updated.delivery_statuses =
+              idx >= 0
+                ? existing.map((d, i) => (i === idx ? entry : d))
+                : [...existing, entry];
+          }
+          return updated;
+        }),
       );
     },
     onMessageUpdated: (message: Message) => {
@@ -2032,9 +2054,7 @@ export const ChatScreen: React.FC = () => {
             if (poster) {
               let posterUploadUri = poster.uri;
               let posterMime: string = poster.mimeType;
-              let posterE2ee:
-                | { key: string; nonce: string }
-                | undefined;
+              let posterE2ee: { key: string; nonce: string } | undefined;
               if (shouldEncrypt) {
                 try {
                   const encPoster = await E2EEService.encryptMediaFile(
