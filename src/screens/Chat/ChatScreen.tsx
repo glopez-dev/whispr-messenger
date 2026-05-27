@@ -3845,7 +3845,7 @@ export const ChatScreen: React.FC = () => {
                                 : "Contact"
                             }
                             showOnlineBadge={conversation?.type === "direct"}
-                            isOnline={false}
+                            isOnline={isOtherOnline}
                           />
                           <Text style={styles.infoName}>
                             {conversation
@@ -3853,7 +3853,18 @@ export const ChatScreen: React.FC = () => {
                               : "Contact"}
                           </Text>
                           {conversation?.type === "direct" && (
-                            <Text style={styles.infoStatus}>Hors ligne</Text>
+                            <Text
+                              style={[
+                                styles.infoStatus,
+                                isOtherOnline && { color: colors.status.online },
+                              ]}
+                            >
+                              {isOtherOnline
+                                ? "En ligne"
+                                : otherLastSeenAt
+                                  ? `Vu à ${new Date(otherLastSeenAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+                                  : "Hors ligne"}
+                            </Text>
                           )}
                         </View>
                         <View style={styles.infoSection}>
