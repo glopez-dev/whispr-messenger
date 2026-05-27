@@ -37,6 +37,7 @@ import {
   NotificationSettings,
 } from "../../services/NotificationService";
 import { setReadReceiptsEnabled } from "../../services/messaging/readReceiptsPref";
+import { setTypingIndicatorEnabled } from "../../services/messaging/typingIndicatorPref";
 import { SettingsChoiceAlert } from "./SettingsChoiceAlert";
 import { useTour } from "../../context/TourContext";
 import { DangerConfirmModal } from "../../components/Common/DangerConfirmModal";
@@ -371,6 +372,9 @@ export const SettingsScreen: React.FC = () => {
           if (typeof parsedMsg.readReceipts === "boolean") {
             setReadReceiptsEnabled(parsedMsg.readReceipts);
           }
+          if (typeof parsedMsg.typingIndicator === "boolean") {
+            setTypingIndicatorEnabled(parsedMsg.typingIndicator);
+          }
         }
         if (appJson) setAppSettings(JSON.parse(appJson));
         if (secJson) setSecuritySettings(JSON.parse(secJson));
@@ -449,6 +453,14 @@ export const SettingsScreen: React.FC = () => {
         setMessagingSettings((prev) => {
           const updated = { ...prev, [key]: value };
           persistSettings(STORAGE_KEYS.messaging, updated);
+          // indicateur de saisie : pas d'equivalent backend dans le DTO
+          // privacy de user-service aujourd'hui, donc on se contente du
+          // mirror local synchrone. useWebSocket le lit a chaque appel
+          // de sendTyping via getTypingIndicatorEnabled() -> effet
+          // immediat sans avoir a reload SettingsScreen ou la conversation.
+          if (key === "typingIndicator") {
+            setTypingIndicatorEnabled(value);
+          }
           // accuses de lecture : symetrie WhatsApp punitive. On met a jour le
           // mirror memoire immediatement pour que useWebSocket le voie au
           // prochain markAsRead, puis on push au backend (privacy_settings).

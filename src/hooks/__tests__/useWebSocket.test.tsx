@@ -88,6 +88,11 @@ jest.mock("../../services/messaging/readReceiptsPref", () => ({
   getReadReceiptsEnabled: () => mockGetReadReceiptsEnabled(),
 }));
 
+const mockGetTypingIndicatorEnabled = jest.fn(() => true);
+jest.mock("../../services/messaging/typingIndicatorPref", () => ({
+  getTypingIndicatorEnabled: () => mockGetTypingIndicatorEnabled(),
+}));
+
 import React from "react";
 import { renderHook, act } from "@testing-library/react-native";
 import { useWebSocket } from "../useWebSocket";

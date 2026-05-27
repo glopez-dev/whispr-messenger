@@ -24,6 +24,7 @@ import {
 } from "../services/calls/systemCallProvider";
 import { isCallsAvailable } from "./useCallsAvailable";
 import { getReadReceiptsEnabled } from "../services/messaging/readReceiptsPref";
+import { getTypingIndicatorEnabled } from "../services/messaging/typingIndicatorPref";
 import { useInboxStore } from "../store/inboxStore";
 import type { InboxItem } from "../types/inbox";
 
@@ -492,6 +493,13 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
   );
 
   const sendTyping = useCallback((conversationId: string, typing: boolean) => {
+    // si l'user a desactive l'indicateur de saisie, on n'emet pas le
+    // signal "en train d'ecrire". On laisse en revanche passer le stop
+    // (typing === false) pour que le destinataire qui voyait deja le
+    // signal arrete de le voir, et pour clear tout etat fantome cote
+    // serveur quand l'utilisateur coupe le toggle en pleine saisie.
+    if (typing && !getTypingIndicatorEnabled()) return;
+
     const socket = getSharedSocket();
     if (!socket.isConnected()) return;
 
