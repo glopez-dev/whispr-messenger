@@ -435,6 +435,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           nonce: (message.metadata as any).media_nonce as string,
         }
       : undefined;
+  // WHISPR-fix-video-preview-hevc-ios : le poster vidéo est chiffré avec
+  // sa propre clé/nonce. Sans ces métadonnées, MediaMessage tombera sur
+  // le placeholder pour les vidéos E2EE (au lieu de tenter <Video> sur
+  // le blob déchiffré, qui casse sur iOS avec AVErrorFileFormatNotRecognized).
+  const e2eeThumbnail =
+    (message.metadata as any)?.e2ee &&
+    (message.metadata as any)?.thumbnail_key &&
+    (message.metadata as any)?.thumbnail_nonce
+      ? {
+          key: (message.metadata as any).thumbnail_key as string,
+          nonce: (message.metadata as any).thumbnail_nonce as string,
+        }
+      : undefined;
   const mediaUploadOverlay = isSent
     ? getMediaUploadOverlayState(
         message.status,
@@ -501,10 +514,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   size={firstAttachment.metadata.size}
                   thumbnailUri={resolveMediaUrl(
                     firstAttachment.metadata.thumbnail_url,
-                    firstAttachment.media_id,
-                    "thumbnail",
+                    (firstAttachment.metadata as any).thumbnail_id ||
+                      firstAttachment.media_id,
+                    (firstAttachment.metadata as any).thumbnail_id
+                      ? "blob"
+                      : "thumbnail",
                   )}
                   e2ee={e2eeMedia}
+                  thumbnailE2ee={e2eeThumbnail}
                 />
               )
             ) : null}
@@ -620,10 +637,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       size={firstAttachment.metadata.size}
                       thumbnailUri={resolveMediaUrl(
                         firstAttachment.metadata.thumbnail_url,
-                        firstAttachment.media_id,
-                        "thumbnail",
+                        (firstAttachment.metadata as any).thumbnail_id ||
+                          firstAttachment.media_id,
+                        (firstAttachment.metadata as any).thumbnail_id
+                          ? "blob"
+                          : "thumbnail",
                       )}
                       e2ee={e2eeMedia}
+                      thumbnailE2ee={e2eeThumbnail}
                     />
                   ),
                 )
@@ -723,10 +744,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   size={firstAttachment.metadata.size}
                   thumbnailUri={resolveMediaUrl(
                     firstAttachment.metadata.thumbnail_url,
-                    firstAttachment.media_id,
-                    "thumbnail",
+                    (firstAttachment.metadata as any).thumbnail_id ||
+                      firstAttachment.media_id,
+                    (firstAttachment.metadata as any).thumbnail_id
+                      ? "blob"
+                      : "thumbnail",
                   )}
                   e2ee={e2eeMedia}
+                  thumbnailE2ee={e2eeThumbnail}
                 />
               )}
             </>

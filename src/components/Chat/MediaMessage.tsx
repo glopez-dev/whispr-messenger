@@ -62,6 +62,15 @@ interface MediaMessageProps {
     key: string;
     nonce: string;
   };
+  // WHISPR-fix-video-preview-hevc-ios : pour les vidéos E2EE, le poster
+  // est uploadé séparément et chiffré avec sa propre clé/nonce. Sans ça,
+  // le composant n'a aucun moyen d'afficher une preview sans tomber sur
+  // le blob déchiffré de la vidéo (qui sur iOS+HEVC casse avec
+  // AVPlayerItem -11828 AVErrorFileFormatNotRecognized).
+  thumbnailE2ee?: {
+    key: string;
+    nonce: string;
+  };
 }
 
 export const MediaMessage: React.FC<MediaMessageProps> = ({
@@ -71,6 +80,7 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
   size,
   thumbnailUri,
   e2ee,
+  thumbnailE2ee,
 }) => {
   ensureExpoAvVideoLoaded();
   const { getThemeColors } = useTheme();
@@ -96,11 +106,28 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
   );
 
   const { decryptedUri: mainUri } = useE2EEMedia(resolvedMainUri, e2ee);
-  const { decryptedUri: thumbUri } = useE2EEMedia(resolvedThumbUri, e2ee);
+  // WHISPR-fix-video-preview-hevc-ios : le thumbnail E2EE a sa propre clé/nonce
+  // car il est uploadé séparément. Si elle n'est pas fournie, on retombe sur
+  // la clé du média principal (compat pour les images legacy qui reusaient
+  // la clé pour leur thumbnail).
+  const thumbE2eeKeys = thumbnailE2ee || e2ee;
+  const { decryptedUri: thumbUri } = useE2EEMedia(
+    resolvedThumbUri,
+    thumbE2eeKeys,
+  );
 
   // Use decrypted URIs if available, fallback to resolved URIs
   const finalMainUri = mainUri || resolvedMainUri;
-  const finalThumbUri = thumbUri || resolvedThumbUri;
+  // Important : pour une vidéo E2EE sans thumbnail séparé, `resolvedThumbUri`
+  // pointe vers la même ressource que le main (cf. MessageBubble qui passe
+  // thumbnail_url=media_url par défaut). On considère alors qu'on n'a PAS
+  // de vrai thumbnail image et on bascule sur le placeholder, plutôt que
+  // d'essayer d'afficher le blob vidéo déchiffré dans <Image>.
+  const hasDistinctThumbnail =
+    !!resolvedThumbUri && resolvedThumbUri !== resolvedMainUri;
+  const finalThumbUri = hasDistinctThumbnail
+    ? thumbUri || resolvedThumbUri
+    : undefined;
 
   // WHISPR-1039: on lit le ratio via l'évènement onLoad natif plutôt que
   // Image.getSize pour fonctionner uniformément iOS/Android/web et éviter
@@ -385,14 +412,21 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
         activeOpacity={0.9}
         style={styles.videoContainer}
       >
-        {/* Video preview - use thumbnail image first if available, else Video component or placeholder */}
+        {/* Video preview :
+            - si on a un thumbnail image distinct → <Image> (cas E2EE avec
+              poster côté client, ou plaintext avec thumbnail serveur).
+            - si pas de thumbnail ET pas en E2EE → on peut tenter <Video>
+              comme preview (cas legacy/plaintext, vidéo lisible direct).
+            - en E2EE sans thumbnail → placeholder direct. Tenter <Video>
+              sur un blob déchiffré HEVC casse iOS avec AVErrorFileFormatNotRecognized
+              (-11828) et affiche un cadre noir. */}
         {finalThumbUri ? (
           <Image
             source={{ uri: finalThumbUri }}
             style={styles.videoThumbnail}
             resizeMode="cover"
           />
-        ) : Video && finalMainUri && !thumbnailError ? (
+        ) : Video && finalMainUri && !thumbnailError && !e2ee ? (
           <Video
             ref={thumbnailVideoRef}
             source={{ uri: finalMainUri }}
@@ -441,7 +475,9 @@ export const MediaMessage: React.FC<MediaMessageProps> = ({
             }}
           />
         ) : (
-          // Fallback placeholder if Video component not available or error
+          // Fallback placeholder : Video indisponible, erreur thumbnail,
+          // ou média E2EE sans poster séparé. On garde le bouton play
+          // accessible — le modal full peut quand même tenter la lecture.
           <View
             style={[
               styles.videoThumbnail,
