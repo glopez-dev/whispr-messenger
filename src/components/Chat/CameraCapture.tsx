@@ -192,7 +192,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ["images"],
         allowsEditing: false,
-        cameraType: cameraType === "front" ? "front" : "back",
+        cameraType: (cameraType === "front"
+          ? "front"
+          : "back") as ImagePicker.CameraType,
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
@@ -244,7 +246,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         mediaTypes: ["videos"],
         allowsEditing: false,
         quality: 0.9,
-        cameraType: cameraType === "front" ? "front" : "back",
+        cameraType: (cameraType === "front"
+          ? "front"
+          : "back") as ImagePicker.CameraType,
         videoMaxDuration: 60,
       });
 
