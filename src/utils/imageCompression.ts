@@ -102,10 +102,14 @@ export interface CompressionOptions {
   compress?: number;
 }
 
-const DEFAULT_MAX_WIDTH = 1920;
-const DEFAULT_MAX_HEIGHT = 1920;
-const DEFAULT_QUALITY = 0.8;
-const DEFAULT_COMPRESS = 0.7;
+// Bornes relevees temporairement pour la periode de demo : on accepte
+// des images plus grandes et moins compressees pour les captures de
+// presentation. Valeurs d'origine : max 1920px, compress 0.7, quality 0.8.
+// A remettre apres la demo si la conso MinIO devient un sujet.
+const DEFAULT_MAX_WIDTH = 3840;
+const DEFAULT_MAX_HEIGHT = 3840;
+const DEFAULT_QUALITY = 0.95;
+const DEFAULT_COMPRESS = 0.92;
 
 function getImageSize(uri: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
