@@ -28,12 +28,33 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-// expo-av is imported via try/catch — stub the module so the require resolves
+// expo-av is imported via try/catch — stub the module so the require resolves.
+// We tag the Video component with a sentinel testID so tests can prove it is
+// (or is NOT) rendered for a given scenario.
 jest.mock(
   "expo-av",
-  () => ({ Video: () => null, ResizeMode: { COVER: "cover" } }),
+  () => {
+    const RN = require("react-native");
+    const ReactInstance = require("react");
+    return {
+      Video: (props: any) =>
+        ReactInstance.createElement(RN.View, {
+          ...props,
+          testID: "video-thumbnail-sentinel",
+        }),
+      ResizeMode: { COVER: "cover", CONTAIN: "contain" },
+    };
+  },
   { virtual: true },
 );
+
+// E2EE decryption is heavy and IO-bound — stub it to a deterministic blob URI
+// so we can assert on which uri the component renders.
+jest.mock("../../../services/E2EEService", () => ({
+  E2EEService: {
+    decryptMediaFile: jest.fn(async (uri: string) => `decrypted:${uri}`),
+  },
+}));
 
 import { MediaMessage } from "../MediaMessage";
 
@@ -201,5 +222,77 @@ describe("MediaMessage useResolvedMediaUrl (WHISPR-1216)", () => {
       ([u]: [string]) => u.includes("/blob") && u.includes("stream=1"),
     );
     expect(blobStreamCalls.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("MediaMessage video preview (WHISPR-fix-video-preview-hevc-ios)", () => {
+  beforeEach(() => {
+    // Pour ces tests on stubbe fetch en bytes pour que la résolution du blob
+    // n'est pas bloquée — on s'intéresse au thumbnail rendu, pas à la pipeline
+    // d'URL.
+    (global as any).fetch = jest.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        url: "",
+        headers: { get: () => "application/octet-stream" },
+        blob: async () =>
+          new Blob([new Uint8Array([0xff, 0xd8])], { type: "image/jpeg" }),
+      });
+    });
+  });
+
+  it("rend une <Image> et JAMAIS <Video> quand un poster E2EE est fourni", async () => {
+    const videoUri = "https://whispr.devzeyu.com/media/v1/video1/blob";
+    const posterUri = "https://whispr.devzeyu.com/media/v1/poster1/blob";
+
+    const { queryByTestId } = render(
+      <MediaMessage
+        uri={videoUri}
+        type="video"
+        thumbnailUri={posterUri}
+        e2ee={{ key: "video-key", nonce: "video-nonce" }}
+        thumbnailE2ee={{ key: "poster-key", nonce: "poster-nonce" }}
+      />,
+    );
+
+    // Le composant <Video> ne doit JAMAIS apparaître en thumbnail pour un
+    // média E2EE avec poster — c'est précisément ce qui cassait avec
+    // AVErrorFileFormatNotRecognized (-11828) sur iOS+HEVC.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(queryByTestId("video-thumbnail-sentinel")).toBeNull();
+  });
+
+  it("rend le placeholder (pas <Video>) pour une vidéo E2EE sans poster", async () => {
+    const videoUri = "https://whispr.devzeyu.com/media/v1/video2/blob";
+
+    const { queryByTestId } = render(
+      <MediaMessage
+        uri={videoUri}
+        type="video"
+        e2ee={{ key: "video-key", nonce: "video-nonce" }}
+      />,
+    );
+
+    // Important : sans thumbnail E2EE explicite, on n'a AUCUN moyen sûr
+    // d'afficher la frame d'une vidéo HEVC sur iOS. On doit rendre le
+    // placeholder, pas tenter <Video> sur le blob déchiffré.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(queryByTestId("video-thumbnail-sentinel")).toBeNull();
+  });
+
+  it("rend bien <Video> comme thumbnail pour une vidéo plaintext sans thumbnail séparé", async () => {
+    // Avec stream OK : la pipeline /blob?stream=1 retourne des bytes, donc
+    // resolvedMainUri se matérialise en blob:fake. Sans thumbnail séparé,
+    // et SANS e2ee, on accepte <Video> en thumbnail (comportement legacy).
+    const { queryByTestId } = render(
+      <MediaMessage
+        uri="https://whispr.devzeyu.com/media/v1/video3/blob"
+        type="video"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(queryByTestId("video-thumbnail-sentinel")).not.toBeNull();
+    });
   });
 });

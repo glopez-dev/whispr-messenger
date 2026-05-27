@@ -130,6 +130,7 @@ const CHAT_TOUR_STEPS: TourStep[] = [
 import { getConversationDisplayName } from "../../utils";
 import { generateClientRandom } from "../../utils/crypto";
 import { convertHeicToJpeg } from "../../utils/imageCompression";
+import { extractVideoPoster } from "../../utils/videoPoster";
 import { usePresenceStore } from "../../store/presenceStore";
 import { AuthStackParamList } from "../../navigation/AuthNavigator";
 import { colors, withOpacity } from "../../theme/colors";
@@ -676,6 +677,13 @@ export const ChatScreen: React.FC = () => {
                       media_key: parsed.media_key,
                       media_nonce: parsed.media_nonce,
                       e2ee: true,
+                      // WHISPR-fix-video-preview-hevc-ios
+                      ...(parsed.thumbnail_key && parsed.thumbnail_nonce
+                        ? {
+                            thumbnail_key: parsed.thumbnail_key,
+                            thumbnail_nonce: parsed.thumbnail_nonce,
+                          }
+                        : {}),
                     };
                   }
                 } catch {
@@ -718,13 +726,35 @@ export const ChatScreen: React.FC = () => {
         }
       }
     },
-    onDeliveryStatus: (messageId: string, status: string) => {
+    onDeliveryStatus: (
+      messageId: string,
+      status: string,
+      userId?: string,
+      readAt?: string,
+    ) => {
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId
-            ? { ...msg, status: status as "sent" | "delivered" | "read" }
-            : msg,
-        ),
+        prev.map((msg) => {
+          if (msg.id !== messageId) return msg;
+          const updated = {
+            ...msg,
+            status: status as MessageWithRelations["status"],
+          };
+          if (status === "read" && userId) {
+            const existing = updated.delivery_statuses ?? [];
+            const idx = existing.findIndex((d) => d.user_id === userId);
+            const entry = {
+              id: idx >= 0 ? existing[idx].id : `${messageId}-${userId}`,
+              message_id: messageId,
+              user_id: userId,
+              read_at: readAt ?? new Date().toISOString(),
+            };
+            updated.delivery_statuses =
+              idx >= 0
+                ? existing.map((d, i) => (i === idx ? entry : d))
+                : [...existing, entry];
+          }
+          return updated;
+        }),
       );
     },
     onMessageUpdated: (message: Message) => {
@@ -1379,6 +1409,13 @@ export const ChatScreen: React.FC = () => {
                         media_key: parsed.media_key,
                         media_nonce: parsed.media_nonce,
                         e2ee: true,
+                        // WHISPR-fix-video-preview-hevc-ios
+                        ...(parsed.thumbnail_key && parsed.thumbnail_nonce
+                          ? {
+                              thumbnail_key: parsed.thumbnail_key,
+                              thumbnail_nonce: parsed.thumbnail_nonce,
+                            }
+                          : {}),
                       };
                     } else {
                       displayContent = decrypted;
@@ -2064,6 +2101,68 @@ export const ChatScreen: React.FC = () => {
           }
         }
 
+        // WHISPR-fix-video-preview-hevc-ios : pour les vidéos, on extrait
+        // un poster JPEG côté client. Sinon le composant MediaMessage tente
+        // <Video> sur le blob déchiffré pour générer la preview de liste,
+        // ce qui casse iOS sur HEVC/.mov avec AVErrorFileFormatNotRecognized
+        // (-11828). Le poster est uploadé séparément ; en E2EE il est chiffré
+        // avec sa propre clé/nonce.
+        let posterUpload:
+          | {
+              id: string;
+              url: string;
+              key?: string;
+              nonce?: string;
+            }
+          | undefined;
+        if (type === "video") {
+          try {
+            const poster = await extractVideoPoster(uploadUri, finalFilename);
+            if (poster) {
+              let posterUploadUri = poster.uri;
+              let posterMime: string = poster.mimeType;
+              let posterE2ee: { key: string; nonce: string } | undefined;
+              if (shouldEncrypt) {
+                try {
+                  const encPoster = await E2EEService.encryptMediaFile(
+                    poster.uri,
+                  );
+                  posterUploadUri = encPoster.encryptedUri;
+                  posterE2ee = { key: encPoster.key, nonce: encPoster.nonce };
+                  posterMime = "application/octet-stream";
+                } catch (posterEncErr) {
+                  logger.warn(
+                    "ChatScreen.handleSendMedia",
+                    "Poster encryption failed, falling back to plaintext poster",
+                    posterEncErr,
+                  );
+                }
+              }
+              const posterResult = await MediaService.uploadMedia(
+                {
+                  uri: posterUploadUri,
+                  name: poster.filename,
+                  type: posterMime,
+                },
+                undefined,
+                { context: "message", ownerId: userId },
+              );
+              posterUpload = {
+                id: posterResult.id,
+                url: posterResult.url,
+                key: posterE2ee?.key,
+                nonce: posterE2ee?.nonce,
+              };
+            }
+          } catch (posterErr) {
+            logger.warn(
+              "ChatScreen.handleSendMedia",
+              "Video poster extraction/upload failed, falling back to placeholder preview",
+              posterErr,
+            );
+          }
+        }
+
         // 1. Upload file to media-service (encrypted or plain)
         const uploadResult = await MediaService.uploadMedia(
           { uri: finalUploadUri, name: finalFilename, type: uploadMimeType },
@@ -2102,16 +2201,29 @@ export const ChatScreen: React.FC = () => {
           }
         }
 
-        const mediaMetadata = {
+        const mediaMetadata: Record<string, unknown> = {
           media_type: type,
           media_id: uploadResult.id,
           media_url: uploadResult.url,
-          thumbnail_url: uploadResult.thumbnail_url || uploadResult.url,
+          thumbnail_url: posterUpload
+            ? posterUpload.url
+            : uploadResult.thumbnail_url || uploadResult.url,
           filename: uploadResult.filename || finalFilename,
           mime_type: uploadResult.mime_type || finalMimeType,
           size: uploadResult.size,
           duration: resolvedDuration,
         };
+        // WHISPR-fix-video-preview-hevc-ios : si on a réussi à uploader un
+        // poster séparé, on attache son id et (en E2EE) sa clé/nonce. Le
+        // récepteur s'en sert pour rendre une <Image> au lieu de tenter
+        // <Video> sur le blob déchiffré.
+        if (posterUpload) {
+          mediaMetadata.thumbnail_id = posterUpload.id;
+          if (posterUpload.key && posterUpload.nonce) {
+            mediaMetadata.thumbnail_key = posterUpload.key;
+            mediaMetadata.thumbnail_nonce = posterUpload.nonce;
+          }
+        }
 
         // Update optimistic message with remote URLs so preview uses the hosted image
         setMessages((prev) =>
@@ -2241,6 +2353,14 @@ export const ChatScreen: React.FC = () => {
                 caption: messageContent,
                 media_key: e2eeMediaMeta.key,
                 media_nonce: e2eeMediaMeta.nonce,
+                // WHISPR-fix-video-preview-hevc-ios : la clé/nonce du poster
+                // doivent transiter chiffrées (jamais en clair côté serveur).
+                ...(posterUpload?.key && posterUpload?.nonce
+                  ? {
+                      thumbnail_key: posterUpload.key,
+                      thumbnail_nonce: posterUpload.nonce,
+                    }
+                  : {}),
               });
               const enc = await E2EEService.encryptMessageForConversation({
                 conversationId,

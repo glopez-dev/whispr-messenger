@@ -284,6 +284,21 @@ function membersFromConversationPayload(conv: any): RawConversationMember[] {
   return conv.members as RawConversationMember[];
 }
 
+async function resolveUserServiceGroupId(
+  conversationId: string,
+  headers: Record<string, string>,
+  externalGroupId?: string | null,
+): Promise<string | null> {
+  if (externalGroupId) return externalGroupId;
+  const res = await fetch(
+    `${API_BASE_URL}/groups/by-conversation/${encodeURIComponent(conversationId)}`,
+    { headers },
+  ).catch(() => null);
+  if (!res?.ok) return null;
+  const group = await res.json().catch(() => null);
+  return group?.id ?? null;
+}
+
 const DEFAULT_GROUP_SETTINGS: GroupSettings = {
   message_permission: "all_members",
   media_permission: "all_members",
@@ -800,16 +815,35 @@ export const groupsAPI = {
 
   async getGroupLogs(
     groupId: string,
-    params?: { page?: number; limit?: number; actionType?: string },
+    params?: {
+      page?: number;
+      limit?: number;
+      actionType?: string;
+      conversationId?: string;
+    },
   ): Promise<{ logs: GroupLog[]; total: number }> {
     const headers = await getAuthHeaders();
+    let resolvedGroupId = groupId;
+    if (params?.conversationId) {
+      const conv = await fetchMessagingConversationPayload(
+        params.conversationId,
+        headers,
+      );
+      const externalId = conv?.externalGroupId || conv?.external_group_id;
+      resolvedGroupId =
+        (await resolveUserServiceGroupId(
+          params.conversationId,
+          headers,
+          externalId,
+        )) || groupId;
+    }
     const query = new URLSearchParams();
     if (params?.page) query.set("page", String(params.page));
     if (params?.limit) query.set("limit", String(params.limit));
     if (params?.actionType) query.set("actionType", params.actionType);
     const qs = query.toString();
     const res = await fetch(
-      `${API_BASE_URL}/groups/${encodeURIComponent(groupId)}/logs${qs ? `?${qs}` : ""}`,
+      `${API_BASE_URL}/groups/${encodeURIComponent(resolvedGroupId)}/logs${qs ? `?${qs}` : ""}`,
       { headers },
     );
     if (!res.ok) {
@@ -828,8 +862,15 @@ export const groupsAPI = {
     const headers = await getAuthHeaders();
     const convId = params?.conversationId || groupId;
     const conv = await fetchMessagingConversationPayload(convId, headers);
-    const userServiceGroupId =
-      conv?.externalGroupId || conv?.external_group_id || groupId;
+    const externalId = conv?.externalGroupId || conv?.external_group_id;
+    const userServiceGroupId = await resolveUserServiceGroupId(
+      convId,
+      headers,
+      externalId,
+    );
+    if (!userServiceGroupId) {
+      return extractGroupSettingsFromConversation(conv);
+    }
     const res = await fetch(
       `${API_BASE_URL}/groups/${encodeURIComponent(userServiceGroupId)}/settings`,
       { headers },
@@ -848,8 +889,37 @@ export const groupsAPI = {
     const headers = await getAuthHeaders();
     const convId = params?.conversationId || groupId;
     const conv = await fetchMessagingConversationPayload(convId, headers);
-    const userServiceGroupId =
-      conv?.externalGroupId || conv?.external_group_id || groupId;
+    const externalId = conv?.externalGroupId || conv?.external_group_id;
+    const userServiceGroupId = await resolveUserServiceGroupId(
+      convId,
+      headers,
+      externalId,
+    );
+    if (!userServiceGroupId) {
+      const currentMeta =
+        conv?.metadata && typeof conv.metadata === "object"
+          ? (conv.metadata as Record<string, unknown>)
+          : {};
+      const currentSettings = extractGroupSettingsFromConversation(conv);
+      const nextSettings: GroupSettings = { ...currentSettings, ...updates };
+      const res = await fetch(
+        `${MESSAGING_API_URL}/conversations/${encodeURIComponent(convId)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...headers },
+          body: JSON.stringify({
+            metadata: { ...currentMeta, group_settings: nextSettings },
+          }),
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(
+          `Impossible de mettre a jour les parametres (${res.status})${text ? `: ${text}` : ""}`,
+        );
+      }
+      return nextSettings;
+    }
     const res = await fetch(
       `${API_BASE_URL}/groups/${encodeURIComponent(userServiceGroupId)}/settings`,
       {
