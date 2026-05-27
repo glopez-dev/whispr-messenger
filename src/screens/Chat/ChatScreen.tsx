@@ -1351,6 +1351,7 @@ export const ChatScreen: React.FC = () => {
             ) // Include all message types
             .map(async (msg) => {
               let displayContent = msg.content;
+              let e2eeMetadata: Record<string, unknown> = {};
               if (
                 typeof msg.content === "string" &&
                 E2EEService.isEncryptedPayload(msg.content)
@@ -1359,8 +1360,27 @@ export const ChatScreen: React.FC = () => {
                   conversationId,
                   content: msg.content,
                 });
-                displayContent =
-                  decrypted === null ? "Message chiffré" : decrypted;
+                if (decrypted === null) {
+                  displayContent = "Message chiffré";
+                } else if (msg.message_type === "media") {
+                  try {
+                    const parsed = JSON.parse(decrypted);
+                    if (parsed.media_key && parsed.media_nonce) {
+                      displayContent = parsed.caption || "";
+                      e2eeMetadata = {
+                        media_key: parsed.media_key,
+                        media_nonce: parsed.media_nonce,
+                        e2ee: true,
+                      };
+                    } else {
+                      displayContent = decrypted;
+                    }
+                  } catch {
+                    displayContent = decrypted;
+                  }
+                } else {
+                  displayContent = decrypted;
+                }
               }
               // WHISPR-1074: the backend may ship the enriched shape
               // (delivery_statuses + status). Widen once instead of
@@ -1406,6 +1426,7 @@ export const ChatScreen: React.FC = () => {
               return {
                 ...msg,
                 content: displayContent,
+                metadata: { ...(msg.metadata || {}), ...e2eeMetadata },
                 status,
                 reactions,
                 attachments,
