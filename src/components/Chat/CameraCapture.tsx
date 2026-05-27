@@ -24,7 +24,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -160,6 +159,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
         return false;
       }
       if (needsMic) {
+        const { Audio } = require("expo-av");
         const micPerm = await Audio.requestPermissionsAsync();
         if (micPerm.status !== "granted") {
           Alert.alert(
