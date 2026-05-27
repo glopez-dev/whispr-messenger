@@ -45,7 +45,12 @@ interface UseWebSocketOptions {
   onConversationSummaries?: (conversations: Conversation[]) => void;
   onConversationArchived?: (conversationId: string, archived: boolean) => void;
   onTyping?: (userId: string, typing: boolean) => void;
-  onDeliveryStatus?: (messageId: string, status: string) => void;
+  onDeliveryStatus?: (
+    messageId: string,
+    status: string,
+    userId?: string,
+    readAt?: string,
+  ) => void;
   onContactRequest?: (request: any) => void;
   onPresenceUpdate?: (userId: string, isOnline: boolean) => void;
   onReactionAdded?: (payload: ReactionRealtimePayload) => void;
@@ -107,12 +112,22 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
         const msg = (data?.message ?? data) as Message;
         if (msg?.id) callbacksRef.current.onNewMessage?.(msg);
       },
-      onDelivery: (data: { message_id: string; status: string }) => {
+      onDelivery: (data: {
+        message_id: string;
+        status: string;
+        user_id?: string;
+        read_at?: string;
+      }) => {
         // symetrie punitive : si l user a desactive ses accuses, il ne doit
         // pas voir non plus les accuses des autres. Les statuts sent /
         // delivered passent toujours, seul "read" est filtre.
         if (data.status === "read" && !getReadReceiptsEnabled()) return;
-        callbacksRef.current.onDeliveryStatus?.(data.message_id, data.status);
+        callbacksRef.current.onDeliveryStatus?.(
+          data.message_id,
+          data.status,
+          data.user_id,
+          data.read_at,
+        );
       },
       // message_unread : symetrique de message_read, emis quand un destinataire
       // a appuye sur "Marquer comme non-lu". Le backend revert le delivery_status
@@ -336,10 +351,20 @@ export const useWebSocket = (options: UseWebSocketOptions) => {
         callbacksRef.current.onMessageDeleted?.(messageId, true);
       }
     };
-    const onDelivery = (data: { message_id: string; status: string }) => {
+    const onDelivery = (data: {
+      message_id: string;
+      status: string;
+      user_id?: string;
+      read_at?: string;
+    }) => {
       // cf. user channel : on filtre "read" quand l user a coupe ses accuses
       if (data.status === "read" && !getReadReceiptsEnabled()) return;
-      callbacksRef.current.onDeliveryStatus?.(data.message_id, data.status);
+      callbacksRef.current.onDeliveryStatus?.(
+        data.message_id,
+        data.status,
+        data.user_id,
+        data.read_at,
+      );
     };
     const onPresenceDiff = (data: {
       joins?: Record<string, any>;

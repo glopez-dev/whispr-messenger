@@ -360,7 +360,12 @@ describe("useWebSocket — joinConversationChannel handlers", () => {
       message_id: "m1",
       status: "delivered",
     });
-    expect(onDeliveryStatus).toHaveBeenCalledWith("m1", "delivered");
+    expect(onDeliveryStatus).toHaveBeenCalledWith(
+      "m1",
+      "delivered",
+      undefined,
+      undefined,
+    );
 
     getConvHandler("presence_diff")({
       joins: { "u-3": {} },
@@ -477,7 +482,12 @@ describe("useWebSocket — joinConversationChannel handlers", () => {
     getConvHandler("delivery_status")({ message_id: "m2", status: "sent" });
 
     expect(onDeliveryStatus).toHaveBeenCalledTimes(1);
-    expect(onDeliveryStatus).toHaveBeenCalledWith("m2", "sent");
+    expect(onDeliveryStatus).toHaveBeenCalledWith(
+      "m2",
+      "sent",
+      undefined,
+      undefined,
+    );
   });
 });
 
