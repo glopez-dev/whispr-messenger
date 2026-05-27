@@ -149,6 +149,21 @@ Example:
 fix(chat): scroll to bottom on new message received
 ```
 
+### Semantic version bump
+
+`.github/workflows/release.yml` runs on every push to `main` and bumps the
+version tag based on the commits since the last `v*` tag (merge commits
+excluded, matching is case-insensitive):
+
+| Commit pattern | Bump |
+|---|---|
+| `<type>!:` / `<type>(scope)!:` (trailing `!`) or `BREAKING CHANGE` / `BREAKING-CHANGE` in the subject | **major** |
+| `feat:` / `feat(scope):` | **minor** |
+| Anything else (`fix`, `chore`, `docs`, `refactor`, `test`, …) | **patch** |
+
+If any commit in the range matches `major`, the bump is major; otherwise if
+any matches `minor`, the bump is minor; otherwise patch.
+
 ---
 
 ## 7. Push
