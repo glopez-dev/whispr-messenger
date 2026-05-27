@@ -1,4 +1,4 @@
-import { Conversation, Message, PinnedMessage } from "../../types/messaging";
+import { Conversation, Message } from "../../types/messaging";
 import { TokenService } from "../TokenService";
 import { getApiBaseUrl } from "../apiBase";
 import { snakecaseKeys } from "../../utils/caseTransform";
@@ -17,6 +17,9 @@ import {
   unwrap,
   type ApiError,
 } from "./http";
+import { attachmentsAPI } from "./attachments";
+import { pinsAPI } from "./pins";
+import { reactionsAPI } from "./reactions";
 
 export { mapBackendAttachment } from "./http";
 export type { ApiError } from "./http";
@@ -104,6 +107,10 @@ function normalizeRawUserInfo(user: any): CachedUserInfo | null {
 }
 
 export const messagingAPI = {
+  ...reactionsAPI,
+  ...pinsAPI,
+  ...attachmentsAPI,
+
   async getConversations(params?: {
     include_archived?: boolean;
     limit?: number;
@@ -440,155 +447,6 @@ export const messagingAPI = {
 
     if (!response.ok) {
       throw httpError("Failed to delete message", response);
-    }
-  },
-
-  async addReaction(
-    messageId: string,
-    userId: string,
-    reaction: string,
-  ): Promise<void> {
-    const response = await authenticatedFetch(
-      `${API_BASE_URL}/messages/${encodeURIComponent(messageId)}/reactions`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: userId,
-          reaction,
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      const msg =
-        (body as { message?: string; error?: string })?.message ||
-        (body as { error?: string })?.error ||
-        `HTTP ${response.status}`;
-      const err = new Error(msg) as Error & { status: number; body: unknown };
-      err.status = response.status;
-      err.body = body;
-      throw err;
-    }
-  },
-
-  async removeReaction(
-    messageId: string,
-    userId: string,
-    reaction: string,
-  ): Promise<void> {
-    const url = `${API_BASE_URL}/messages/${encodeURIComponent(
-      messageId,
-    )}/reactions/${encodeURIComponent(reaction)}?user_id=${encodeURIComponent(userId)}`;
-
-    const response = await authenticatedFetch(url, { method: "DELETE" });
-
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      const msg =
-        (body as { message?: string; error?: string })?.message ||
-        (body as { error?: string })?.error ||
-        `HTTP ${response.status}`;
-      const err = new Error(msg) as Error & { status: number; body: unknown };
-      err.status = response.status;
-      err.body = body;
-      throw err;
-    }
-  },
-
-  async getMessageReactions(messageId: string) {
-    const response = await authenticatedFetch(
-      `${API_BASE_URL}/messages/${encodeURIComponent(messageId)}/reactions`,
-    );
-
-    if (!response.ok) {
-      // Back ou routes pas encore alignés — pas de réactions affichées
-      if (response.status === 404 || response.status === 400) {
-        return { reactions: [] };
-      }
-      throw httpError("Failed to fetch message reactions", response);
-    }
-
-    return unwrap(response);
-  },
-
-  async pinMessage(conversationId: string, messageId: string): Promise<void> {
-    const response = await authenticatedFetch(
-      `${API_BASE_URL}/messages/${encodeURIComponent(messageId)}/pin`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversation_id: conversationId,
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      throw httpError("Failed to pin message", response);
-    }
-  },
-
-  async unpinMessage(conversationId: string, messageId: string): Promise<void> {
-    const url = `${API_BASE_URL}/messages/${encodeURIComponent(
-      messageId,
-    )}/pin?conversation_id=${encodeURIComponent(conversationId)}`;
-
-    const response = await authenticatedFetch(url, { method: "DELETE" });
-
-    if (!response.ok) {
-      throw httpError("Failed to unpin message", response);
-    }
-  },
-
-  async getPinnedMessages(conversationId: string): Promise<PinnedMessage[]> {
-    const response = await authenticatedFetch(
-      `${API_BASE_URL}/conversations/${encodeURIComponent(conversationId)}/pins`,
-    );
-
-    if (!response.ok) {
-      // Endpoint may not exist yet (404) — return empty array gracefully
-      if (response.status === 404) {
-        return [];
-      }
-      throw httpError("Failed to fetch pinned messages", response);
-    }
-
-    const data = await unwrap(response);
-    return Array.isArray(data) ? (data as PinnedMessage[]) : [];
-  },
-
-  async getAttachments(messageId: string) {
-    const response = await authenticatedFetch(
-      `${API_BASE_URL}/messages/${encodeURIComponent(messageId)}/attachments`,
-    );
-
-    if (!response.ok) {
-      // Endpoint may not exist yet (404) — return empty array gracefully
-      if (response.status === 404) {
-        return [];
-      }
-      throw httpError("Failed to fetch attachments", response);
-    }
-
-    const data = await unwrap(response);
-    const raw = Array.isArray(data) ? data : [];
-    return raw.map((att: any) => mapBackendAttachment(att, messageId));
-  },
-
-  async addAttachment(messageId: string, attachment: any): Promise<void> {
-    const response = await authenticatedFetch(
-      `${API_BASE_URL}/messages/${encodeURIComponent(messageId)}/attachments`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(attachment),
-      },
-    );
-
-    if (!response.ok) {
-      throw httpError("Failed to add attachment", response);
     }
   },
 
