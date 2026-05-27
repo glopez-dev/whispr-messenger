@@ -190,12 +190,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       // l'appareil photo (HEIC sur iOS si "Haute efficacité" est actif).
       // Imposer une qualité re-encoderait systématiquement en JPEG.
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["images"],
         allowsEditing: false,
-        cameraType:
-          cameraType === "front"
-            ? ImagePicker.CameraType.front
-            : ImagePicker.CameraType.back,
+        cameraType: cameraType === "front" ? "front" : "back",
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
@@ -244,13 +241,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       );
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        mediaTypes: ["videos"],
         allowsEditing: false,
         quality: 0.9,
-        cameraType:
-          cameraType === "front"
-            ? ImagePicker.CameraType.front
-            : ImagePicker.CameraType.back,
+        cameraType: cameraType === "front" ? "front" : "back",
         videoMaxDuration: 60,
       });
 
