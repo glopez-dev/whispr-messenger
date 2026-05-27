@@ -78,6 +78,11 @@ function buildMessageBody(message: Message): string {
     return "Message chiffré";
   }
 
+  // les pieces jointes E2EE arrivent avec un envelope JSON dans content, ne pas le leak
+  if (message.message_type === "media" && isE2EEEnvelopeV1(message.content)) {
+    return "Pièce jointe chiffrée";
+  }
+
   const text = compactWhitespace(message.content);
   const linkPreview = normalizeLinkPreview(
     ((message.metadata ?? {}) as { link_preview?: Record<string, unknown> })
