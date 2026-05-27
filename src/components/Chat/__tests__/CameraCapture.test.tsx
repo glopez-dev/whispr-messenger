@@ -51,6 +51,7 @@ jest.mock("expo-haptics", () => ({
 }));
 
 const mockRequestCameraPerm = jest.fn();
+const mockRequestMicPerm = jest.fn();
 const mockLaunchCamera = jest.fn();
 jest.mock("expo-image-picker", () => ({
   requestCameraPermissionsAsync: (...args: unknown[]) =>
@@ -59,6 +60,24 @@ jest.mock("expo-image-picker", () => ({
   MediaTypeOptions: { Images: "Images", Videos: "Videos" },
   CameraType: { front: "front", back: "back" },
 }));
+
+jest.mock(
+  "expo-av",
+  () => {
+    const RN = require("react-native");
+    const R = require("react");
+    return {
+      Audio: {
+        requestPermissionsAsync: (...args: unknown[]) =>
+          mockRequestMicPerm(...args),
+      },
+      Video: (props: any) =>
+        R.createElement(RN.View, { ...props, testID: "camera-video-preview" }),
+      ResizeMode: { COVER: "cover", CONTAIN: "contain" },
+    };
+  },
+  { virtual: true },
+);
 
 jest.mock("../../../context/ThemeContext", () => ({
   useTheme: () => ({
@@ -81,6 +100,7 @@ let alertSpy: jest.SpyInstance;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockRequestMicPerm.mockResolvedValue({ status: "granted" });
   alertSpy = jest.spyOn(Alert, "alert").mockImplementation(() => {});
   jest.spyOn(console, "error").mockImplementation(() => {});
   jest.spyOn(console, "warn").mockImplementation(() => {});
@@ -137,8 +157,8 @@ describe("CameraCapture — permissions", () => {
     await flushAsync();
 
     expect(alertSpy).toHaveBeenCalledWith(
-      "Erreur",
-      expect.stringMatching(/permission/i),
+      "Permission requise",
+      expect.stringMatching(/caméra/i),
     );
     expect(mockLaunchCamera).not.toHaveBeenCalled();
   });
@@ -250,26 +270,43 @@ describe("CameraCapture — photo capture", () => {
 });
 
 describe("CameraCapture — video capture", () => {
-  it("captures a video and shows the video preview state", async () => {
+  it("captures a video, requests mic permission, and shows the video player", async () => {
     mockRequestCameraPerm.mockResolvedValue({ status: "granted" });
+    mockRequestMicPerm.mockResolvedValue({ status: "granted" });
     mockLaunchCamera.mockResolvedValue({
       canceled: false,
       assets: [{ uri: "file:///mock/clip.mp4" }],
     });
     const onCapture = jest.fn();
-    const { getByText } = render(
+    const { getByText, getByTestId } = render(
       <CameraCapture {...defaultProps} onCapture={onCapture} />,
     );
 
     fireEvent.press(getByText("Vidéo"));
     await flushAsync();
 
-    expect(getByText("Vidéo capturée")).toBeTruthy();
+    expect(mockRequestMicPerm).toHaveBeenCalled();
+    expect(getByTestId("camera-video-preview")).toBeTruthy();
     fireEvent.press(getByText("Envoyer"));
 
     expect(onCapture).toHaveBeenCalledWith(
       expect.objectContaining({ uri: "file:///mock/clip.mp4", type: "video" }),
     );
+  });
+
+  it("alerts and aborts when microphone permission is denied", async () => {
+    mockRequestCameraPerm.mockResolvedValue({ status: "granted" });
+    mockRequestMicPerm.mockResolvedValue({ status: "denied" });
+    const { getByText } = render(<CameraCapture {...defaultProps} />);
+
+    fireEvent.press(getByText("Vidéo"));
+    await flushAsync();
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Permission requise",
+      expect.stringMatching(/microphone/i),
+    );
+    expect(mockLaunchCamera).not.toHaveBeenCalled();
   });
 
   it("alerts when video capture throws", async () => {
