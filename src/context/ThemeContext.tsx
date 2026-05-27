@@ -74,6 +74,12 @@ interface ThemeContextType {
   getFontSize: (
     size: "xs" | "sm" | "base" | "lg" | "xl" | "xxl" | "xxxl",
   ) => number;
+  /**
+   * @deprecated Prefer `useI18n().t` from `src/i18n/useI18n`. Translation
+   * lookups do not need to flow through the theme context; this field is
+   * kept for backward compatibility with existing call sites and will be
+   * removed once those are migrated.
+   */
   getLocalizedText: (key: string) => string;
 }
 
