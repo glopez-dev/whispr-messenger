@@ -1503,6 +1503,9 @@ export const ChatScreen: React.FC = () => {
               const sameStatus = cached.status === api.status;
               const sameEdited = cached.edited_at === api.edited_at;
               const sameDeleted = cached.is_deleted === api.is_deleted;
+              const sameMessageType = cached.message_type === api.message_type;
+              const sameForwarded =
+                cached.forwarded_from_id === api.forwarded_from_id;
               const cachedMeta = cached.metadata as
                 | Record<string, any>
                 | undefined;
@@ -1511,7 +1514,14 @@ export const ChatScreen: React.FC = () => {
                 cachedMeta?.media_url === apiMeta?.media_url &&
                 cachedMeta?.blockedByModeration ===
                   apiMeta?.blockedByModeration &&
-                cachedMeta?.appealRejected === apiMeta?.appealRejected;
+                cachedMeta?.appealRejected === apiMeta?.appealRejected &&
+                cachedMeta?.forwarded === apiMeta?.forwarded &&
+                cachedMeta?.media_key === apiMeta?.media_key &&
+                cachedMeta?.media_nonce === apiMeta?.media_nonce &&
+                cachedMeta?.e2ee === apiMeta?.e2ee &&
+                (cachedMeta?.link_preview as { url?: string } | undefined)
+                  ?.url ===
+                  (apiMeta?.link_preview as { url?: string } | undefined)?.url;
               // `undefined` and `[]` are semantically the same here: the
               // preload writes messages without reactions/attachments, so the
               // cache may store `undefined` while the API normalizes to `[]`.
@@ -1520,13 +1530,25 @@ export const ChatScreen: React.FC = () => {
               const sameReactions =
                 JSON.stringify(cachedReactions) ===
                 JSON.stringify(apiReactions);
+              // Same approach for attachments — compare structurally rather
+              // than by reference because the API always builds new objects.
+              // Catches "attachments arrived from the API but were missing
+              // from the preload-served cache entry".
+              const cachedAttachments = cached.attachments ?? [];
+              const apiAttachments = api.attachments ?? [];
+              const sameAttachments =
+                JSON.stringify(cachedAttachments) ===
+                JSON.stringify(apiAttachments);
               if (
                 sameContent &&
                 sameStatus &&
                 sameEdited &&
                 sameDeleted &&
+                sameMessageType &&
+                sameForwarded &&
                 sameMeta &&
-                sameReactions
+                sameReactions &&
+                sameAttachments
               ) {
                 return cached;
               }

@@ -2,6 +2,7 @@ import { TokenService } from "./TokenService";
 import { DeviceService } from "./DeviceService";
 import { SignalKeyService } from "./SignalKeyService";
 import { E2EEService } from "./E2EEService";
+import { cacheService } from "./messaging/cache";
 import { getApiBaseUrl } from "./apiBase";
 import { emitSessionExpired } from "./sessionEvents";
 import { logger } from "../utils/logger";
@@ -313,6 +314,11 @@ export const AuthService = {
     E2EEService.resetIdentityCache();
     E2EEService.resetPlaintextCache();
     await E2EEService.resetDecryptedMediaCache();
+    // Wipe the in-memory message mirror — AsyncStorage gets cleared by
+    // AppResetService but the process-lifetime Map would otherwise let a
+    // subsequent login on the same device read the previous account's
+    // plaintext messages.
+    await cacheService.clearAllMessages();
   },
 
   async validateSession(): Promise<{

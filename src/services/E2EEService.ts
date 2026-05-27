@@ -14,6 +14,7 @@ import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import { TokenService } from "./TokenService";
 import { SignalKeysService } from "./SecurityService";
+import { logger } from "../utils/logger";
 
 nacl.setPRNG((x: Uint8Array, n: number) => {
   const bytes = getRandomBytes(n);
@@ -304,12 +305,43 @@ export const E2EEService = {
    * Wipe the decrypted-media cache (memory + disk). Must be called on logout
    * so plaintext bytes from the previous account do not survive a session
    * change. Idempotent — safe to call even when no media has been decrypted.
+   *
+   * On web, the cache values are `blob:` object URLs that hold a reference
+   * to the decrypted bytes in browser memory until explicitly revoked.
+   * Clearing the Map alone would leak them; we revoke each one first.
+   * On native, the cache values are file paths and the bytes live on disk.
    */
   async resetDecryptedMediaCache(): Promise<void> {
+    if (
+      Platform.OS === "web" &&
+      typeof URL !== "undefined" &&
+      typeof URL.revokeObjectURL === "function"
+    ) {
+      for (const value of DECRYPTED_MEDIA_MEMORY.values()) {
+        if (value.startsWith("blob:")) {
+          try {
+            URL.revokeObjectURL(value);
+          } catch {
+            // ignore — best-effort revoke
+          }
+        }
+      }
+    }
     DECRYPTED_MEDIA_MEMORY.clear();
-    await FileSystem.deleteAsync(DECRYPTED_MEDIA_DIR, {
-      idempotent: true,
-    }).catch(() => {});
+    try {
+      await FileSystem.deleteAsync(DECRYPTED_MEDIA_DIR, {
+        idempotent: true,
+      });
+    } catch (error) {
+      // Surface the failure: leaving plaintext media on disk after logout
+      // is a security concern, even if the next decryptMediaFile call will
+      // overwrite individual files.
+      logger.warn(
+        "E2EEService",
+        "Failed to delete decrypted-media cache directory",
+        error,
+      );
+    }
   },
 
   isEncryptedPayload(content: string): boolean {
