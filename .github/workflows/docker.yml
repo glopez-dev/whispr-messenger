@@ -58,7 +58,6 @@ jobs:
             type=sha,format=long
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=deploy-preprod,enable=${{ github.ref == 'refs/heads/deploy/preprod' }}
           labels: |
             org.opencontainers.image.title=Whispr Mobile Web
             org.opencontainers.image.description=Whispr frontend (Expo web build)
@@ -72,7 +71,7 @@ jobs:
           GITHUB_REF: ${{ github.ref }}
         run: |
           REF="${INPUT_REF:-$GITHUB_REF}"
-          if [[ "$REF" == *"deploy/preprod"* ]]; then
+          if [[ "$REF" == *"main"* ]]; then
             echo "url=https://whispr.devzeyu.com" >> $GITHUB_OUTPUT
           else
             echo "::error::No production API URL configured for ref $REF — refusing to bake an old hardcoded domain into the image."

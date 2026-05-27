@@ -4,13 +4,12 @@ on:
   pull_request:
     branches:
       - main
-      - deploy/preprod
     paths-ignore:
       - "**.md"
       - "documentation/**"
   push:
     branches:
-      - deploy/preprod
+      - main
     paths-ignore:
       - "**.md"
       - "documentation/**"

@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: ["🚀 CI Pipeline"]
     types: [completed]
-    branches: [main, deploy/preprod]
+    branches: [main]
   workflow_dispatch:
     inputs:
       commit_sha:
@@ -122,11 +122,7 @@ jobs:
           TRIGGER_BRANCH: ${{ github.event.workflow_run.head_branch || 'main' }}
         run: |
           echo "trigger_branch=${TRIGGER_BRANCH}" >> $GITHUB_OUTPUT
-          if [ "$TRIGGER_BRANCH" = "main" ]; then
-            echo "infra_branch=main" >> $GITHUB_OUTPUT
-          else
-            echo "infra_branch=deploy/preprod" >> $GITHUB_OUTPUT
-          fi
+          echo "infra_branch=main" >> $GITHUB_OUTPUT
 
       - name: Checkout infrastructure repository
         uses: actions/checkout@v5

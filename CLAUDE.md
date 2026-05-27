@@ -1,4 +1,4 @@
-# AI Agent Workflow — whispr-messenger/mobile-app
+# AI Agent Workflow — glopez-dev/whispr-messenger
 
 This document describes the full development workflow an AI agent must follow
 when picking up and completing a Jira ticket for this repository.
@@ -8,8 +8,8 @@ when picking up and completing a Jira ticket for this repository.
 ## 0. Prerequisites
 
 - Jira cloud ID: fetch at runtime via `mcp__atlassian__getAccessibleAtlassianResources` (select the resource whose `name` matches the Jira site)
-- GitHub org/repo: `whispr-messenger/mobile-app`
-- Default base branch: `deploy/preprod`
+- GitHub org/repo: `glopez-dev/whispr-messenger`
+- Default base branch: `main`
 - Node package manager: `npm`
 
 ---
@@ -27,8 +27,8 @@ when picking up and completing a Jira ticket for this repository.
 ## 2. Prepare the branch
 
 ```bash
-git checkout deploy/preprod
-git pull origin deploy/preprod
+git checkout main
+git pull origin main
 git checkout -b <TICKET-KEY>-<short-kebab-description>
 ```
 
@@ -160,7 +160,7 @@ git push -u origin <branch-name>
 After every push, request a Copilot review on the pull request:
 
 ```bash
-gh api repos/whispr-messenger/mobile-app/pulls/<PR-number>/requested_reviewers \
+gh api repos/glopez-dev/whispr-messenger/pulls/<PR-number>/requested_reviewers \
   --method POST -f 'reviewers[]=copilot'
 ```
 
@@ -172,11 +172,11 @@ Use `mcp__github__create_pull_request`:
 
 ```json
 {
-  "owner": "whispr-messenger",
-  "repo": "mobile-app",
+  "owner": "glopez-dev",
+  "repo": "whispr-messenger",
   "title": "<same as commit title>",
   "head": "<branch-name>",
-  "base": "deploy/preprod",
+  "base": "main",
   "body": "## Summary\n- bullet 1\n- bullet 2\n\n## Test plan\n- [ ] Unit tests green\n- [ ] Lint clean\n- [ ] Tested on iOS simulator\n- [ ] Tested on Android emulator\n\nCloses <TICKET-KEY>"
 }
 ```
@@ -184,7 +184,7 @@ Use `mcp__github__create_pull_request`:
 After creation, check CI with:
 
 ```bash
-gh pr checks <PR-number> --repo whispr-messenger/mobile-app
+gh pr checks <PR-number> --repo glopez-dev/whispr-messenger
 ```
 
 Fix any failing checks before merging.
@@ -197,8 +197,8 @@ Once all CI checks are green, use `mcp__github__merge_pull_request`:
 
 ```json
 {
-  "owner": "whispr-messenger",
-  "repo": "mobile-app",
+  "owner": "glopez-dev",
+  "repo": "whispr-messenger",
   "pullNumber": <number>,
   "merge_method": "merge"
 }
@@ -215,11 +215,11 @@ Use `mcp__atlassian__transitionJiraIssue` with the transition whose `name` is
 
 ---
 
-## 11. Return to deploy/preprod
+## 11. Return to main
 
 ```bash
-git checkout deploy/preprod
-git pull origin deploy/preprod
+git checkout main
+git pull origin main
 ```
 
 ---

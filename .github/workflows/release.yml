@@ -1,8 +1,7 @@
 name: 🏷️ Release
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
 
 permissions:
@@ -11,7 +10,6 @@ permissions:
 jobs:
   release:
     name: 🚀 Create Release
-    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref == 'deploy/preprod'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
