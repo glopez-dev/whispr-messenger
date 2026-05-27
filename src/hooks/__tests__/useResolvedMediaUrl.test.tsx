@@ -275,11 +275,16 @@ describe("useResolvedMediaUrl — auth-resolved native path", () => {
     const { result, unmount } = renderHook(() =>
       useResolvedMediaUrl("https://api/media/v1/long/blob"),
     );
+    // Tick microtasks once so the disk-cache check resolves and we reach
+    // the downloadAsync call we've stubbed with a never-settling promise.
+    await act(async () => {
+      await Promise.resolve();
+    });
     act(() => unmount());
     // Now resolve the download — the hook should ignore the result.
     resolveDownload?.({ headers: { "Content-Type": "image/jpeg" } });
-    // Tick microtasks
     await act(async () => {
+      await Promise.resolve();
       await Promise.resolve();
     });
     expect(result.current.error).toBe(false);

@@ -83,6 +83,7 @@ import type {
 import { prefetchResolvedMediaUris } from "../hooks/useResolvedMediaUrl";
 import { messagingAPI } from "../services/messaging/api";
 import { cacheService } from "../services/messaging/cache";
+import { decryptMessagesForCache } from "./preloadMessagesCache";
 
 /** Durée minimale du splash in-app (ms), en parallèle avec validateSession. */
 const SPLASH_MIN_MS = 2000;
@@ -338,12 +339,7 @@ export const AuthNavigator: React.FC = () => {
             const id = uniqueConversationIds[cursor++];
             try {
               const data = await messagingAPI.getMessages(id, { limit: 30 });
-              const cached = Array.isArray(data)
-                ? data.map((m: any) => ({
-                    ...m,
-                    status: m?.status || "sent",
-                  }))
-                : [];
+              const cached = await decryptMessagesForCache(id, data);
               await cacheService.saveMessages(id, cached as any);
             } catch {}
           }

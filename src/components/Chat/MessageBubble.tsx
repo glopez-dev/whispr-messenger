@@ -236,7 +236,7 @@ interface MessageBubbleProps {
   resolveMemberName?: (userId: string) => string;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   message,
   isSent,
   currentUserId,
@@ -1076,13 +1076,36 @@ const styles = StyleSheet.create({
   },
 });
 
-export default memo(MessageBubble, (prevProps, nextProps) => {
+/**
+ * Memo comparator extracted as a named function so it can be unit-tested
+ * directly without rendering the (heavy) component. Returns true when the
+ * two prop sets are equivalent enough to skip a re-render.
+ */
+export function areMessageBubblePropsEqual(
+  prevProps: MessageBubbleProps,
+  nextProps: MessageBubbleProps,
+): boolean {
+  const prevMeta = prevProps.message.metadata as
+    | Record<string, any>
+    | undefined;
+  const nextMeta = nextProps.message.metadata as
+    | Record<string, any>
+    | undefined;
   return (
     prevProps.message.id === nextProps.message.id &&
     prevProps.message.content === nextProps.message.content &&
     prevProps.message.status === nextProps.message.status &&
     prevProps.message.edited_at === nextProps.message.edited_at &&
     prevProps.message.is_deleted === nextProps.message.is_deleted &&
+    prevProps.message.message_type === nextProps.message.message_type &&
+    prevProps.message.forwarded_from_id ===
+      nextProps.message.forwarded_from_id &&
+    // Reference equality is enough: when the parent rebuilds the message
+    // (new attachments, reply hydrated, etc.) it produces a fresh array/
+    // object via the spread operator. Catches "attachments arrived after
+    // initial load" and "reply_to resolved from a later page".
+    prevProps.message.attachments === nextProps.message.attachments &&
+    prevProps.message.reply_to === nextProps.message.reply_to &&
     prevProps.senderName === nextProps.senderName &&
     prevProps.senderAvatarUrl === nextProps.senderAvatarUrl &&
     prevProps.isConsecutive === nextProps.isConsecutive &&
@@ -1090,12 +1113,20 @@ export default memo(MessageBubble, (prevProps, nextProps) => {
     prevProps.showSenderAvatar === nextProps.showSenderAvatar &&
     prevProps.onReactionDetailsPress === nextProps.onReactionDetailsPress &&
     prevProps.pendingAppeal?.status === nextProps.pendingAppeal?.status &&
-    (prevProps.message.metadata as any)?.blockedByModeration ===
-      (nextProps.message.metadata as any)?.blockedByModeration &&
-    (prevProps.message.metadata as any)?.appealRejected ===
-      (nextProps.message.metadata as any)?.appealRejected &&
-    (prevProps.message.metadata as any)?.media_url ===
-      (nextProps.message.metadata as any)?.media_url &&
+    prevMeta?.blockedByModeration === nextMeta?.blockedByModeration &&
+    prevMeta?.appealRejected === nextMeta?.appealRejected &&
+    prevMeta?.media_url === nextMeta?.media_url &&
+    prevMeta?.forwarded === nextMeta?.forwarded &&
+    // E2EE media keys feed useE2EEMedia inside MediaMessage; if they show
+    // up after the cache served a plaintext placeholder the bubble must
+    // re-render to kick off decryption.
+    prevMeta?.media_key === nextMeta?.media_key &&
+    prevMeta?.media_nonce === nextMeta?.media_nonce &&
+    prevMeta?.e2ee === nextMeta?.e2ee &&
+    // link_preview is hydrated asynchronously by getLinkPreview() — compare
+    // by URL so that a freshly resolved preview triggers a re-render.
+    (prevMeta?.link_preview as { url?: string } | undefined)?.url ===
+      (nextMeta?.link_preview as { url?: string } | undefined)?.url &&
     prevProps.isLastSentByMe === nextProps.isLastSentByMe &&
     prevProps.isGroupConversation === nextProps.isGroupConversation &&
     prevProps.otherMembersCount === nextProps.otherMembersCount &&
@@ -1109,7 +1140,12 @@ export default memo(MessageBubble, (prevProps, nextProps) => {
     JSON.stringify(prevProps.message.reactions) ===
       JSON.stringify(nextProps.message.reactions)
   );
-});
+}
+
+export const MessageBubble = memo(
+  MessageBubbleComponent,
+  areMessageBubblePropsEqual,
+);
 
 function deliveryStatusesEqual(
   a: MessageWithRelations["delivery_statuses"],
