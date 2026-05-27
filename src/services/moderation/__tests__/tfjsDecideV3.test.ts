@@ -18,11 +18,11 @@ function probs(healthy: number, notFood: number, unhealthy: number) {
 
 describe("decideV3FromProbs", () => {
   it("blocks when unhealthy dominates above the default threshold", () => {
-    const r = decideV3FromProbs(probs(0.05, 0.05, 0.9));
+    const r = decideV3FromProbs(probs(0.005, 0.005, 0.99));
     expect(r.allowed).toBe(false);
     expect(r.reason).toBe("BLOCK_TRAINED_CLASS");
     expect(r.bestClass).toBe("unhealthy");
-    expect(r.bestProb).toBeCloseTo(0.9);
+    expect(r.bestProb).toBeCloseTo(0.99);
   });
 
   it("allows when healthy dominates", () => {

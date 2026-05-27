@@ -76,9 +76,9 @@ describe("decideFromProbs", () => {
     expect(r.reason).toBe("OTHER_CLASS");
   });
 
-  it("blocks a junk food class above the default 0.3 threshold", () => {
+  it("blocks a junk food class above a 0.3 threshold", () => {
     const data = probsFor({ Burger: 0.55, Other: 0.1 });
-    const r = decideFromProbs(data);
+    const r = decideFromProbs(data, 0.3);
     expect(r.allowed).toBe(false);
     expect(r.bestClass).toBe("Burger");
     expect(r.reason).toBe("BLOCK_TRAINED_CLASS");
@@ -103,7 +103,7 @@ describe("decideFromProbs", () => {
     const trainedFoodClasses = CLASS_NAMES.filter((c) => c !== "Other");
     for (const cls of trainedFoodClasses) {
       const data = probsFor({ [cls]: 0.5 });
-      const r = decideFromProbs(data);
+      const r = decideFromProbs(data, 0.3);
       expect(r.allowed).toBe(false);
       expect(r.bestClass).toBe(cls);
     }

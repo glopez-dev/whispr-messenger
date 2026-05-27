@@ -14,7 +14,8 @@ import {
 
 export const OTHER_CONFIDENCE_CEILING = 0.85;
 export const SECONDARY_FOOD_THRESHOLD = 0.15;
-export const V3_UNHEALTHY_THRESHOLD_DEFAULT = 0.5;
+export const V2_FOOD_THRESHOLD_DEFAULT = 0.99;
+export const V3_UNHEALTHY_THRESHOLD_DEFAULT = 0.99;
 
 /**
  * V2 decision: 9-class softmax (8 food classes + "Other"), with a runner-up
@@ -22,7 +23,7 @@ export const V3_UNHEALTHY_THRESHOLD_DEFAULT = 0.5;
  */
 export function decideV2FromProbs(
   data: ArrayLike<number>,
-  threshold = 0.3,
+  threshold = V2_FOOD_THRESHOLD_DEFAULT,
 ): GateResult {
   if (data.length !== CLASS_NAMES_V2.length) {
     throw new Error(
