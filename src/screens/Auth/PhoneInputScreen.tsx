@@ -23,7 +23,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { countries, searchCountries, type Country } from "../../data/countries";
 import { AuthService } from "../../services/AuthService";
 import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 import { normalizePhoneToE164 } from "../../utils/phoneUtils";
 import { AuthLanguageSwitcher } from "./AuthLanguageSwitcher";
 

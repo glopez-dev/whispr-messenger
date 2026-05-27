@@ -25,7 +25,7 @@ import { SignalKeysService } from "../../services/SecurityService";
 import { DeviceService } from "../../services/DeviceService";
 import { UserService } from "../../services/UserService";
 import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "Otp">;
 type OtpRouteProp = RouteProp<AuthStackParamList, "Otp">;

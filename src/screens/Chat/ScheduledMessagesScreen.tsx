@@ -25,7 +25,7 @@ import {
   SchedulingService,
   ScheduledMessage,
 } from "../../services/SchedulingService";
-import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { AuthStackParamList } from "../../navigation/types";
 import { logger } from "../../utils/logger";
 
 type ScheduledMessagesRouteProp = StackScreenProps<

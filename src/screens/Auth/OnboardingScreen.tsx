@@ -24,7 +24,7 @@ import Animated, {
   withSequence,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 const { width: W } = Dimensions.get("window");
 const ONBOARDING_KEY = "@whispr:onboarding_done";

@@ -25,7 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 import { Ionicons } from "@expo/vector-icons";
 import QRCodeStyled from "react-native-qrcode-styled";
 import { Circle, Path } from "react-native-svg";

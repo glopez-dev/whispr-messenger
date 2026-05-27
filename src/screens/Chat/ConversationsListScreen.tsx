@@ -66,7 +66,7 @@ import { EmptyState } from "../../components/Chat/EmptyState";
 import { ConversationSkeleton } from "../../components/Chat/SkeletonLoader";
 import { NewConversationModal } from "../../components/Chat/NewConversationModal";
 import { useTheme } from "../../context/ThemeContext";
-import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { AuthStackParamList } from "../../navigation/types";
 import { colors } from "../../theme/colors";
 import Toast from "../../components/Toast/Toast";
 import { useConversationsStore } from "../../store/conversationsStore";

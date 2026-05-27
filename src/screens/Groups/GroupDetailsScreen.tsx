@@ -59,7 +59,7 @@ import {
 import { messagingAPI } from "../../services/messaging/api";
 import { contactsAPI } from "../../services/contacts/api";
 import { Contact } from "../../types/contact";
-import { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { AuthStackParamList } from "../../navigation/types";
 import { useConversationsStore } from "../../store/conversationsStore";
 
 const AnimatedTouchableOpacity =

@@ -25,7 +25,7 @@ import { useMiniProfileCard } from "../../store/miniProfileCardStore";
 import { useAuth } from "../../context/AuthContext";
 import { messagingAPI } from "../../services/messaging/api";
 import { MiniProfileCard } from "./MiniProfileCard";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 export const MiniProfileCardHost: React.FC = () => {
   const { isOpen, currentUserId: viewedUserId, close } = useMiniProfileCard();

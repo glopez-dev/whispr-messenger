@@ -44,7 +44,7 @@ import QRCodeStyled from "react-native-qrcode-styled";
 import { Circle, Path } from "react-native-svg";
 import { TwoFactorService } from "../../services/TwoFactorService";
 import { copyToClipboard } from "../../utils/clipboard";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import type { AuthStackParamList } from "../../navigation/types";
 
 const buildStarPath = (cx: number, cy: number, r: number) =>
   `
