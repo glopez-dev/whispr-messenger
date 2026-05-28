@@ -1,13 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
-import * as FileSystem from "expo-file-system";
-import * as ImageManipulator from "expo-image-manipulator";
-
-// expo-file-system v55 types don't fully match the runtime API — alias to avoid
-// scattering `as any` across every call site.
-const FS = FileSystem as any;
 import type {
   Report,
   UserSanction,
@@ -23,6 +16,12 @@ import {
   rolesAPI,
 } from "../services/moderation/moderationApi";
 import { logger } from "../utils/logger";
+import {
+  buildAppealThumbnailBase64,
+  buildAppealWebDataUri,
+  copyAppealImageToCache,
+  deleteAppealCacheFile,
+} from "./moderationStore/helpers";
 
 export interface PendingBlockedImageAppeal {
   appealId: string;
@@ -232,61 +231,16 @@ export const useModerationStore = create<ModerationState>()(
         blockReason,
         scores,
       }) => {
-        const cacheDir = FS.cacheDirectory as string | undefined;
-        let localPath = imageUri;
-
         try {
-          if (cacheDir) {
-            const dir = `${cacheDir}blocked-appeals`;
-            try {
-              const info = await FS.getInfoAsync(dir);
-              if (!info.exists) {
-                await FS.makeDirectoryAsync(dir, {
-                  intermediates: true,
-                });
-              }
-            } catch {
-              try {
-                await FS.makeDirectoryAsync(dir, {
-                  intermediates: true,
-                });
-              } catch {
-                /* ignore */
-              }
-            }
-
-            const ext = imageUri.split(".").pop()?.split("?")[0] || "jpg";
-            localPath = `${dir}/${messageTempId}.${ext}`;
-            try {
-              await FS.copyAsync({
-                from: imageUri,
-                to: localPath,
-              });
-            } catch (err) {
-              logger.warn(
-                "moderation",
-                "copyAsync failed — keeping original URI",
-                err,
-              );
-              localPath = imageUri;
-            }
-          }
-
-          // Shrink aggressively (150px @ q=0.3) so the base64 payload stays
-          // comfortably under the backend body-size limit even for complex
-          // scenes. Previous 200px @ q=0.5 could exceed 100KB → 413 at the edge.
-          const manipulated = await ImageManipulator.manipulateAsync(
+          const localPath = await copyAppealImageToCache(
             imageUri,
-            [{ resize: { width: 150 } }],
-            {
-              compress: 0.3,
-              format: ImageManipulator.SaveFormat.JPEG,
-              base64: true,
-            },
+            messageTempId,
           );
 
+          const thumbnailBase64 = await buildAppealThumbnailBase64(imageUri);
+
           const evidence: AppealEvidence = {
-            thumbnailBase64: manipulated.base64,
+            thumbnailBase64,
             blockReason,
             scores,
             conversationId,
@@ -301,45 +255,7 @@ export const useModerationStore = create<ModerationState>()(
             evidence,
           });
 
-          // On web, blob: URIs are revoked at logout/reload, so we need a
-          // self-contained copy of the original image. Build a full-size
-          // base64 data URI (resized to a max of 1280px so we stay under a
-          // sensible AsyncStorage budget) that survives the session.
-          let localDataUri: string | undefined;
-          if (Platform.OS === "web") {
-            try {
-              const fullsize = await ImageManipulator.manipulateAsync(
-                imageUri,
-                [{ resize: { width: 1280 } }],
-                {
-                  compress: 0.8,
-                  format: ImageManipulator.SaveFormat.JPEG,
-                  base64: true,
-                },
-              );
-              if (fullsize.base64) {
-                const dataUri = `data:image/jpeg;base64,${fullsize.base64}`;
-                // Cap at ~5MB of base64 text to avoid choking AsyncStorage /
-                // IndexedDB. Above that threshold we give up on auto-retry
-                // and rely on the rejected message label.
-                if (dataUri.length <= 5 * 1024 * 1024) {
-                  localDataUri = dataUri;
-                } else {
-                  logger.warn(
-                    "moderation",
-                    "image too large for web persistence, skipping auto-retry payload",
-                    { size: dataUri.length },
-                  );
-                }
-              }
-            } catch (err) {
-              logger.warn(
-                "moderation",
-                "failed to build web-safe data URI for appeal",
-                err,
-              );
-            }
-          }
+          const localDataUri = await buildAppealWebDataUri(imageUri);
 
           set((state) => ({
             pendingAppeals: {
@@ -362,11 +278,7 @@ export const useModerationStore = create<ModerationState>()(
       cleanupAppeal: async (messageTempId) => {
         const entry = get().pendingAppeals[messageTempId];
         if (entry?.localUri) {
-          try {
-            await FS.deleteAsync(entry.localUri, { idempotent: true });
-          } catch {
-            /* ignore */
-          }
+          await deleteAppealCacheFile(entry.localUri);
         }
         set((state) => {
           const next = { ...state.pendingAppeals };
