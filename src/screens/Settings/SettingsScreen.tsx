@@ -21,7 +21,6 @@ import * as LocalAuthentication from "expo-local-authentication";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { AuthStackParamList } from "../../navigation/types";
@@ -44,6 +43,7 @@ import {
   persistSettingsCategory,
   privacyToApi,
 } from "./helpers/settingsConverters";
+import { SettingItem, SettingSection } from "./components/SettingsRows";
 import { setReadReceiptsEnabled } from "../../services/messaging/readReceiptsPref";
 import { setTypingIndicatorEnabled } from "../../services/messaging/typingIndicatorPref";
 import { SettingsChoiceAlert } from "./SettingsChoiceAlert";
@@ -649,125 +649,6 @@ export const SettingsScreen: React.FC = () => {
       : []),
   ];
 
-  const SettingItem = ({
-    label,
-    subtitle,
-    value,
-    onPress,
-    rightComponent,
-    icon,
-  }: {
-    label: string;
-    subtitle?: string;
-    value?: string;
-    onPress?: () => void;
-    rightComponent?: React.ReactNode;
-    icon?: string;
-  }) => (
-    <TouchableOpacity
-      style={styles.settingItem}
-      onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityRole="button"
-      accessibilityLabel={subtitle ? `${label}. ${subtitle}` : label}
-    >
-      <View style={styles.settingItemLeft}>
-        {icon && (
-          <Ionicons
-            name={icon as any}
-            size={20}
-            color={themeColors.text.secondary}
-            style={styles.settingIcon}
-          />
-        )}
-        <View style={styles.settingTextContainer}>
-          <Text
-            style={[
-              styles.settingLabel,
-              {
-                color: themeColors.text.primary,
-                fontSize: getFontSize("base"),
-              },
-            ]}
-          >
-            {label}
-          </Text>
-          {subtitle && (
-            <Text
-              style={[
-                styles.settingSubtitle,
-                {
-                  color: themeColors.text.secondary,
-                  fontSize: getFontSize("sm"),
-                },
-              ]}
-            >
-              {subtitle}
-            </Text>
-          )}
-          {value && !subtitle && (
-            <Text
-              style={[
-                styles.settingValue,
-                {
-                  color: themeColors.text.secondary,
-                  fontSize: getFontSize("sm"),
-                },
-              ]}
-            >
-              {value}
-            </Text>
-          )}
-        </View>
-      </View>
-      {rightComponent || (
-        <Ionicons
-          name="chevron-forward"
-          size={20}
-          color={themeColors.text.tertiary}
-        />
-      )}
-    </TouchableOpacity>
-  );
-
-  const SettingSection = ({
-    title,
-    icon,
-    children,
-  }: {
-    title: string;
-    icon: string;
-    children: React.ReactNode;
-  }) => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Ionicons
-          name={icon as any}
-          size={20}
-          color={themeColors.text.secondary}
-          style={styles.sectionIcon}
-        />
-        <Text
-          style={[
-            styles.sectionTitle,
-            { color: themeColors.text.primary, fontSize: getFontSize("lg") },
-          ]}
-        >
-          {title}
-        </Text>
-      </View>
-      <View style={styles.sectionShadow}>
-        <BlurView
-          intensity={Platform.OS === "ios" ? 60 : 80}
-          tint="dark"
-          style={styles.sectionContent}
-        >
-          {children}
-        </BlurView>
-      </View>
-    </View>
-  );
-
   // WHISPR-1202 (re-fix WHISPR-1199) : sur React Native Web, height:100% sur
   // le ScrollView ne suffit pas car la chaîne flex au-dessus n'est pas
   // toujours contrainte en pixels. On positionne le ScrollView en absolu
@@ -810,10 +691,14 @@ export const SettingsScreen: React.FC = () => {
       >
         {/* Account Settings */}
         <SettingSection
+          themeColors={themeColors}
+          getFontSize={getFontSize}
           title={getLocalizedText("settings.account")}
           icon="person-outline"
         >
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.myProfile")}
             subtitle={getLocalizedText("settings.myProfileSubtitle")}
             onPress={() => navigation.navigate("MyProfile")}
@@ -826,6 +711,8 @@ export const SettingsScreen: React.FC = () => {
             }
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.logout")}
             subtitle="Se déconnecter de votre compte"
             onPress={handleLogout}
@@ -838,6 +725,8 @@ export const SettingsScreen: React.FC = () => {
             }
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.deleteAccount")}
             subtitle="Fonctionnalité à venir"
             onPress={handleDeleteAccount}
@@ -853,25 +742,35 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Privacy Section */}
         <SettingSection
+          themeColors={themeColors}
+          getFontSize={getFontSize}
           title={getLocalizedText("settings.privacy")}
           icon="shield-outline"
         >
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Photo de profil"
             value={translatePrivacyValue(privacySettings.profilePhoto)}
             onPress={() => handlePrivacyItemPress("profilePhoto")}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Prénom"
             value={translatePrivacyValue(privacySettings.firstName)}
             onPress={() => handlePrivacyItemPress("firstName")}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Nom de famille"
             value={translatePrivacyValue(privacySettings.lastName)}
             onPress={() => handlePrivacyItemPress("lastName")}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Biographie"
             value={translatePrivacyValue(privacySettings.biography)}
             onPress={() => handlePrivacyItemPress("biography")}
@@ -879,16 +778,22 @@ export const SettingsScreen: React.FC = () => {
           {/* WHISPR-1298 : 3 toggles ajoutés (lastSeen, onlineStatus,
               groupAdd) pour couvrir les fields backend orphelins. */}
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Dernière connexion"
             value={translatePrivacyValue(privacySettings.lastSeen)}
             onPress={() => handlePrivacyItemPress("lastSeen")}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Statut en ligne"
             value={translatePrivacyValue(privacySettings.onlineStatus)}
             onPress={() => handlePrivacyItemPress("onlineStatus")}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Permission d'ajout aux groupes"
             value={translatePrivacyValue(privacySettings.groupAdd)}
             onPress={() => handlePrivacyItemPress("groupAdd")}
@@ -897,6 +802,8 @@ export const SettingsScreen: React.FC = () => {
               screen was already registered in AuthNavigator but unreachable
               from the settings UI. */}
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={
               getLocalizedText("settings.blockedUsers") ||
               "Utilisateurs bloqués"
@@ -912,6 +819,8 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Notifications Section */}
         <SettingSection
+          themeColors={themeColors}
+          getFontSize={getFontSize}
           title={getLocalizedText("settings.notifications")}
           icon="notifications-outline"
         >
@@ -1036,6 +945,8 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Messaging Section */}
         <SettingSection
+          themeColors={themeColors}
+          getFontSize={getFontSize}
           title={getLocalizedText("settings.messaging")}
           icon="chatbubbles-outline"
         >
@@ -1121,10 +1032,14 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Application Settings */}
         <SettingSection
+          themeColors={themeColors}
+          getFontSize={getFontSize}
           title={getLocalizedText("settings.application")}
           icon="settings-outline"
         >
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.theme")}
             value={
               settings.theme === "light"
@@ -1136,11 +1051,15 @@ export const SettingsScreen: React.FC = () => {
             onPress={() => setShowThemeModal(true)}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.background")}
             value={backgroundPresetLabel}
             onPress={() => setShowBackgroundModal(true)}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.language")}
             value={
               settings.language === "fr"
@@ -1150,6 +1069,8 @@ export const SettingsScreen: React.FC = () => {
             onPress={() => setShowLanguageModal(true)}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.fontSize")}
             value={
               settings.fontSize === "small"
@@ -1161,6 +1082,8 @@ export const SettingsScreen: React.FC = () => {
             onPress={() => setShowFontSizeModal(true)}
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Tour guidé"
             subtitle="Afficher le tour de présentation"
             icon="compass-outline"
@@ -1182,10 +1105,14 @@ export const SettingsScreen: React.FC = () => {
         </SettingSection>
 
         <SettingSection
+          themeColors={themeColors}
+          getFontSize={getFontSize}
           title={getLocalizedText("settings.aboutSection")}
           icon="document-text-outline"
         >
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.aboutWhispr")}
             subtitle={getLocalizedText("settings.aboutWhisprSubtitle")}
             onPress={() => navigation.navigate("AboutContent")}
@@ -1195,10 +1122,14 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Security Settings */}
         <SettingSection
+          themeColors={themeColors}
+          getFontSize={getFontSize}
           title={getLocalizedText("settings.security")}
           icon="lock-closed-outline"
         >
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label="Clés de sécurité"
             subtitle="Gérer vos clés de chiffrement et vos appareils"
             onPress={() => navigation.navigate("SecurityKeys")}
@@ -1206,6 +1137,8 @@ export const SettingsScreen: React.FC = () => {
           />
           {/* WHISPR-1055: session management — list connected devices + revoke. */}
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("devices.title") || "Mes appareils"}
             subtitle={
               getLocalizedText("devices.subtitle") ||
@@ -1215,6 +1148,8 @@ export const SettingsScreen: React.FC = () => {
             icon="phone-portrait-outline"
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("twoFactor.title")}
             subtitle={getLocalizedText("twoFactor.authenticationSubtitle")}
             onPress={() => navigation.navigate("TwoFactorAuth")}
@@ -1264,10 +1199,14 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Moderation Section */}
         <SettingSection
+          themeColors={themeColors}
+          getFontSize={getFontSize}
           title={getLocalizedText("settings.moderation") || "Modération"}
           icon="flag-outline"
         >
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.myReports") || "Mes signalements"}
             subtitle={
               getLocalizedText("settings.myReportsSubtitle") ||
@@ -1277,6 +1216,8 @@ export const SettingsScreen: React.FC = () => {
             icon="document-text-outline"
           />
           <SettingItem
+            themeColors={themeColors}
+            getFontSize={getFontSize}
             label={getLocalizedText("settings.mySanctions") || "Mes sanctions"}
             subtitle={
               getLocalizedText("settings.mySanctionsSubtitle") ||
@@ -1287,6 +1228,8 @@ export const SettingsScreen: React.FC = () => {
           />
           {isStaff && (
             <SettingItem
+              themeColors={themeColors}
+              getFontSize={getFontSize}
               label={
                 getLocalizedText("settings.moderationDashboard") ||
                 "Tableau de modération"
@@ -1303,8 +1246,15 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Administration - visible uniquement pour les admins/modérateurs */}
         {isStaff && (
-          <SettingSection title="Administration" icon="flask-outline">
+          <SettingSection
+            title="Administration"
+            icon="flask-outline"
+            themeColors={themeColors}
+            getFontSize={getFontSize}
+          >
             <SettingItem
+              themeColors={themeColors}
+              getFontSize={getFontSize}
               label="Demos IA (Admin)"
               subtitle="Demontrer les modeles IA Zeyou et Maya aux prospects"
               onPress={() => navigation.navigate("AdminDemos")}
@@ -1315,8 +1265,15 @@ export const SettingsScreen: React.FC = () => {
 
         {/* Developer / Debug - visible en dev local + en build preprod (jamais en prod) */}
         {(__DEV__ || process.env.EXPO_PUBLIC_ENV === "preprod") && (
-          <SettingSection title="Debug" icon="bug-outline">
+          <SettingSection
+            title="Debug"
+            icon="bug-outline"
+            themeColors={themeColors}
+            getFontSize={getFontSize}
+          >
             <SettingItem
+              themeColors={themeColors}
+              getFontSize={getFontSize}
               label="Modèle de modération"
               subtitle="v2 EfficientNet 9-classes · v3 MobileNetV3 3-classes (healthy/not_food/unhealthy) · v4 MobileNetV3 binary food/not_food"
               value={
@@ -1330,6 +1287,8 @@ export const SettingsScreen: React.FC = () => {
               icon="cube-outline"
             />
             <SettingItem
+              themeColors={themeColors}
+              getFontSize={getFontSize}
               label="Moderation Test"
               subtitle="Run the on-device TFJS image gate"
               onPress={() => navigation.navigate("ModerationTest")}
@@ -1345,6 +1304,8 @@ export const SettingsScreen: React.FC = () => {
             {__DEV__ && (
               <>
                 <SettingItem
+                  themeColors={themeColors}
+                  getFontSize={getFontSize}
                   label="[DEV] Recovery Codes Screen"
                   subtitle="Preview écran codes de backup (données mockées)"
                   onPress={() => navigation.navigate("RecoveryCodes")}
@@ -1358,6 +1319,8 @@ export const SettingsScreen: React.FC = () => {
                   }
                 />
                 <SettingItem
+                  themeColors={themeColors}
+                  getFontSize={getFontSize}
                   label="[DEV] Recovery Code Entry"
                   subtitle="Preview saisie code de récupération"
                   onPress={() => navigation.navigate("RecoveryCodeEntry")}
@@ -1556,39 +1519,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  sectionIcon: {
-    marginRight: 8,
-  },
-  sectionTitle: {
-    fontWeight: "bold",
-  },
-  sectionShadow: {
-    borderRadius: 12,
-    shadowColor: "#FFFFFF",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  sectionContent: {
-    borderRadius: 12,
-    overflow: "hidden",
-    backgroundColor:
-      Platform.OS === "ios"
-        ? "rgba(20, 25, 50, 0.35)"
-        : "rgba(20, 25, 50, 0.7)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.18)",
-  },
   settingItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1603,9 +1533,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
-  settingIcon: {
-    marginRight: 12,
-  },
   settingTextContainer: {
     flex: 1,
   },
@@ -1613,9 +1540,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   settingSubtitle: {
-    marginTop: 2,
-  },
-  settingValue: {
     marginTop: 2,
   },
   alertOverlay: {
