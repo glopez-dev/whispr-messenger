@@ -39,7 +39,6 @@ import {
   MessageWithRelations,
   MessageReaction,
   Conversation,
-  PinnedMessage,
 } from "../../types/messaging";
 import { messagingAPI } from "../../services/messaging/api";
 import { cacheService } from "../../services/messaging/cache";
@@ -153,11 +152,6 @@ import { BlockedImageAppealModal } from "../../components/Chat/BlockedImageAppea
 import { useModerationStore } from "../../store/moderationStore";
 import { getSharedSocket } from "../../services/messaging/websocket";
 import { offlineQueue, QueuedMessage } from "../../services/offlineQueue";
-import {
-  validateReactionEmoji,
-  checkReactionLimits,
-  userHasReaction,
-} from "../../utils/reactionEmoji";
 import { showAlert } from "../../utils/alert";
 import { canonicalizeMimeType, resolveMimeType } from "../../utils/mime";
 import {
@@ -170,6 +164,9 @@ import {
   type DateSeparatorItem,
 } from "./helpers/dateSeparators";
 import { useChatMessages } from "./hooks/useChatMessages";
+import { usePinnedMessages } from "./hooks/usePinnedMessages";
+import { useChatReactions } from "./hooks/useChatReactions";
+import { useChatSearch } from "./hooks/useChatSearch";
 
 type ChatScreenRouteProp = StackScreenProps<
   AuthStackParamList,
@@ -224,22 +221,6 @@ export const ChatScreen: React.FC = () => {
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [selectedMessage, setSelectedMessage] =
     useState<MessageWithRelations | null>(null);
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
-  const [reactionPickerMessageId, setReactionPickerMessageId] = useState<
-    string | null
-  >(null);
-  const [reactionReactorsModal, setReactionReactorsModal] = useState<{
-    messageId: string;
-    emoji: string;
-  } | null>(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<MessageWithRelations[]>(
-    [],
-  );
-  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
-  const [pinnedMessages, setPinnedMessages] = useState<PinnedMessage[]>([]);
-  const [showPinnedBar, setShowPinnedBar] = useState(true);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [e2eeToggleBusy, setE2eeToggleBusy] = useState(false);
   const [conversationMembers, setConversationMembers] = useState<
@@ -827,6 +808,35 @@ export const ChatScreen: React.FC = () => {
     loadMoreMessages,
   } = useChatMessages({ conversationId, markAsRead });
 
+  const {
+    pinnedMessages,
+    setPinnedMessages,
+    showPinnedBar,
+    setShowPinnedBar,
+    loadPinnedMessages,
+    handlePinMessage,
+  } = usePinnedMessages({ conversationId, selectedMessage, setMessages });
+
+  const {
+    showReactionPicker,
+    setShowReactionPicker,
+    reactionPickerMessageId,
+    setReactionPickerMessageId,
+    reactionReactorsModal,
+    setReactionReactorsModal,
+    reactionModalList,
+    resolveReactorDisplayName,
+    handleReactionPress,
+    handleReactionDetailsPress,
+    handleReactionSelectFromPicker,
+  } = useChatReactions({
+    conversationId,
+    userId,
+    messages,
+    conversationMembers,
+    setMessages,
+  });
+
   // Drain offline queue when connection is restored
   const prevConnectionStateRef = useRef<string>("disconnected");
   useEffect(() => {
@@ -898,16 +908,6 @@ export const ChatScreen: React.FC = () => {
 
     prevConnectionStateRef.current = connectionState;
   }, [connectionState, conversationId, conversation, userId]);
-
-  const loadPinnedMessages = useCallback(async () => {
-    try {
-      const pinned = await messagingAPI.getPinnedMessages(conversationId);
-      setPinnedMessages(pinned);
-    } catch (error) {
-      logger.error("ChatScreen", "Error loading pinned messages", error);
-      setPinnedMessages([]);
-    }
-  }, [conversationId]);
 
   const loadConversation = useCallback(async () => {
     try {
@@ -2229,83 +2229,6 @@ export const ChatScreen: React.FC = () => {
     ],
   );
 
-  const resolveReactorDisplayName = useCallback(
-    (uid: string) => {
-      if (uid === userId) return "Vous";
-      const m = conversationMembers.find((x) => x.id === uid);
-      if (m?.display_name) return m.display_name;
-      return "Utilisateur";
-    },
-    [userId, conversationMembers],
-  );
-
-  const reactionModalList = useMemo(() => {
-    if (!reactionReactorsModal) return [];
-    const msg = messages.find((m) => m.id === reactionReactorsModal.messageId);
-    return (msg?.reactions ?? []).filter(
-      (r) => r.reaction === reactionReactorsModal.emoji,
-    );
-  }, [reactionReactorsModal, messages]);
-
-  const handleReactionPress = useCallback(
-    async (messageId: string, emoji: string) => {
-      const validated = validateReactionEmoji(emoji);
-      if (!validated.ok) {
-        showAlert("Emoji non supporté", validated.reason);
-        return;
-      }
-
-      const msg = messages.find((m) => m.id === messageId);
-      const reactions = msg?.reactions ?? [];
-      const already = userHasReaction(reactions, userId, emoji);
-
-      try {
-        if (already) {
-          await messagingAPI.removeReaction(messageId, userId, emoji);
-        } else {
-          const limits = checkReactionLimits(reactions, userId, emoji);
-          if (!limits.ok) {
-            showAlert("Réaction impossible", limits.reason);
-            return;
-          }
-          await messagingAPI.addReaction(messageId, userId, emoji);
-        }
-
-        const reactionData = await messagingAPI.getMessageReactions(messageId);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === messageId
-              ? {
-                  ...m,
-                  reactions: Array.isArray(reactionData)
-                    ? reactionData
-                    : reactionData?.reactions || [],
-                }
-              : m,
-          ),
-        );
-      } catch (error: unknown) {
-        const e = error as { message?: string };
-        showAlert(
-          "Réaction",
-          e.message || "Impossible de mettre à jour la réaction.",
-        );
-        logger.error("ChatScreen", "Error toggling reaction", error);
-      }
-    },
-    [userId, messages],
-  );
-
-  const handleReactionDetailsPress = useCallback(
-    (messageId: string, emoji: string) => {
-      if (Platform.OS !== "web") {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-      setReactionReactorsModal({ messageId, emoji });
-    },
-    [],
-  );
-
   // Group messages by date and add date separators
   const messagesWithSeparators = useMemo(() => {
     if (messages.length === 0) return [];
@@ -2340,6 +2263,26 @@ export const ChatScreen: React.FC = () => {
 
     return result;
   }, [messages]);
+
+  const {
+    showSearch,
+    setShowSearch,
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    setSearchResults,
+    currentSearchIndex,
+    setCurrentSearchIndex,
+    handleSearch,
+    handleSearchNext,
+    handleSearchPrevious,
+  } = useChatSearch({
+    conversationId,
+    messages,
+    e2eeEnabledRef,
+    flatListRef,
+    messagesWithSeparators,
+  });
 
   // Id of the most recent message I sent — used to render a textual delivery
   // status only under that bubble. messages[] is sorted newest-first, so the
@@ -2533,52 +2476,6 @@ export const ChatScreen: React.FC = () => {
     }
   }, [selectedMessage]);
 
-  const handlePinMessage = useCallback(async () => {
-    if (!selectedMessage) return;
-
-    try {
-      const isCurrentlyPinned = pinnedMessages.some(
-        (m) => (m.messageId ?? m.message?.id) === selectedMessage.id,
-      );
-      const action = isCurrentlyPinned ? "unpin" : "pin";
-
-      if (isCurrentlyPinned) {
-        // Optimistically remove from the pinned bar so the banner disappears
-        // immediately, even if the refresh below races the server.
-        setPinnedMessages((prev) =>
-          prev.filter(
-            (m) => (m.messageId ?? m.message?.id) !== selectedMessage.id,
-          ),
-        );
-        await messagingAPI.unpinMessage(conversationId, selectedMessage.id);
-      } else {
-        await messagingAPI.pinMessage(conversationId, selectedMessage.id);
-        // Re-open the bar when the user just pinned a new message after
-        // having manually closed it.
-        setShowPinnedBar(true);
-      }
-
-      await loadPinnedMessages();
-
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === selectedMessage.id
-            ? { ...msg, is_pinned: !isCurrentlyPinned }
-            : msg,
-        ),
-      );
-    } catch (error) {
-      const isCurrentlyPinned = pinnedMessages.some(
-        (m) => (m.messageId ?? m.message?.id) === selectedMessage.id,
-      );
-      logger.error(
-        "ChatScreen",
-        `Error ${isCurrentlyPinned ? "unpinning" : "pinning"} message`,
-        error,
-      );
-    }
-  }, [selectedMessage, conversationId, pinnedMessages, loadPinnedMessages]);
-
   const handlePinnedMessagePress = useCallback(
     (messageId: string) => {
       if (!messages.some((m) => m.id === messageId)) {
@@ -2589,181 +2486,6 @@ export const ChatScreen: React.FC = () => {
     },
     [scrollToMessage, messages],
   );
-
-  const handleReactionSelectFromPicker = useCallback(
-    async (emoji: string) => {
-      if (reactionPickerMessageId) {
-        await handleReactionPress(reactionPickerMessageId, emoji);
-        setShowReactionPicker(false);
-        setReactionPickerMessageId(null);
-      }
-    },
-    [reactionPickerMessageId, handleReactionPress],
-  );
-
-  // Handle search — try server-side first, fall back to client-side filtering
-  const handleSearch = useCallback(
-    async (query: string) => {
-      setSearchQuery(query);
-
-      if (!query.trim()) {
-        setSearchResults([]);
-        setCurrentSearchIndex(0);
-        return;
-      }
-
-      try {
-        const trimmed = query.trim();
-        const apiResults = e2eeEnabledRef.current
-          ? null
-          : await messagingAPI.searchMessages(conversationId, trimmed, {
-              limit: 50,
-            });
-
-        let results: MessageWithRelations[];
-
-        if (apiResults !== null) {
-          // Server returned results — map them to MessageWithRelations
-          results = apiResults
-            .filter((msg) => msg.message_type !== "system" && !msg.is_deleted)
-            .map((msg) => {
-              const enriched = msg as MessageWithRelations;
-              return {
-                ...enriched,
-                status: enriched.status || ("sent" as const),
-              };
-            });
-        } else {
-          // Fallback: client-side search on loaded messages
-          results = messages.filter((msg) => {
-            if (msg.message_type === "system" || msg.is_deleted) return false;
-            if (!msg.content) return false;
-            return msg.content.toLowerCase().includes(trimmed.toLowerCase());
-          });
-        }
-
-        setSearchResults(results);
-        setCurrentSearchIndex(0);
-
-        // Scroll to first result after a short delay to ensure list is rendered
-        if (results.length > 0 && flatListRef.current) {
-          setTimeout(() => {
-            const firstResultIndex = messagesWithSeparators.findIndex(
-              (item) => !isDateSeparator(item) && item.id === results[0].id,
-            );
-
-            if (firstResultIndex !== -1 && flatListRef.current) {
-              try {
-                flatListRef.current.scrollToIndex({
-                  index: firstResultIndex,
-                  animated: true,
-                  viewPosition: 0.5,
-                });
-              } catch (error) {
-                logger.warn(
-                  "ChatScreen",
-                  "Error scrolling to search result",
-                  error,
-                );
-              }
-            }
-          }, 100);
-        }
-      } catch (error) {
-        logger.error("ChatScreen", "Error in search", error);
-        setSearchResults([]);
-        setCurrentSearchIndex(0);
-      }
-    },
-    [conversationId, messages, messagesWithSeparators],
-  );
-
-  const handleSearchNext = useCallback(() => {
-    if (
-      currentSearchIndex < searchResults.length - 1 &&
-      searchResults.length > 0
-    ) {
-      try {
-        const newIndex = currentSearchIndex + 1;
-        setCurrentSearchIndex(newIndex);
-        const result = searchResults[newIndex];
-        if (!result) {
-          logger.warn(
-            "ChatScreen",
-            `Search result not found at index: ${newIndex}`,
-          );
-          return;
-        }
-        const resultIndex = messagesWithSeparators.findIndex(
-          (item) => !isDateSeparator(item) && item.id === result.id,
-        );
-        if (resultIndex !== -1 && flatListRef.current) {
-          try {
-            flatListRef.current.scrollToIndex({
-              index: resultIndex,
-              animated: true,
-              viewPosition: 0.5,
-            });
-          } catch (error) {
-            logger.warn(
-              "ChatScreen",
-              "Error scrolling to next search result",
-              error,
-            );
-          }
-        } else {
-          logger.warn(
-            "ChatScreen",
-            `Search result not found in messages list: ${result.id}`,
-          );
-        }
-      } catch (error) {
-        logger.error("ChatScreen", "Error in handleSearchNext", error);
-      }
-    }
-  }, [currentSearchIndex, searchResults, messagesWithSeparators]);
-
-  const handleSearchPrevious = useCallback(() => {
-    if (currentSearchIndex > 0 && searchResults.length > 0) {
-      try {
-        const newIndex = currentSearchIndex - 1;
-        setCurrentSearchIndex(newIndex);
-        const result = searchResults[newIndex];
-        if (!result) {
-          logger.warn(
-            "ChatScreen",
-            `Search result not found at index: ${newIndex}`,
-          );
-          return;
-        }
-        const resultIndex = messagesWithSeparators.findIndex(
-          (item) => !isDateSeparator(item) && item.id === result.id,
-        );
-        if (resultIndex !== -1 && flatListRef.current) {
-          try {
-            flatListRef.current.scrollToIndex({
-              index: resultIndex,
-              animated: true,
-              viewPosition: 0.5,
-            });
-          } catch (error) {
-            logger.warn(
-              "ChatScreen",
-              "Error scrolling to previous search result",
-              error,
-            );
-          }
-        } else {
-          logger.warn(
-            "ChatScreen",
-            `Search result not found in messages list: ${result.id}`,
-          );
-        }
-      } catch (error) {
-        logger.error("ChatScreen", "Error in handleSearchPrevious", error);
-      }
-    }
-  }, [currentSearchIndex, searchResults, messagesWithSeparators]);
 
   // Derive the other user's presence for direct conversations
   const otherUserId = useMemo(() => {
