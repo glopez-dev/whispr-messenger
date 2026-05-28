@@ -143,6 +143,7 @@ import {
   type ChatListItem,
   type DateSeparatorItem,
 } from "./helpers/dateSeparators";
+import { deriveBubbleRowMeta } from "./helpers/bubbleRowMeta";
 import { useChatMessages } from "./hooks/useChatMessages";
 import { usePinnedMessages } from "./hooks/usePinnedMessages";
 import { useChatReactions } from "./hooks/useChatReactions";
@@ -1570,47 +1571,15 @@ export const ChatScreen: React.FC = () => {
       );
 
       const isGroup = conversation?.type === "group";
-      // Resolve sender info for group conversations.
-      const sender =
-        !isSent && isGroup
-          ? conversationMembers.find((m) => m.id === message.sender_id)
-          : undefined;
-      const senderName = sender?.display_name || sender?.username;
-      const senderAvatarUrl = sender?.avatar_url;
-
-      // Inverted FlatList: newer messages have lower indices. The item that
-      // visually appears above the current one is messagesWithSeparators[index + 1].
-      // Consider the message "consecutive" when the previous (older, visually
-      // above) item is from the same sender — in that case we hide the avatar
-      // to keep bursts compact.
-      let isConsecutive = false;
-      if (!isSent && isGroup) {
-        const prev = messagesWithSeparators[index + 1];
-        if (
-          prev &&
-          !isDateSeparator(prev) &&
-          prev.sender_id === message.sender_id &&
-          prev.message_type !== "system"
-        ) {
-          isConsecutive = true;
-        }
-      }
-
-      // iMessage convention: only the last bubble in a same-sender burst
-      // carries a tail. The message that comes chronologically AFTER this
-      // one (visually BELOW it in the inverted list, so index - 1) is the
-      // one we compare against. If it's from the same sender, we are not
-      // the last in the burst and the tail is suppressed.
-      let isLastInBurst = true;
-      const next = messagesWithSeparators[index - 1];
-      if (
-        next &&
-        !isDateSeparator(next) &&
-        next.sender_id === message.sender_id &&
-        next.message_type !== "system"
-      ) {
-        isLastInBurst = false;
-      }
+      const { isConsecutive, isLastInBurst, senderName, senderAvatarUrl } =
+        deriveBubbleRowMeta(
+          messagesWithSeparators,
+          index,
+          message,
+          isSent,
+          isGroup,
+          conversationMembers,
+        );
 
       return (
         <MessageBubble
