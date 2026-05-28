@@ -27,14 +27,13 @@ import * as Haptics from "expo-haptics";
 import Toast from "../../components/Toast/Toast";
 import QRCodeStyled from "react-native-qrcode-styled";
 
-import * as Crypto from "expo-crypto";
-
 import { copyToClipboard } from "../../utils/clipboard";
+import { DeviceManagerService } from "../../services/SecurityService";
 import {
-  DeviceManagerService,
-  SignalKeysService,
-  type DeviceInfo,
-} from "../../services/SecurityService";
+  useDeviceKeys,
+  type ConnectedDevice,
+  type SecurityKey,
+} from "./hooks/useDeviceKeys";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -43,29 +42,6 @@ const formatCountdown = (seconds: number): string => {
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 };
-
-interface ConnectedDevice {
-  id: string;
-  name: string;
-  type: "mobile" | "tablet" | "desktop" | "web";
-  lastActive: string;
-  location?: string;
-  isCurrent: boolean;
-  securityCode?: string;
-}
-
-interface SecurityKey {
-  id: string;
-  deviceId: string;
-  deviceName: string;
-  fingerprint: string;
-  verified: boolean;
-}
-
-function formatFingerprint(hex: string): string {
-  const truncated = hex.slice(0, 32);
-  return truncated.match(/.{1,4}/g)?.join(" ") ?? hex;
-}
 
 // Module-level cache — survives re-renders and component remounts
 export const _qrCache: {
@@ -383,10 +359,6 @@ export const SecurityKeysScreen: React.FC = () => {
   const slideAnim = useRef(new Animated.Value(30)).current;
   const modalScale = useRef(new Animated.Value(0.9)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
-  const [devices, setDevices] = useState<ConnectedDevice[]>([]);
-  const [loadingDevices, setLoadingDevices] = useState(true);
-
-  const [securityKeys, setSecurityKeys] = useState<SecurityKey[]>([]);
 
   const [showSecurityCodeModal, setShowSecurityCodeModal] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<ConnectedDevice | null>(
@@ -405,14 +377,11 @@ export const SecurityKeysScreen: React.FC = () => {
     type: "info",
   });
 
-  const mapPlatformToType = (platform?: string): ConnectedDevice["type"] => {
-    const p = platform?.toLowerCase() ?? "";
-    if (p === "ios" || p === "android") return "mobile";
-    if (p === "web") return "web";
-    if (p === "tablet") return "tablet";
-    if (p === "desktop" || p === "macos" || p === "windows" || p === "linux")
-      return "desktop";
-    return "mobile";
+  const showToast = (
+    message: string,
+    type: "success" | "error" | "info" | "warning" = "info",
+  ) => {
+    setToast({ visible: true, message, type });
   };
 
   const formatLastActive = (isoString: string): string => {
@@ -428,6 +397,19 @@ export const SecurityKeysScreen: React.FC = () => {
     return `${getLocalizedText("security.daysAgo") || "Il y a"} ${days}j`;
   };
 
+  const { devices, setDevices, loadingDevices, securityKeys, setSecurityKeys } =
+    useDeviceKeys({
+      userId: userId ?? null,
+      currentDeviceId: currentDeviceId ?? null,
+      formatLastActive,
+      onLoadError: () =>
+        showToast(
+          getLocalizedText("security.loadDevicesError") ||
+            "Impossible de charger les appareils",
+          "error",
+        ),
+    });
+
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -441,55 +423,6 @@ export const SecurityKeysScreen: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start();
-
-    DeviceManagerService.listDevices()
-      .then(async (apiDevices: DeviceInfo[]) => {
-        const mapped: ConnectedDevice[] = apiDevices.map((d) => ({
-          id: d.id,
-          name: d.deviceName,
-          type: mapPlatformToType(d.deviceType),
-          lastActive: formatLastActive(d.lastActive?.toString() ?? ""),
-          isCurrent: d.id === currentDeviceId,
-        }));
-        setDevices(mapped);
-
-        const keys: SecurityKey[] = await Promise.all(
-          mapped.map(async (d, i) => {
-            let fingerprint = "—";
-            if (userId) {
-              try {
-                const bundle = await SignalKeysService.getKeyBundle(
-                  userId,
-                  d.id,
-                );
-                const raw = await Crypto.digestStringAsync(
-                  Crypto.CryptoDigestAlgorithm.SHA256,
-                  bundle.identity_key + d.id,
-                );
-                fingerprint = formatFingerprint(raw);
-              } catch {
-                // keep "—" if bundle unavailable
-              }
-            }
-            return {
-              id: String(i + 1),
-              deviceId: d.id,
-              deviceName: d.name,
-              fingerprint,
-              verified: d.isCurrent,
-            };
-          }),
-        );
-        setSecurityKeys(keys);
-      })
-      .catch(() => {
-        showToast(
-          getLocalizedText("security.loadDevicesError") ||
-            "Impossible de charger les appareils",
-          "error",
-        );
-      })
-      .finally(() => setLoadingDevices(false));
   }, []);
 
   useEffect(() => {
@@ -537,13 +470,6 @@ export const SecurityKeysScreen: React.FC = () => {
         console.warn("[SecurityKeysScreen] Haptic feedback error:", error);
       }
     }
-  };
-
-  const showToast = (
-    message: string,
-    type: "success" | "error" | "info" | "warning" = "info",
-  ) => {
-    setToast({ visible: true, message, type });
   };
 
   const confirmDisconnectDevice = async (device: ConnectedDevice) => {
