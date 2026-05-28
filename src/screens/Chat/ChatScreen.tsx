@@ -11,7 +11,6 @@ import React, {
 } from "react";
 import {
   View,
-  ImageBackground,
   StyleSheet,
   FlatList,
   ActivityIndicator,
@@ -145,12 +144,10 @@ import {
   gateChatImageBeforeSend,
   gateChatVideoBeforeSend,
 } from "../../services/moderation";
-import { appealsAPI } from "../../services/moderation/moderationApi";
 import { ScheduleDateTimePicker } from "../../components/Chat/ScheduleDateTimePicker";
 import { OfflineBanner } from "../../components/Chat/OfflineBanner";
 import { BlockedImageAppealModal } from "../../components/Chat/BlockedImageAppealModal";
 import { useModerationStore } from "../../store/moderationStore";
-import { getSharedSocket } from "../../services/messaging/websocket";
 import { offlineQueue, QueuedMessage } from "../../services/offlineQueue";
 import { showAlert } from "../../utils/alert";
 import { canonicalizeMimeType, resolveMimeType } from "../../utils/mime";
@@ -168,6 +165,8 @@ import { usePinnedMessages } from "./hooks/usePinnedMessages";
 import { useChatReactions } from "./hooks/useChatReactions";
 import { useChatSearch } from "./hooks/useChatSearch";
 import { useChatModeration } from "./hooks/useChatModeration";
+import { ChatBackgroundLayer } from "./components/ChatBackgroundLayer";
+import { NotContactBanner } from "./components/NotContactBanner";
 
 type ChatScreenRouteProp = StackScreenProps<
   AuthStackParamList,
@@ -2570,30 +2569,10 @@ export const ChatScreen: React.FC = () => {
           ]}
         >
           <TourAutoStart />
-          {hasCustomBackground && customBackgroundUri ? (
-            <ImageBackground
-              key={`${customBackgroundUri}:${customBackgroundVersion}`}
-              source={{ uri: customBackgroundUri }}
-              resizeMode="cover"
-              style={styles.customBackground}
-            />
-          ) : null}
-          {!hasCustomBackground ? (
-            <LinearGradient
-              colors={colors.background.gradient.app}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.gradientBackground}
-            />
-          ) : null}
-          <View
-            pointerEvents="none"
-            style={[
-              styles.backgroundScrim,
-              hasCustomBackground
-                ? styles.backgroundScrimWithCustomImage
-                : styles.backgroundScrimDefault,
-            ]}
+          <ChatBackgroundLayer
+            hasCustomBackground={hasCustomBackground}
+            customBackgroundUri={customBackgroundUri}
+            customBackgroundVersion={customBackgroundVersion}
           />
           <SafeAreaView
             style={[
@@ -2642,39 +2621,10 @@ export const ChatScreen: React.FC = () => {
               />
             </AttachStep>
             {isOtherUserContact === false && (
-              <View style={styles.notContactBanner}>
-                <Ionicons
-                  name="information-circle-outline"
-                  size={16}
-                  color={colors.text.light}
-                  style={{ marginRight: 6 }}
-                />
-                <Text style={styles.notContactBannerText} numberOfLines={1}>
-                  Cette personne n'est pas dans vos contacts
-                </Text>
-                <TouchableOpacity
-                  onPress={handleAddContactFromChat}
-                  disabled={addingContact}
-                  style={styles.notContactBannerButton}
-                >
-                  {addingContact ? (
-                    // wrapper pour annoncer l'etat busy au screen reader
-                    <View
-                      accessibilityState={{ busy: true }}
-                      accessibilityLiveRegion="polite"
-                    >
-                      <ActivityIndicator
-                        size="small"
-                        color={colors.text.light}
-                      />
-                    </View>
-                  ) : (
-                    <Text style={styles.notContactBannerButtonText}>
-                      Ajouter
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <NotContactBanner
+                onAddContact={handleAddContactFromChat}
+                busy={addingContact}
+              />
             )}
             {showPinnedBar && pinnedMessages.length > 0 && (
               <PinnedMessagesBar
@@ -3207,55 +3157,12 @@ const styles = StyleSheet.create({
   screenRootWithCustomBackground: {
     backgroundColor: "transparent",
   },
-  customBackground: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  gradientBackground: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background.dark,
-  },
-  backgroundScrim: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  backgroundScrimDefault: {
-    backgroundColor: "rgba(3, 8, 27, 0.18)",
-  },
-  backgroundScrimWithCustomImage: {
-    backgroundColor: "rgba(5, 8, 22, 0.62)",
-  },
   container: {
     flex: 1,
     backgroundColor: "transparent",
   },
   keyboardView: {
     flex: 1,
-  },
-  notContactBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginHorizontal: 12,
-    marginTop: 4,
-    borderRadius: 8,
-  },
-  notContactBannerText: {
-    flex: 1,
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: 13,
-  },
-  notContactBannerButton: {
-    backgroundColor: colors.primary.main,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  notContactBannerButtonText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "600",
   },
   listContent: {
     paddingVertical: 16,
