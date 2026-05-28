@@ -20,21 +20,28 @@ const mockAlert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
 // ---- messagingAPI ----
 const mockSendMessage = jest.fn();
 const mockEditMessage = jest.fn();
+const mockGetConversationMembers = jest.fn(async () => [{ id: "other" }]);
+const mockAddAttachment = jest.fn(async () => ({}));
 jest.mock("../../../../services/messaging/api", () => ({
   messagingAPI: {
     sendMessage: (...a: unknown[]) => mockSendMessage(...a),
     editMessage: (...a: unknown[]) => mockEditMessage(...a),
+    getConversationMembers: (...a: unknown[]) =>
+      mockGetConversationMembers(...a),
+    addAttachment: (...a: unknown[]) => mockAddAttachment(...a),
   },
 }));
 
 // ---- E2EEService ----
 const mockEncryptForConversation = jest.fn();
 const mockEncryptDirectText = jest.fn();
+const mockEncryptMediaFile = jest.fn();
 jest.mock("../../../../services/E2EEService", () => ({
   E2EEService: {
     encryptMessageForConversation: (...a: unknown[]) =>
       mockEncryptForConversation(...a),
     encryptDirectTextMessage: (...a: unknown[]) => mockEncryptDirectText(...a),
+    encryptMediaFile: (...a: unknown[]) => mockEncryptMediaFile(...a),
   },
 }));
 
@@ -68,6 +75,51 @@ jest.mock("../../../../utils/logger", () => ({
   logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() },
 }));
 
+// ---- media-send deps ----
+const mockUploadMedia = jest.fn();
+const mockShareMediaWithRetry = jest.fn(async () => {});
+const mockGetMediaMetadata = jest.fn(async () => ({}));
+jest.mock("../../../../services/MediaService", () => ({
+  MediaService: {
+    uploadMedia: (...a: unknown[]) => mockUploadMedia(...a),
+    shareMediaWithRetry: (...a: unknown[]) => mockShareMediaWithRetry(...a),
+    getMediaMetadata: (...a: unknown[]) => mockGetMediaMetadata(...a),
+  },
+}));
+
+const mockGateImage = jest.fn(async () => ({ ok: true }));
+const mockGateVideo = jest.fn(async () => ({ ok: true }));
+jest.mock("../../../../services/moderation", () => ({
+  gateChatImageBeforeSend: (...a: unknown[]) => mockGateImage(...a),
+  gateChatVideoBeforeSend: (...a: unknown[]) => mockGateVideo(...a),
+}));
+
+jest.mock("../../../../utils/imageCompression", () => ({
+  convertHeicToJpeg: jest.fn(async () => null),
+}));
+jest.mock("../../../../utils/videoPoster", () => ({
+  extractVideoPoster: jest.fn(async () => null),
+}));
+jest.mock("../../../../utils/mapMediaUploadError", () => ({
+  mapMediaUploadError: () => ({ userMessage: "Échec de l'envoi" }),
+}));
+const mockResolveMembers = jest.fn(async () => ({ memberIds: ["other"] }));
+jest.mock("../../../../utils/resolveMembers", () => ({
+  resolveConversationMemberIds: (...a: unknown[]) => mockResolveMembers(...a),
+}));
+jest.mock("../../../../utils/mime", () => ({
+  canonicalizeMimeType: (m: string) => m,
+  resolveMimeType: () => "image/jpeg",
+}));
+jest.mock("../../../../utils/audioUpload", () => ({
+  forceAudioUploadIdentity: (f: string, m: string) => ({
+    filename: f,
+    mimeType: m,
+  }),
+  remapAudioUploadUri: async (u: string) => u,
+}));
+jest.mock("../../../../utils/alert", () => ({ showAlert: jest.fn() }));
+
 import { useChatComposer } from "../useChatComposer";
 import type {
   Conversation,
@@ -92,6 +144,8 @@ function setup(overrides: Overrides = {}) {
     metadata: {},
   } as unknown as Conversation;
 
+  const setAppealModal = jest.fn();
+
   const opts = {
     conversationId: "conv-1",
     userId: "me",
@@ -106,6 +160,10 @@ function setup(overrides: Overrides = {}) {
     sendTyping,
     scrollToBottom,
     getLocalizedText,
+    e2eeEnabled: false,
+    allConversations: [],
+    conversationMembers: [],
+    setAppealModal,
     ...overrides,
   };
 
@@ -117,6 +175,7 @@ function setup(overrides: Overrides = {}) {
     setReplyingTo,
     sendTyping,
     scrollToBottom,
+    setAppealModal,
     e2eeEnabledRef,
   };
 }
@@ -128,6 +187,24 @@ beforeEach(() => {
     client_random: 12345,
     sent_at: "2026-01-01T00:00:00Z",
   });
+  mockUploadMedia.mockResolvedValue({
+    id: "media-1",
+    url: "https://cdn/media-1/blob",
+    thumbnail_url: "https://cdn/media-1/thumb",
+    filename: "photo.jpg",
+    mime_type: "image/jpeg",
+    size: 1234,
+  });
+  mockGateImage.mockResolvedValue({ ok: true });
+  mockGateVideo.mockResolvedValue({ ok: true });
+  mockResolveMembers.mockResolvedValue({ memberIds: ["other"] });
+  mockGetConversationMembers.mockResolvedValue([{ id: "other" }]);
+  mockEncryptMediaFile.mockResolvedValue({
+    encryptedUri: "file://enc",
+    key: "K",
+    nonce: "N",
+  });
+  mockEncryptForConversation.mockResolvedValue({ content: "CIPHER" });
 });
 
 describe("useChatComposer — handleSendMessage", () => {
@@ -305,5 +382,97 @@ describe("useChatComposer — handleSendMessage", () => {
       true,
     );
     expect(mockSendMessage).toHaveBeenCalled();
+  });
+});
+
+describe("useChatComposer — handleSendMedia", () => {
+  it("uploads, shares and sends an image (E2EE direct)", async () => {
+    const { result } = setup(); // direct conv => shouldEncrypt true
+
+    await act(async () => {
+      await result.current.handleSendMedia(
+        "file://photo.jpg",
+        "image",
+        undefined,
+        "ma légende",
+      );
+    });
+
+    // gate ran, file encrypted, uploaded, shared, and message sent
+    expect(mockGateImage).toHaveBeenCalledWith("file://photo.jpg");
+    expect(mockEncryptMediaFile).toHaveBeenCalledWith("file://photo.jpg");
+    expect(mockUploadMedia).toHaveBeenCalled();
+    expect(mockShareMediaWithRetry).toHaveBeenCalledWith("media-1", ["other"]);
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      "conv-1",
+      expect.objectContaining({ message_type: "media" }),
+    );
+  });
+
+  it("blocks on a failed moderation gate and opens the appeal modal", async () => {
+    mockGateImage.mockResolvedValue({
+      ok: false,
+      reason: "Nudité détectée",
+      scores: { nsfw: 0.9 },
+    });
+    const { result, setAppealModal } = setup();
+
+    await act(async () => {
+      await result.current.handleSendMedia("file://x.jpg", "image");
+    });
+
+    expect(mockUploadMedia).not.toHaveBeenCalled();
+    expect(mockSendMessage).not.toHaveBeenCalled();
+    expect(setAppealModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visible: true,
+        blockReason: "Nudité détectée",
+      }),
+    );
+  });
+
+  it("skips the gate when opts.skipGate is set (appeal re-submit path)", async () => {
+    const { result } = setup();
+
+    await act(async () => {
+      await result.current.handleSendMedia(
+        "file://x.jpg",
+        "image",
+        undefined,
+        undefined,
+        { skipGate: true },
+      );
+    });
+
+    expect(mockGateImage).not.toHaveBeenCalled();
+    expect(mockUploadMedia).toHaveBeenCalled();
+    expect(mockSendMessage).toHaveBeenCalled();
+  });
+
+  it("marks the temp message failed when the upload throws", async () => {
+    mockUploadMedia.mockRejectedValue(new Error("413 too large"));
+    const { result, setMessages } = setup();
+
+    await act(async () => {
+      await result.current.handleSendMedia("file://x.jpg", "image");
+    });
+
+    const lastUpdater = setMessages.mock.calls.at(-1)?.[0] as (
+      prev: MessageWithRelations[],
+    ) => MessageWithRelations[];
+    const tempId = setMessages.mock.calls
+      .map((c) => c[0])
+      .map((u) =>
+        typeof u === "function"
+          ? (u as (p: MessageWithRelations[]) => MessageWithRelations[])([])
+          : u,
+      )
+      .flat()
+      .find((m) => (m as MessageWithRelations)?.id?.startsWith("temp-"))?.id;
+    const out = lastUpdater([
+      { id: tempId, client_random: 12345 } as MessageWithRelations,
+    ]);
+    expect(out[0].status).toBe("failed");
+    expect(out[0].content).toBe("Échec de l'envoi");
   });
 });
