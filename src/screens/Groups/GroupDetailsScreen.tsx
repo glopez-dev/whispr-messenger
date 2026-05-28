@@ -50,52 +50,15 @@ import { Avatar } from "../../components/Chat/Avatar";
 import { DangerConfirmModal } from "../../components/Common/DangerConfirmModal";
 import { ProfileTrigger } from "../../components/Profile/ProfileTrigger";
 import { logger } from "../../utils/logger";
-import {
-  groupsAPI,
-  GroupDetails,
-  GroupMember,
-  GroupSettings,
-} from "../../services/groups/api";
-import { messagingAPI } from "../../services/messaging/api";
-import { contactsAPI } from "../../services/contacts/api";
-import { Contact } from "../../types/contact";
+import { groupsAPI, GroupSettings } from "../../services/groups/api";
 import { AuthStackParamList } from "../../navigation/types";
 import { useConversationsStore } from "../../store/conversationsStore";
 import { useGroupData } from "./hooks/useGroupData";
+import { useGroupMemberActions } from "./hooks/useGroupMemberActions";
 
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);
 const AnimatedView = Animated.createAnimatedComponent(View);
-
-const isSelfDemotionBlocked = (
-  role: "admin" | "member",
-  targetUserId: string,
-  currentUserId: string,
-  isLastAdmin: boolean,
-): boolean =>
-  role === "member" && targetUserId === currentUserId && isLastAdmin;
-
-const getChangeRoleErrorMessage = (
-  error: { status?: number; message?: string } | null | undefined,
-): { title: string; message: string } => {
-  if (error?.status === 403) {
-    return {
-      title: "Non autorisé",
-      message: "Seul un administrateur peut modifier les rôles.",
-    };
-  }
-  if (error?.status === 404 || error?.status === 405) {
-    return {
-      title: "Fonctionnalité indisponible",
-      message:
-        "Le changement de rôle n'est pas encore disponible côté serveur.",
-    };
-  }
-  return {
-    title: "Erreur",
-    message: error?.message || "Impossible de changer le rôle",
-  };
-};
 
 type GroupDetailsScreenRouteProp = StackScreenProps<
   AuthStackParamList,
@@ -146,16 +109,6 @@ export const GroupDetailsScreen: React.FC = () => {
   const [leaving, setLeaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [loadingContacts, setLoadingContacts] = useState(false);
-  const [contactSearch, setContactSearch] = useState("");
-  const [addingMember, setAddingMember] = useState(false);
-  const [memberActionFor, setMemberActionFor] = useState<GroupMember | null>(
-    null,
-  );
-  const [memberActionLoading, setMemberActionLoading] = useState(false);
-
   const { settings: themeSettings, getLocalizedText } = useTheme();
   const hasCustomBackground =
     themeSettings?.backgroundPreset === "custom" &&
@@ -193,6 +146,30 @@ export const GroupDetailsScreen: React.FC = () => {
   const adminCount = members.filter((m) => m.role === "admin").length;
   const isLastAdmin = isAdmin && ownerCount + adminCount === 1;
   const otherMembers = members.filter((m) => m.user_id !== CURRENT_USER_ID);
+
+  const {
+    showAddMemberModal,
+    setShowAddMemberModal,
+    loadingContacts,
+    contactSearch,
+    setContactSearch,
+    addingMember,
+    memberActionFor,
+    setMemberActionFor,
+    memberActionLoading,
+    pickerContacts,
+    openAddMemberModal,
+    handlePickContact,
+    handleRemoveMember,
+    handleChangeRole,
+  } = useGroupMemberActions({
+    conversationId,
+    groupId,
+    members,
+    currentUserId: CURRENT_USER_ID,
+    isLastAdmin,
+    loadGroupData,
+  });
 
   const handleLeaveGroup = useCallback(async () => {
     // si dernier admin sans autres membres, on ne peut pas quitter (groupe orphelin)
@@ -399,214 +376,6 @@ export const GroupDetailsScreen: React.FC = () => {
       refreshConversations,
       removeConversationLocal,
     ],
-  );
-
-  const loadContactsForPicker = useCallback(async () => {
-    try {
-      setLoadingContacts(true);
-      const result = await contactsAPI.getContacts();
-      setContacts(result.contacts);
-    } catch (error) {
-      logger.error("GroupDetailsScreen", "Error loading contacts", error);
-      Alert.alert("Erreur", "Impossible de charger les contacts");
-    } finally {
-      setLoadingContacts(false);
-    }
-  }, []);
-
-  const openAddMemberModal = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    setContactSearch("");
-    setShowAddMemberModal(true);
-    if (contacts.length === 0) {
-      loadContactsForPicker().catch((err) => {
-        logger.error(
-          "GroupDetailsScreen",
-          "loadContactsForPicker rejected",
-          err,
-        );
-      });
-    }
-  }, [contacts.length, loadContactsForPicker]);
-
-  const existingMemberIds = React.useMemo(
-    () => new Set(members.map((m) => m.user_id)),
-    [members],
-  );
-
-  const pickerContacts = React.useMemo(() => {
-    const q = contactSearch.trim().toLowerCase();
-    return contacts.filter((c) => {
-      const userId = c.contact_user?.id ?? c.contact_id;
-      if (!userId || existingMemberIds.has(userId)) return false;
-      if (!q) return true;
-      const nick = c.nickname?.toLowerCase() || "";
-      const uname = c.contact_user?.username?.toLowerCase() || "";
-      const fn = c.contact_user?.first_name?.toLowerCase() || "";
-      const ln = c.contact_user?.last_name?.toLowerCase() || "";
-      return (
-        nick.includes(q) ||
-        uname.includes(q) ||
-        fn.includes(q) ||
-        ln.includes(q)
-      );
-    });
-  }, [contacts, contactSearch, existingMemberIds]);
-
-  const handlePickContact = useCallback(
-    async (contact: Contact) => {
-      const userId = contact.contact_user?.id ?? contact.contact_id;
-      if (!userId) return;
-      try {
-        setAddingMember(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        await messagingAPI.addGroupMembers(conversationId, [userId]);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert("Membre ajouté", "Le membre a été ajouté au groupe.");
-        setShowAddMemberModal(false);
-        loadGroupData();
-      } catch (error: any) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        if (error?.status === 403) {
-          Alert.alert(
-            "Non autorisé",
-            "Seul un administrateur peut ajouter un membre.",
-          );
-        } else {
-          Alert.alert(
-            "Erreur",
-            error?.message || "Impossible d'ajouter ce membre",
-          );
-        }
-      } finally {
-        setAddingMember(false);
-      }
-    },
-    [conversationId, loadGroupData],
-  );
-
-  const handleRemoveMember = useCallback(
-    (member: GroupMember) => {
-      Alert.alert(
-        "Retirer du groupe",
-        `Retirer ${member.display_name} du groupe ?`,
-        [
-          { text: "Annuler", style: "cancel" },
-          {
-            text: "Retirer",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                setMemberActionLoading(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                await messagingAPI.removeGroupMember(
-                  conversationId,
-                  member.user_id,
-                );
-                Haptics.notificationAsync(
-                  Haptics.NotificationFeedbackType.Success,
-                );
-                setMemberActionFor(null);
-                loadGroupData();
-              } catch (error: any) {
-                Haptics.notificationAsync(
-                  Haptics.NotificationFeedbackType.Error,
-                );
-                if (error?.status === 403) {
-                  Alert.alert(
-                    "Non autorisé",
-                    "Seul un administrateur peut retirer un membre.",
-                  );
-                } else {
-                  Alert.alert(
-                    "Erreur",
-                    error?.message || "Impossible de retirer ce membre",
-                  );
-                }
-              } finally {
-                setMemberActionLoading(false);
-              }
-            },
-          },
-        ],
-      );
-    },
-    [conversationId, loadGroupData],
-  );
-
-  const handleChangeRole = useCallback(
-    async (member: GroupMember, role: "admin" | "member") => {
-      if (
-        isSelfDemotionBlocked(
-          role,
-          member.user_id,
-          CURRENT_USER_ID,
-          isLastAdmin,
-        )
-      ) {
-        Alert.alert(
-          "Action impossible",
-          "Tu es le seul admin. Promeus quelqu'un d'autre avant de te rétrograder, ou quitte le groupe (un membre sera auto-promu).",
-        );
-        return;
-      }
-      try {
-        setMemberActionLoading(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-        // préférer les endpoints dédiés user-service (PR #151), repli messaging
-        if (role === "admin") {
-          try {
-            await groupsAPI.promoteMember(groupId, member.user_id);
-          } catch (e: any) {
-            if (e?.status === 404 || e?.status === 405) {
-              await messagingAPI.updateGroupMemberRole(
-                conversationId,
-                member.user_id,
-                "admin",
-              );
-            } else {
-              throw e;
-            }
-          }
-        } else {
-          try {
-            await groupsAPI.demoteMember(groupId, member.user_id);
-          } catch (e: any) {
-            if (e?.status === 409) {
-              // dernier admin - ne devrait pas arriver ici vu isSelfDemotionBlocked,
-              // mais on le gère quand même pour les races conditions
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert(
-                "Impossible",
-                "Tu ne peux pas retirer le dernier admin",
-              );
-              return;
-            }
-            if (e?.status === 404 || e?.status === 405) {
-              await messagingAPI.updateGroupMemberRole(
-                conversationId,
-                member.user_id,
-                "member",
-              );
-            } else {
-              throw e;
-            }
-          }
-        }
-
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setMemberActionFor(null);
-        loadGroupData();
-      } catch (error: any) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        const { title, message } = getChangeRoleErrorMessage(error);
-        Alert.alert(title, message);
-      } finally {
-        setMemberActionLoading(false);
-      }
-    },
-    [CURRENT_USER_ID, conversationId, groupId, isLastAdmin, loadGroupData],
   );
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
