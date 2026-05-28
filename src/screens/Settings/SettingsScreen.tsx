@@ -31,11 +31,18 @@ import { useTheme } from "../../context/ThemeContext";
 import type { BackgroundPreset } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { useIsStaff, useModerationStore } from "../../store/moderationStore";
-import { UserService, PrivacySettings } from "../../services/UserService";
+import { UserService } from "../../services/UserService";
 import {
   NotificationService,
   NotificationSettings,
 } from "../../services/NotificationService";
+import {
+  STORAGE_KEYS,
+  apiToNotification,
+  apiToPrivacy,
+  notificationToApi,
+  privacyToApi,
+} from "./helpers/settingsConverters";
 import { setReadReceiptsEnabled } from "../../services/messaging/readReceiptsPref";
 import { setTypingIndicatorEnabled } from "../../services/messaging/typingIndicatorPref";
 import { SettingsChoiceAlert } from "./SettingsChoiceAlert";
@@ -103,15 +110,6 @@ export const SettingsScreen: React.FC = () => {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
-  // AsyncStorage keys
-  const STORAGE_KEYS = {
-    privacy: "@whispr_settings_privacy",
-    notifications: "@whispr_settings_notifications",
-    messaging: "@whispr_settings_messaging",
-    app: "@whispr_settings_app",
-    security: "whispr_settings_security",
-  };
-
   // Privacy settings
   const [privacySettings, setPrivacySettings] = useState({
     profilePhoto: "Everyone",
@@ -177,73 +175,6 @@ export const SettingsScreen: React.FC = () => {
       }
     },
     [STORAGE_KEYS.security],
-  );
-
-  /**
-   * Map local privacy values (Everyone/Contacts/Nobody) to API format (everyone/contacts/nobody)
-   */
-  const toVisibility = (
-    val: string | undefined,
-  ): "everyone" | "contacts" | "nobody" => {
-    const v = (val ?? "everyone").toLowerCase();
-    if (v === "contacts" || v === "nobody") return v;
-    return "everyone";
-  };
-
-  const privacyToApi = useCallback(
-    (local: typeof privacySettings): PrivacySettings => ({
-      profilePictureVisibility: toVisibility(local.profilePhoto),
-      firstNameVisibility: toVisibility(local.firstName),
-      lastNameVisibility: toVisibility(local.lastName),
-      biographyVisibility: toVisibility(local.biography),
-      lastSeenVisibility: toVisibility(local.lastSeen),
-      onlineStatusVisibility: toVisibility(local.onlineStatus),
-      groupAddPermission: toVisibility(local.groupAdd),
-      searchVisibility: true,
-      phoneNumberSearch: "everyone",
-    }),
-    [],
-  );
-
-  /**
-   * Map API privacy format back to local format
-   */
-  const apiToPrivacy = useCallback((api: PrivacySettings) => {
-    const capitalize = (s: string) =>
-      s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
-    return {
-      profilePhoto: capitalize(api.profilePictureVisibility),
-      firstName: capitalize(api.firstNameVisibility),
-      lastName: capitalize(api.lastNameVisibility),
-      biography: capitalize(api.biographyVisibility),
-      lastSeen: capitalize(api.lastSeenVisibility),
-      onlineStatus: capitalize(api.onlineStatusVisibility),
-      groupAdd: capitalize(api.groupAddPermission),
-    };
-  }, []);
-
-  /**
-   * Map local notification settings to the notification-service API format
-   */
-  const notificationToApi = useCallback(
-    (local: typeof notificationSettings): Partial<NotificationSettings> => ({
-      message_push_enabled: local.notifications,
-      system_push_enabled: local.sound,
-      mentions_only: local.mentions,
-    }),
-    [],
-  );
-
-  /**
-   * Map notification-service API format back to local format
-   */
-  const apiToNotification = useCallback(
-    (api: NotificationSettings) => ({
-      notifications: api.message_push_enabled,
-      sound: api.system_push_enabled,
-      mentions: api.mentions_only,
-    }),
-    [],
   );
 
   /**
