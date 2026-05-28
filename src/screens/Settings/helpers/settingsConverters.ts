@@ -1,5 +1,7 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { PrivacySettings, UserService } from "../../../services/UserService";
 import { NotificationSettings } from "../../../services/NotificationService";
+import { storage as secureStorage } from "../../../services/storage";
 
 export const STORAGE_KEYS = {
   privacy: "@whispr_settings_privacy",
@@ -8,6 +10,47 @@ export const STORAGE_KEYS = {
   app: "@whispr_settings_app",
   security: "whispr_settings_security",
 } as const;
+
+/**
+ * Persist a settings category. The security category is routed through
+ * SecureStore (Keychain iOS / Keystore Android, encrypted vault on web —
+ * WHISPR-1359) so the local 2FA / biometric UI flags can not be tampered
+ * with by a rooted device or an unencrypted ADB backup. Everything else
+ * goes to AsyncStorage. Never throws — logs and swallows.
+ */
+export async function persistSettingsCategory(
+  key: string,
+  value: Record<string, unknown>,
+): Promise<void> {
+  try {
+    if (key === STORAGE_KEYS.security) {
+      await secureStorage.setItem(key, JSON.stringify(value));
+      return;
+    }
+    await AsyncStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error("Error persisting settings:", error);
+  }
+}
+
+/**
+ * Read the security category from SecureStore. If empty, fall back to
+ * AsyncStorage to migrate existing users, then purge the legacy key
+ * (WHISPR-1359). Returns the raw JSON string or null.
+ */
+export async function loadSecurityFromStorage(): Promise<string | null> {
+  try {
+    const secureRaw = await secureStorage.getItem(STORAGE_KEYS.security);
+    if (secureRaw !== null) return secureRaw;
+    const legacyRaw = await AsyncStorage.getItem(STORAGE_KEYS.security);
+    if (legacyRaw === null) return null;
+    await secureStorage.setItem(STORAGE_KEYS.security, legacyRaw);
+    await AsyncStorage.removeItem(STORAGE_KEYS.security);
+    return legacyRaw;
+  } catch {
+    return null;
+  }
+}
 
 export interface LocalPrivacySettings {
   profilePhoto: string;
