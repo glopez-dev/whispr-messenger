@@ -43,15 +43,12 @@ import { colors, withOpacity } from "../../theme/colors";
 import { typography } from "../../theme/typography";
 import { Avatar } from "../../components/Chat/Avatar";
 import { logger } from "../../utils/logger";
-import {
-  groupsAPI,
-  GroupDetails,
-  GroupMember,
-} from "../../services/groups/api";
+import { groupsAPI, GroupMember } from "../../services/groups/api";
 import { contactsAPI, Contact } from "../../services/contacts/api";
 import { useAuth } from "../../context/AuthContext";
 import { AuthStackParamList } from "../../navigation/types";
 import { useConversationsStore } from "../../store/conversationsStore";
+import { useGroupManagementData } from "./hooks/useGroupManagementData";
 import { MediaService } from "../../services/MediaService";
 
 const AnimatedTouchableOpacity =
@@ -78,14 +75,28 @@ export const GroupManagementScreen: React.FC = () => {
     (s) => s.applyConversationUpdate,
   );
 
-  const [groupDetails, setGroupDetails] = useState<GroupDetails | null>(null);
-  const [members, setMembers] = useState<GroupMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [editingDescription, setEditingDescription] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
+
+  const {
+    groupDetails,
+    setGroupDetails,
+    members,
+    setMembers,
+    loading,
+    refreshing,
+    loadGroupData,
+    handleRefresh,
+  } = useGroupManagementData({
+    groupId,
+    conversationId,
+    onLoaded: (details) => {
+      setNewName(details.name);
+      setNewDescription(details.description || "");
+    },
+  });
   const [saving, setSaving] = useState(false);
   const [showAddMembersModal, setShowAddMembersModal] = useState(false);
   const [availableContacts, setAvailableContacts] = useState<Contact[]>([]);
@@ -112,27 +123,6 @@ export const GroupManagementScreen: React.FC = () => {
     headerOpacity.value = withTiming(1, { duration: 300 });
     contentScale.value = withSpring(1, { damping: 15, stiffness: 150 });
   }, []);
-
-  const loadGroupData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [details, membersData] = await Promise.all([
-        groupsAPI.getGroupDetails(groupId, conversationId),
-        groupsAPI.getGroupMembers(groupId, { conversationId }),
-      ]);
-
-      setGroupDetails(details);
-      setMembers(membersData.members);
-      setNewName(details.name);
-      setNewDescription(details.description || "");
-    } catch (error) {
-      logger.error("GroupManagementScreen", "Error loading group data", error);
-      Alert.alert("Erreur", "Impossible de charger les informations du groupe");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [groupId, conversationId]);
 
   const groupAvatarUrl = useMemo(() => {
     if (groupDetails?.picture_url) return groupDetails.picture_url;
@@ -247,16 +237,6 @@ export const GroupManagementScreen: React.FC = () => {
       refreshConversations,
     ],
   );
-
-  useEffect(() => {
-    loadGroupData();
-  }, [loadGroupData]);
-
-  const handleRefresh = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setRefreshing(true);
-    loadGroupData();
-  }, [loadGroupData]);
 
   const isAdmin =
     members.find((m) => m.user_id === currentUserId)?.role === "admin";
