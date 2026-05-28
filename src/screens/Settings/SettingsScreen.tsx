@@ -20,7 +20,6 @@ import * as ImagePicker from "expo-image-picker";
 import * as LocalAuthentication from "expo-local-authentication";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { storage as secureStorage } from "../../services/storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useNavigation } from "@react-navigation/native";
@@ -40,7 +39,9 @@ import {
   STORAGE_KEYS,
   apiToNotification,
   apiToPrivacy,
+  loadSecurityFromStorage,
   notificationToApi,
+  persistSettingsCategory,
   privacyToApi,
 } from "./helpers/settingsConverters";
 import { setReadReceiptsEnabled } from "../../services/messaging/readReceiptsPref";
@@ -151,33 +152,6 @@ export const SettingsScreen: React.FC = () => {
   });
 
   /**
-   * Persist a settings category to storage. The security category is routed
-   * through SecureStore (Keychain iOS / Keystore Android, encrypted vault on
-   * web) — WHISPR-1359 — so the local 2FA / biometric flags can not be
-   * tampered with by a rooted device or an unencrypted ADB backup. Other
-   * categories stay on AsyncStorage: they are UX preferences, not security
-   * boundaries.
-   *
-   * fix(settings) Le flag local biometricAuth/twoFactorAuth ne suffit PAS
-   * pour autoriser une action sensible. Toujours valider cote serveur (cf
-   * endpoint /auth/v1/2fa/status). Le flag sert juste a piloter l UI.
-   */
-  const persistSettings = useCallback(
-    async (key: string, value: Record<string, any>) => {
-      try {
-        if (key === STORAGE_KEYS.security) {
-          await secureStorage.setItem(key, JSON.stringify(value));
-          return;
-        }
-        await AsyncStorage.setItem(key, JSON.stringify(value));
-      } catch (error) {
-        console.error("Error persisting settings:", error);
-      }
-    },
-    [STORAGE_KEYS.security],
-  );
-
-  /**
    * Sync notification settings to the notification-service backend.
    * Uses a PATCH-style merge: reads current backend settings first, then
    * updates only the fields we manage locally, preserving backend-only
@@ -192,7 +166,7 @@ export const SettingsScreen: React.FC = () => {
       if (!userId) return;
       const doRollback = () => {
         setNotificationSettings(previous);
-        persistSettings(STORAGE_KEYS.notifications, previous);
+        persistSettingsCategory(STORAGE_KEYS.notifications, previous);
         Alert.alert(
           "Erreur",
           "Impossible de synchroniser ce parametre. Veuillez reessayer.",
@@ -215,7 +189,12 @@ export const SettingsScreen: React.FC = () => {
         doRollback();
       }
     },
-    [userId, notificationToApi, persistSettings, STORAGE_KEYS.notifications],
+    [
+      userId,
+      notificationToApi,
+      persistSettingsCategory,
+      STORAGE_KEYS.notifications,
+    ],
   );
 
   /**
@@ -229,7 +208,7 @@ export const SettingsScreen: React.FC = () => {
     ) => {
       const doRollback = () => {
         setPrivacySettings(previous);
-        persistSettings(STORAGE_KEYS.privacy, previous);
+        persistSettingsCategory(STORAGE_KEYS.privacy, previous);
         Alert.alert(
           "Erreur",
           "Impossible de synchroniser ce parametre. Veuillez reessayer.",
@@ -248,29 +227,13 @@ export const SettingsScreen: React.FC = () => {
         doRollback();
       }
     },
-    [privacyToApi, persistSettings, STORAGE_KEYS.privacy],
+    [privacyToApi, persistSettingsCategory, STORAGE_KEYS.privacy],
   );
 
   /**
    * Lit la categorie security depuis SecureStore. Si vide, regarde encore
    * AsyncStorage pour migrer les users existants, puis purge la cle legacy.
    */
-  const loadSecurityFromStorage = useCallback(async (): Promise<
-    string | null
-  > => {
-    try {
-      const secureRaw = await secureStorage.getItem(STORAGE_KEYS.security);
-      if (secureRaw !== null) return secureRaw;
-      const legacyRaw = await AsyncStorage.getItem(STORAGE_KEYS.security);
-      if (legacyRaw === null) return null;
-      await secureStorage.setItem(STORAGE_KEYS.security, legacyRaw);
-      await AsyncStorage.removeItem(STORAGE_KEYS.security);
-      return legacyRaw;
-    } catch {
-      return null;
-    }
-  }, [STORAGE_KEYS.security]);
-
   /**
    * Load all settings from storage and privacy from API on mount.
    *
@@ -375,7 +338,7 @@ export const SettingsScreen: React.FC = () => {
       case "notifications":
         setNotificationSettings((prev) => {
           const updated = { ...prev, [key]: value };
-          persistSettings(STORAGE_KEYS.notifications, updated);
+          persistSettingsCategory(STORAGE_KEYS.notifications, updated);
           syncNotificationsToBackend(updated, prev);
           return updated;
         });
@@ -383,7 +346,7 @@ export const SettingsScreen: React.FC = () => {
       case "messaging":
         setMessagingSettings((prev) => {
           const updated = { ...prev, [key]: value };
-          persistSettings(STORAGE_KEYS.messaging, updated);
+          persistSettingsCategory(STORAGE_KEYS.messaging, updated);
           // indicateur de saisie : pas d'equivalent backend dans le DTO
           // privacy de user-service aujourd'hui, donc on se contente du
           // mirror local synchrone. useWebSocket le lit a chaque appel
@@ -418,7 +381,7 @@ export const SettingsScreen: React.FC = () => {
                       ...curr,
                       readReceipts: previousValue,
                     };
-                    persistSettings(STORAGE_KEYS.messaging, reverted);
+                    persistSettingsCategory(STORAGE_KEYS.messaging, reverted);
                     return reverted;
                   });
                   Alert.alert(
@@ -432,7 +395,7 @@ export const SettingsScreen: React.FC = () => {
                 setReadReceiptsEnabled(previousValue);
                 setMessagingSettings((curr) => {
                   const reverted = { ...curr, readReceipts: previousValue };
-                  persistSettings(STORAGE_KEYS.messaging, reverted);
+                  persistSettingsCategory(STORAGE_KEYS.messaging, reverted);
                   return reverted;
                 });
                 Alert.alert(
@@ -447,7 +410,7 @@ export const SettingsScreen: React.FC = () => {
       case "app":
         setAppSettings((prev) => {
           const updated = { ...prev, [key]: value };
-          persistSettings(STORAGE_KEYS.app, updated);
+          persistSettingsCategory(STORAGE_KEYS.app, updated);
           return updated;
         });
         break;
@@ -457,7 +420,7 @@ export const SettingsScreen: React.FC = () => {
         } else {
           setSecuritySettings((prev) => {
             const updated = { ...prev, [key]: value };
-            persistSettings(STORAGE_KEYS.security, updated);
+            persistSettingsCategory(STORAGE_KEYS.security, updated);
             return updated;
           });
         }
@@ -487,7 +450,7 @@ export const SettingsScreen: React.FC = () => {
     if (result.success) {
       setSecuritySettings((prev) => {
         const updated = { ...prev, biometricAuth: true };
-        persistSettings(STORAGE_KEYS.security, updated);
+        persistSettingsCategory(STORAGE_KEYS.security, updated);
         return updated;
       });
     }
@@ -578,7 +541,7 @@ export const SettingsScreen: React.FC = () => {
       } else if (type === "privacy" && selectedPrivacyItem) {
         setPrivacySettings((prev) => {
           const updated = { ...prev, [selectedPrivacyItem]: value };
-          persistSettings(STORAGE_KEYS.privacy, updated);
+          persistSettingsCategory(STORAGE_KEYS.privacy, updated);
           syncPrivacyToBackend(updated, prev);
           return updated;
         });
