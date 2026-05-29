@@ -142,6 +142,7 @@ import {
 } from "./helpers/dateSeparators";
 import { deriveBubbleRowMeta } from "./helpers/bubbleRowMeta";
 import { useChatMessages } from "./hooks/useChatMessages";
+import { useChatModals } from "./hooks/useChatModals";
 import { usePinnedMessages } from "./hooks/usePinnedMessages";
 import { useChatReactions } from "./hooks/useChatReactions";
 import { useChatSearch } from "./hooks/useChatSearch";
@@ -191,10 +192,24 @@ export const ChatScreen: React.FC = () => {
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] =
     useState<MessageWithRelations | null>(null);
-  const [showActionsMenu, setShowActionsMenu] = useState(false);
-  const [selectedMessage, setSelectedMessage] =
-    useState<MessageWithRelations | null>(null);
-  const [showInfoModal, setShowInfoModal] = useState(false);
+  const {
+    showActionsMenu,
+    setShowActionsMenu,
+    selectedMessage,
+    setSelectedMessage,
+    showForwardModal,
+    setShowForwardModal,
+    forwardingMessage,
+    setForwardingMessage,
+    forwardSending,
+    setForwardSending,
+    showSchedulePicker,
+    setShowSchedulePicker,
+    scheduleMessageText,
+    setScheduleMessageText,
+    showInfoModal,
+    setShowInfoModal,
+  } = useChatModals();
   const [e2eeToggleBusy, setE2eeToggleBusy] = useState(false);
   const [conversationMembers, setConversationMembers] = useState<
     Array<{
@@ -205,18 +220,12 @@ export const ChatScreen: React.FC = () => {
     }>
   >([]);
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
-  const [showForwardModal, setShowForwardModal] = useState(false);
-  const [forwardingMessage, setForwardingMessage] =
-    useState<MessageWithRelations | null>(null);
   const callsAvailability = useCallsAvailable();
   const [callsToast, setCallsToast] = useState<{
     visible: boolean;
     message: string;
     type: ToastType;
   }>({ visible: false, message: "", type: "info" });
-  const [forwardSending, setForwardSending] = useState(false);
-  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
-  const [scheduleMessageText, setScheduleMessageText] = useState("");
   const [isOtherUserContact, setIsOtherUserContact] = useState<boolean | null>(
     null,
   );
