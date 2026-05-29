@@ -16,7 +16,7 @@ import { Text } from "react-native";
 
 const mockValidateSession = jest.fn();
 const mockLogout = jest.fn();
-jest.mock("../../services/AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: {
     validateSession: (...args: unknown[]) => mockValidateSession(...args),
     logout: (...args: unknown[]) => mockLogout(...args),
@@ -24,14 +24,14 @@ jest.mock("../../services/AuthService", () => ({
 }));
 
 const mockResetAppData = jest.fn(async () => {});
-jest.mock("../../services/AppResetService", () => ({
+jest.mock("@/services/AppResetService", () => ({
   AppResetService: {
     resetAppData: () => mockResetAppData(),
   },
 }));
 
 const mockInitPushRegistration = jest.fn(async () => {});
-jest.mock("../../services/NotificationService", () => ({
+jest.mock("@/services/NotificationService", () => ({
   NotificationService: {
     initPushRegistration: (...args: unknown[]) =>
       mockInitPushRegistration(...args),
@@ -40,7 +40,7 @@ jest.mock("../../services/NotificationService", () => ({
 
 const mockSchedulerStart = jest.fn(async () => {});
 const mockSchedulerStop = jest.fn();
-jest.mock("../../services/TokenRefreshScheduler", () => ({
+jest.mock("@/services/TokenRefreshScheduler", () => ({
   tokenRefreshScheduler: {
     start: () => mockSchedulerStart(),
     stop: () => mockSchedulerStop(),
@@ -48,7 +48,7 @@ jest.mock("../../services/TokenRefreshScheduler", () => ({
 }));
 
 const mockDestroySharedSocket = jest.fn();
-jest.mock("../../services/messaging/websocket", () => ({
+jest.mock("@/services/messaging/websocket", () => ({
   destroySharedSocket: () => mockDestroySharedSocket(),
 }));
 
@@ -56,39 +56,39 @@ const mockConversationsReset = jest.fn();
 const mockPresenceReset = jest.fn();
 const mockModerationReset = jest.fn();
 const mockCallsReset = jest.fn();
-jest.mock("../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: {
     getState: () => ({ reset: mockConversationsReset }),
   },
 }));
-jest.mock("../../store/presenceStore", () => ({
+jest.mock("@/store/presenceStore", () => ({
   usePresenceStore: {
     getState: () => ({ reset: mockPresenceReset }),
   },
 }));
-jest.mock("../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: {
     getState: () => ({ reset: mockModerationReset }),
   },
 }));
-jest.mock("../../store/callsStore", () => ({
+jest.mock("@/store/callsStore", () => ({
   useCallsStore: {
     getState: () => ({ reset: mockCallsReset }),
   },
 }));
 
 const mockOnSessionExpired = jest.fn();
-jest.mock("../../services/sessionEvents", () => ({
+jest.mock("@/services/sessionEvents", () => ({
   onSessionExpired: (h: (p: unknown) => void) => mockOnSessionExpired(h),
 }));
 
 const mockUseBadgeSync = jest.fn();
-jest.mock("../../hooks/useBadgeSync", () => ({
+jest.mock("@/hooks/useBadgeSync", () => ({
   useBadgeSync: (auth: boolean) => mockUseBadgeSync(auth),
 }));
 
 const mockSystemCallReset = jest.fn(async () => {});
-jest.mock("../../services/calls/systemCallProvider", () => ({
+jest.mock("@/services/calls/systemCallProvider", () => ({
   systemCallProvider: {
     resetAll: () => mockSystemCallReset(),
   },
@@ -96,7 +96,7 @@ jest.mock("../../services/calls/systemCallProvider", () => ({
 
 const mockClearResolvedMediaCache = jest.fn(async () => {});
 const mockSetResolvedMediaCacheScope = jest.fn();
-jest.mock("../../hooks/useResolvedMediaUrl", () => ({
+jest.mock("@/hooks/useResolvedMediaUrl", () => ({
   clearResolvedMediaCache: (...args: unknown[]) =>
     mockClearResolvedMediaCache(...args),
   setResolvedMediaCacheScope: (...args: unknown[]) =>
@@ -104,7 +104,7 @@ jest.mock("../../hooks/useResolvedMediaUrl", () => ({
 }));
 
 import { render, waitFor, act } from "@testing-library/react-native";
-import { AuthProvider, useAuth } from "../AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 
 beforeEach(() => {
   jest.clearAllMocks();

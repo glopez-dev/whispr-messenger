@@ -4,8 +4,8 @@ import {
   userHasReaction,
   MAX_DISTINCT_REACTIONS_PER_MESSAGE,
   MAX_DISTINCT_REACTIONS_PER_USER_PER_MESSAGE,
-} from "../reactionEmoji";
-import type { MessageReaction } from "../../types/messaging";
+} from "@/utils/reactionEmoji";
+import type { MessageReaction } from "@/types/messaging";
 
 const makeReaction = (
   user_id: string,

@@ -1,8 +1,8 @@
-import { AuthService } from "./AuthService";
-import { TokenService } from "./TokenService";
-import { DeviceService } from "./DeviceService";
-import { getApiBaseUrl } from "./apiBase";
-import type { TokenPair } from "../types/auth";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { DeviceService } from "@/services/DeviceService";
+import { getApiBaseUrl } from "@/services/apiBase";
+import type { TokenPair } from "@/types/auth";
 
 type ApiError = Error & { status?: number; body?: unknown };
 

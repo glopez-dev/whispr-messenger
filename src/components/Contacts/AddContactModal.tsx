@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useRef } from "react";
-import { formatUsername } from "../../utils";
+import { formatUsername } from "@/utils";
 import {
   View,
   Text,
@@ -20,16 +20,16 @@ import { Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { UserSearchResult } from "../../types/contact";
-import { contactsAPI } from "../../services/contacts/api";
-import { messagingAPI } from "../../services/messaging/api";
+import { UserSearchResult } from "@/types/contact";
+import { contactsAPI } from "@/services/contacts/api";
+import { messagingAPI } from "@/services/messaging/api";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/types";
-import { Avatar } from "../Chat/Avatar";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
-import { colors } from "../../theme/colors";
+import type { AuthStackParamList } from "@/navigation/types";
+import { Avatar } from "@/components/Chat/Avatar";
+import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { colors } from "@/theme/colors";
 
 interface AddContactModalProps {
   visible: boolean;

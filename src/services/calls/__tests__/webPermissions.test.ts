@@ -7,7 +7,7 @@ jest.mock("react-native", () => ({
   Platform: { OS: "web" },
 }));
 
-import { requestWebMediaPermissions } from "../webPermissions";
+import { requestWebMediaPermissions } from "@/services/calls/webPermissions";
 
 describe("requestWebMediaPermissions", () => {
   const originalNavigator = global.navigator;
@@ -140,7 +140,9 @@ describe("requestWebMediaPermissions", () => {
   it("retourne granted=true immédiatement sur plateforme natif (non-web)", async () => {
     jest.resetModules();
     jest.doMock("react-native", () => ({ Platform: { OS: "ios" } }));
-    const { requestWebMediaPermissions: fn } = require("../webPermissions");
+    const {
+      requestWebMediaPermissions: fn,
+    } = require("@/services/calls/webPermissions");
 
     const result = await fn(false);
 

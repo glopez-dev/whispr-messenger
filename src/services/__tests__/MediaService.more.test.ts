@@ -10,13 +10,13 @@
  * - uploadMedia : XHR progress success + XHR HTTP error + native fetch success path
  */
 
-jest.mock("../AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: { refreshTokens: jest.fn() },
 }));
-jest.mock("../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: jest.fn() },
 }));
-jest.mock("../apiBase", () => ({
+jest.mock("@/services/apiBase", () => ({
   getApiBaseUrl: () => "https://api.test",
 }));
 
@@ -37,9 +37,9 @@ jest.mock("expo-file-system/legacy", () => ({
 // hook code paths exercised here are the *native* ones unless we override
 // Platform per-test.
 
-import { MediaService } from "../MediaService";
-import { AuthService } from "../AuthService";
-import { TokenService } from "../TokenService";
+import { MediaService } from "@/services/MediaService";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
 import { Platform } from "react-native";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports

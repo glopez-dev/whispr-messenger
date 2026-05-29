@@ -29,7 +29,7 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => ({ params: { report: mockReport } }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { primary: "#000", secondary: "#111", tertiary: "#222" },
@@ -45,22 +45,22 @@ jest.mock("../../../context/ThemeContext", () => ({
 }));
 
 const mockResolveReport = jest.fn();
-jest.mock("../../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: () => ({ resolveReport: mockResolveReport }),
 }));
 
-jest.mock("../../../services/moderation/moderationApi", () => ({
+jest.mock("@/services/moderation/moderationApi", () => ({
   sanctionsAPI: { createSanction: jest.fn() },
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { sanctionsAPI } = require("../../../services/moderation/moderationApi");
+const { sanctionsAPI } = require("@/services/moderation/moderationApi");
 
-jest.mock("../../../components/Moderation", () => ({
+jest.mock("@/components/Moderation", () => ({
   AdminGate: ({ children }: any) => children,
   ReportStatusBadge: () => null,
 }));
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] }, dark: "#000" },
     text: { light: "#fff", secondary: "#aaa" },
@@ -71,7 +71,7 @@ jest.mock("../../../theme/colors", () => ({
   withOpacity: (c: string) => c,
 }));
 
-import { ReportReviewScreen } from "../ReportReviewScreen";
+import { ReportReviewScreen } from "@/screens/Admin/ReportReviewScreen";
 
 function allOnPress(root: any) {
   const out: any[] = [];

@@ -13,7 +13,7 @@ import {
   setTypingIndicatorEnabled,
   isTypingIndicatorPrefHydrated,
   __resetTypingIndicatorPrefForTests,
-} from "../typingIndicatorPref";
+} from "@/services/messaging/typingIndicatorPref";
 
 const STORAGE_KEY = "@whispr_settings_messaging";
 

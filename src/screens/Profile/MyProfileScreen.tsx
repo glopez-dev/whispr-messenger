@@ -27,8 +27,8 @@ import {
   SpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
-import { TourTooltip } from "../../components/Tour/TourTooltip";
-import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+import { TourTooltip } from "@/components/Tour/TourTooltip";
+import { TourAutoStart } from "@/components/Tour/TourAutoStart";
 import {
   View,
   Text,
@@ -48,23 +48,19 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { Button } from "../../components";
+import { Button } from "@/components";
 import {
   ProfileHeader,
   ProfilePictureBlock,
   ProfileFieldRow,
   StatusChip,
-} from "../../components/Profile";
-import {
-  formatUsername,
-  isValidUsername,
-  normalizeUsername,
-} from "../../utils";
-import { colors, spacing, typography, borderRadius } from "../../theme";
-import { UserService } from "../../services";
-import type { UpdateProfileRequest } from "../../services/UserService";
-import { MediaService } from "../../services/MediaService";
-import { useAuth } from "../../context/AuthContext";
+} from "@/components/Profile";
+import { formatUsername, isValidUsername, normalizeUsername } from "@/utils";
+import { colors, spacing, typography, borderRadius } from "@/theme";
+import { UserService } from "@/services";
+import type { UpdateProfileRequest } from "@/services/UserService";
+import { MediaService } from "@/services/MediaService";
+import { useAuth } from "@/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface UserProfile {

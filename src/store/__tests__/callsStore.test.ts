@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock("../../services/calls/callsApi", () => ({
+jest.mock("@/services/calls/callsApi", () => ({
   callsApi: {
     initiate: jest.fn().mockResolvedValue({
       call_id: "c1",
@@ -17,7 +17,7 @@ jest.mock("../../services/calls/callsApi", () => ({
   },
 }));
 
-jest.mock("../../services/calls/liveKitProvider", () => ({
+jest.mock("@/services/calls/liveKitProvider", () => ({
   callsLiveKit: {
     connect: jest.fn().mockResolvedValue({ id: "room" }),
     enableMic: jest.fn().mockResolvedValue(undefined),
@@ -40,8 +40,8 @@ jest.mock("react-native", () => ({
   NativeModules: { WebRTCModule: {} },
 }));
 
-import { useCallsStore } from "../callsStore";
-import { callsLiveKit } from "../../services/calls/liveKitProvider";
+import { useCallsStore } from "@/store/callsStore";
+import { callsLiveKit } from "@/services/calls/liveKitProvider";
 
 const mockProvider = callsLiveKit as unknown as {
   connect: jest.Mock;
@@ -124,7 +124,7 @@ describe("callsStore — track publish on connect", () => {
   // échec LiveKit pour afficher un message utile. acceptIncoming doit donc
   // tagguer chaque étape avec un préfixe stable.
   it("tags accept-api errors so the UI can surface them (WHISPR-1200)", async () => {
-    const callsApi = require("../../services/calls/callsApi").callsApi as {
+    const callsApi = require("@/services/calls/callsApi").callsApi as {
       accept: jest.Mock;
     };
     callsApi.accept.mockRejectedValueOnce(new Error("403 Forbidden"));
@@ -163,7 +163,7 @@ describe("callsStore — track publish on connect", () => {
   // WHISPR-1200 (web) — initiate() doit aussi tagguer ses echecs pour que
   // ChatScreen affiche la vraie cause au lieu d'un toast generique.
   it("tags initiate-api errors so the UI can surface them (WHISPR-1200)", async () => {
-    const callsApi = require("../../services/calls/callsApi").callsApi as {
+    const callsApi = require("@/services/calls/callsApi").callsApi as {
       initiate: jest.Mock;
     };
     callsApi.initiate.mockRejectedValueOnce(new Error("500 server error"));
@@ -174,7 +174,7 @@ describe("callsStore — track publish on connect", () => {
   });
 
   it("tags livekit-connect errors on initiate so the UI can surface them (WHISPR-1200)", async () => {
-    const callsApi = require("../../services/calls/callsApi").callsApi as {
+    const callsApi = require("@/services/calls/callsApi").callsApi as {
       initiate: jest.Mock;
     };
     callsApi.initiate.mockResolvedValueOnce({

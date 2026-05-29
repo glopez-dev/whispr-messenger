@@ -18,7 +18,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   }),
 }));
 
-jest.mock("../storage", () => ({
+jest.mock("@/services/storage", () => ({
   storage: {
     getItem: jest.fn(async (key: string) => secureBackend[key] ?? null),
     setItem: jest.fn(async (key: string, value: string) => {
@@ -34,9 +34,9 @@ import {
   offlineQueue,
   type QueuedMessage,
   __resetMigrationForTests,
-} from "../offlineQueue";
+} from "@/services/offlineQueue";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { storage as secureStorage } from "../storage";
+import { storage as secureStorage } from "@/services/storage";
 
 const makeMessage = (
   overrides: Partial<QueuedMessage> = {},

@@ -4,9 +4,9 @@
 
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { Message } from "../../types/messaging";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { Message } from "@/types/messaging";
 
 interface ReplyPreviewProps {
   replyTo: Message;

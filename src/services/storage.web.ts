@@ -1,4 +1,4 @@
-import { isWrapped, unwrap, wrap } from "./webCryptoVault.web";
+import { isWrapped, unwrap, wrap } from "@/services/webCryptoVault.web";
 
 // Cles dont les valeurs ne doivent jamais finir en clair dans localStorage.
 // On y inclut la cle d'identite Signal (WHISPR-1212), les tokens d'auth

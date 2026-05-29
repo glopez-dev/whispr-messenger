@@ -11,10 +11,10 @@ import {
   BlockedUser,
   PhoneContact,
   ContactRequest,
-} from "../../types/contact";
-import { TokenService } from "../TokenService";
-import { getApiBaseUrl } from "../apiBase";
-import { fetchProfilesBatch } from "../profile/batchFetch";
+} from "@/types/contact";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
+import { fetchProfilesBatch } from "@/services/profile/batchFetch";
 
 export type { Contact };
 

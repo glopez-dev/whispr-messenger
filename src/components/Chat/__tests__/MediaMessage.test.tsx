@@ -13,12 +13,12 @@ import React from "react";
 import { render, waitFor } from "@testing-library/react-native";
 
 const mockGetAccessToken = jest.fn();
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: (...a: any[]) => mockGetAccessToken(...a) },
 }));
 
 // Simple deterministic theme provider.
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       primary: "#fff",
@@ -50,13 +50,13 @@ jest.mock(
 
 // E2EE decryption is heavy and IO-bound — stub it to a deterministic blob URI
 // so we can assert on which uri the component renders.
-jest.mock("../../../services/E2EEService", () => ({
+jest.mock("@/services/E2EEService", () => ({
   E2EEService: {
     decryptMediaFile: jest.fn(async (uri: string) => `decrypted:${uri}`),
   },
 }));
 
-import { MediaMessage } from "../MediaMessage";
+import { MediaMessage } from "@/components/Chat/MediaMessage";
 
 const originalFetch = global.fetch;
 

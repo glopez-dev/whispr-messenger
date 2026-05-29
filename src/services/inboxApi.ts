@@ -3,9 +3,9 @@
  * Endpoint : /notification/api/v1/inbox  (singulier — nginx ingress)
  */
 
-import { getApiBaseUrl } from "./apiBase";
-import { TokenService } from "./TokenService";
-import type { InboxResponse, MarkReadResponse } from "../types/inbox";
+import { getApiBaseUrl } from "@/services/apiBase";
+import { TokenService } from "@/services/TokenService";
+import type { InboxResponse, MarkReadResponse } from "@/types/inbox";
 
 function getBaseUrl(): string {
   // /notification (singulier) — cf nginx ingress notif-service PR #69.

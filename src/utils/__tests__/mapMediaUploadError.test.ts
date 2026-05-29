@@ -1,4 +1,4 @@
-import { mapMediaUploadError } from "../mapMediaUploadError";
+import { mapMediaUploadError } from "@/utils/mapMediaUploadError";
 
 describe("mapMediaUploadError", () => {
   it("maps HTTP 429 to retryable French message", () => {

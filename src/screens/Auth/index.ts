@@ -1,7 +1,7 @@
-export { WelcomeScreen } from "./WelcomeScreen";
-export { PhoneInputScreen } from "./PhoneInputScreen";
-export { OtpScreen } from "./OtpScreen";
-export { ProfileSetupScreen } from "./ProfileSetupScreen";
-export { AccountRecoveredScreen } from "./AccountRecoveredScreen";
-export { RecoveryCodesScreen } from "./RecoveryCodesScreen";
-export { RecoveryCodeEntryScreen } from "./RecoveryCodeEntryScreen";
+export { WelcomeScreen } from "@/screens/Auth/WelcomeScreen";
+export { PhoneInputScreen } from "@/screens/Auth/PhoneInputScreen";
+export { OtpScreen } from "@/screens/Auth/OtpScreen";
+export { ProfileSetupScreen } from "@/screens/Auth/ProfileSetupScreen";
+export { AccountRecoveredScreen } from "@/screens/Auth/AccountRecoveredScreen";
+export { RecoveryCodesScreen } from "@/screens/Auth/RecoveryCodesScreen";
+export { RecoveryCodeEntryScreen } from "@/screens/Auth/RecoveryCodeEntryScreen";

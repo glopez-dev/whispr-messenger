@@ -1,14 +1,10 @@
-import type {
-  AuthPurpose,
-  DeviceInfo,
-  SignalKeyBundleDto,
-} from "../types/auth";
+import type { AuthPurpose, DeviceInfo, SignalKeyBundleDto } from "@/types/auth";
 import type {
   Report,
   Appeal,
   UserSanction,
   SanctionType,
-} from "../types/moderation";
+} from "@/types/moderation";
 
 export type AuthStackParamList = {
   Onboarding: undefined;

@@ -1,5 +1,5 @@
-import { tfjsService } from "./tfjs.service";
-import { logger } from "../../utils/logger";
+import { tfjsService } from "@/services/moderation/tfjs.service";
+import { logger } from "@/utils/logger";
 
 export type GateChatImageResult =
   | { ok: true }

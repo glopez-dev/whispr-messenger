@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import { getApiBaseUrl } from "../services/apiBase";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 export type LegalDocumentSlug = "privacy" | "terms";
 

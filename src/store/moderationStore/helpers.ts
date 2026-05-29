@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
-import { logger } from "../../utils/logger";
+import { logger } from "@/utils/logger";
 
 // expo-file-system v55 types don't fully match the runtime API — alias to avoid
 // scattering `as any` across every call site.

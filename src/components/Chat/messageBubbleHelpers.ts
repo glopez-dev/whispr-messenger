@@ -1,6 +1,6 @@
-import { MessageWithRelations } from "../../types/messaging";
-import { isReachableUrl } from "../../utils";
-import { getApiBaseUrl } from "../../services/apiBase";
+import { MessageWithRelations } from "@/types/messaging";
+import { isReachableUrl } from "@/utils";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 /**
  * True when a URL hostname points to the internal cluster (unreachable from

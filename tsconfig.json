@@ -37,6 +37,12 @@
       ],
       "@/utils/*": [
         "src/utils/*"
+      ],
+      "@/features/*": [
+        "src/features/*"
+      ],
+      "@/shared/*": [
+        "src/shared/*"
       ]
     }
   },

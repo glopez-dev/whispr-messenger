@@ -1,9 +1,9 @@
-import type { GateResult } from "./moderation.types";
+import type { GateResult } from "@/services/moderation/moderation.types";
 import {
   CLASS_NAMES_V2,
   CLASS_NAMES_V3,
   V3_UNHEALTHY_INDEX,
-} from "./moderation.constants";
+} from "@/services/moderation/moderation.constants";
 
 /**
  * Pure decision functions shared between the native and web `tfjs.service`

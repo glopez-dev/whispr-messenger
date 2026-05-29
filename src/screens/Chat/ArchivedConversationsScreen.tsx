@@ -33,14 +33,14 @@ import * as Haptics from "expo-haptics";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
-import { Conversation } from "../../types/messaging";
-import { useConversationsStore } from "../../store/conversationsStore";
-import { AuthStackParamList } from "../../navigation/types";
-import { colors } from "../../theme/colors";
-import ConversationItem from "../../components/Chat/ConversationItem";
-import { ConversationSkeleton } from "../../components/Chat/SkeletonLoader";
-import Toast from "../../components/Toast/Toast";
-import { useTheme } from "../../context/ThemeContext";
+import { Conversation } from "@/types/messaging";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { AuthStackParamList } from "@/navigation/types";
+import { colors } from "@/theme/colors";
+import ConversationItem from "@/components/Chat/ConversationItem";
+import { ConversationSkeleton } from "@/components/Chat/SkeletonLoader";
+import Toast from "@/components/Toast/Toast";
+import { useTheme } from "@/context/ThemeContext";
 
 type NavigationProp = StackNavigationProp<
   AuthStackParamList,

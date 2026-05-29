@@ -9,7 +9,7 @@
 import {
   decideV3FromProbs,
   V3_UNHEALTHY_THRESHOLD_DEFAULT,
-} from "../tfjs.decide";
+} from "@/services/moderation/tfjs.decide";
 
 // Order must match CLASS_NAMES_V3 in moderation.constants.ts.
 function probs(healthy: number, notFood: number, unhealthy: number) {

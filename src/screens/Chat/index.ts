@@ -1,2 +1,2 @@
-export { ConversationsListScreen } from "./ConversationsListScreen";
-export { ChatScreen } from "./ChatScreen";
+export { ConversationsListScreen } from "@/screens/Chat/ConversationsListScreen";
+export { ChatScreen } from "@/screens/Chat/ChatScreen";

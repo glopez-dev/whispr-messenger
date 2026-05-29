@@ -8,12 +8,12 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockGetAccessToken = jest.fn();
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: (...a: any[]) => mockGetAccessToken(...a) },
 }));
 
 // pass-through : on n'a pas de e2ee dans ces tests, le hook retourne l'URI tel quel
-jest.mock("../../../hooks/useE2EEMedia", () => ({
+jest.mock("@/hooks/useE2EEMedia", () => ({
   useE2EEMedia: (uri: string | undefined) => ({
     decryptedUri: uri,
     loading: false,
@@ -22,7 +22,7 @@ jest.mock("../../../hooks/useE2EEMedia", () => ({
 }));
 
 const mockDownloadAudioToCacheFile = jest.fn();
-jest.mock("../../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: {
     downloadAudioToCacheFile: (...a: any[]) =>
       mockDownloadAudioToCacheFile(...a),
@@ -44,7 +44,7 @@ jest.mock(
   { virtual: true },
 );
 
-import { AudioMessage } from "../AudioMessage";
+import { AudioMessage } from "@/components/Chat/AudioMessage";
 
 const mockFetchJson = (body: unknown) => ({
   ok: true,

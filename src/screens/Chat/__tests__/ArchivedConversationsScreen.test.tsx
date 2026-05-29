@@ -70,7 +70,7 @@ jest.mock("@react-navigation/native", () => {
   };
 });
 
-jest.mock("../../../context/ThemeContext", () => {
+jest.mock("@/context/ThemeContext", () => {
   const translations: Record<string, string> = {
     "archived.title": "Archivées",
     "archived.empty": "Aucune conversation archivée",
@@ -103,7 +103,7 @@ const mockFetchArchived = jest.fn();
 const mockLoadMore = jest.fn();
 const mockUnarchive = jest.fn();
 
-jest.mock("../../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: (selector: any) =>
     selector({
       archived: mockArchived,
@@ -113,20 +113,20 @@ jest.mock("../../../store/conversationsStore", () => ({
     }),
 }));
 
-jest.mock("../../../components/Chat/Avatar", () => ({ Avatar: () => null }));
-jest.mock("../../../components/Chat/ConversationItem", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/components/Chat/ConversationItem", () => ({
   __esModule: true,
   default: () => null,
 }));
-jest.mock("../../../components/Chat/SkeletonLoader", () => ({
+jest.mock("@/components/Chat/SkeletonLoader", () => ({
   ConversationSkeleton: () => null,
 }));
-jest.mock("../../../components/Toast/Toast", () => ({
+jest.mock("@/components/Toast/Toast", () => ({
   __esModule: true,
   default: () => null,
 }));
 
-import { ArchivedConversationsScreen } from "../ArchivedConversationsScreen";
+import { ArchivedConversationsScreen } from "@/screens/Chat/ArchivedConversationsScreen";
 
 beforeEach(() => {
   jest.clearAllMocks();

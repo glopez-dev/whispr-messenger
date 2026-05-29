@@ -1,4 +1,4 @@
-import type { MessageWithRelations } from "../../../types/messaging";
+import type { MessageWithRelations } from "@/types/messaging";
 
 // WHISPR-1074: FlatList items in ChatScreen are either messages or date
 // separators. Centralising the union + guard removes the

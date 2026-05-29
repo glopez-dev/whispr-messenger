@@ -4,8 +4,8 @@ import {
   DeviceManagerService,
   SignalKeysService,
   type DeviceInfo,
-} from "../../../services/SecurityService";
-import { logger } from "../../../utils/logger";
+} from "@/services/SecurityService";
+import { logger } from "@/utils/logger";
 
 export interface ConnectedDevice {
   id: string;

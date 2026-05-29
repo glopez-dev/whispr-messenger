@@ -19,7 +19,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, withOpacity } from "../../theme/colors";
+import { colors, withOpacity } from "@/theme/colors";
 
 const DISMISSED_KEY = "@whispr/dismissed_pwa_install";
 const DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours

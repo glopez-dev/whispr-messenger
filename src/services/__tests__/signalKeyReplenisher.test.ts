@@ -10,7 +10,7 @@ const mockGetToken = jest.fn();
 const mockDecodeAccessToken = jest.fn();
 const mockGetIdentityPrivateKey = jest.fn();
 
-jest.mock("../SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   SignalKeysService: {
     getDeviceHealth: (...args: unknown[]) => mockGetDeviceHealth(...args),
     uploadSignedPrekey: (...args: unknown[]) => mockUploadSigned(...args),
@@ -18,13 +18,13 @@ jest.mock("../SecurityService", () => ({
   },
 }));
 
-jest.mock("../SignalKeyService", () => ({
+jest.mock("@/services/SignalKeyService", () => ({
   SignalKeyService: {
     generateKeyBundle: (...args: unknown[]) => mockGenerate(...args),
   },
 }));
 
-jest.mock("../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: (...args: unknown[]) => mockGetToken(...args),
     decodeAccessToken: (...args: unknown[]) => mockDecodeAccessToken(...args),
@@ -40,7 +40,10 @@ jest.mock("react-native", () => ({
   },
 }));
 
-import { replenishPreKeysIfNeeded, __testing } from "../signalKeyReplenisher";
+import {
+  replenishPreKeysIfNeeded,
+  __testing,
+} from "@/services/signalKeyReplenisher";
 
 const FAKE_BUNDLE = {
   identityKey: "ik",

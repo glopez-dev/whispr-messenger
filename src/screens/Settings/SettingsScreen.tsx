@@ -23,17 +23,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/types";
+import type { AuthStackParamList } from "@/navigation/types";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import type { BackgroundPreset } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
-import { useIsStaff, useModerationStore } from "../../store/moderationStore";
-import { UserService } from "../../services/UserService";
+import { useTheme } from "@/context/ThemeContext";
+import type { BackgroundPreset } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { useIsStaff, useModerationStore } from "@/store/moderationStore";
+import { UserService } from "@/services/UserService";
 import {
   NotificationService,
   NotificationSettings,
-} from "../../services/NotificationService";
+} from "@/services/NotificationService";
 import {
   STORAGE_KEYS,
   apiToNotification,
@@ -42,20 +42,23 @@ import {
   notificationToApi,
   persistSettingsCategory,
   privacyToApi,
-} from "./helpers/settingsConverters";
-import { SettingItem, SettingSection } from "./components/SettingsRows";
-import { setReadReceiptsEnabled } from "../../services/messaging/readReceiptsPref";
-import { setTypingIndicatorEnabled } from "../../services/messaging/typingIndicatorPref";
-import { SettingsChoiceAlert } from "./SettingsChoiceAlert";
-import { useTour } from "../../context/TourContext";
-import { DangerConfirmModal } from "../../components/Common/DangerConfirmModal";
-import { FLOATING_TAB_BAR_RESERVED_SPACE } from "../../components/Navigation/floatingTabBarLayout";
+} from "@/screens/Settings/helpers/settingsConverters";
+import {
+  SettingItem,
+  SettingSection,
+} from "@/screens/Settings/components/SettingsRows";
+import { setReadReceiptsEnabled } from "@/services/messaging/readReceiptsPref";
+import { setTypingIndicatorEnabled } from "@/services/messaging/typingIndicatorPref";
+import { SettingsChoiceAlert } from "@/screens/Settings/SettingsChoiceAlert";
+import { useTour } from "@/context/TourContext";
+import { DangerConfirmModal } from "@/components/Common/DangerConfirmModal";
+import { FLOATING_TAB_BAR_RESERVED_SPACE } from "@/components/Navigation/floatingTabBarLayout";
 import {
   DEFAULT_MODERATION_MODEL,
   getModerationModelVersion,
   setModerationModelVersion,
   type ModerationModelVersion,
-} from "../../services/moderation";
+} from "@/services/moderation";
 
 const PRIVACY_ALERT_TITLE: Record<string, string> = {
   profilePhoto: "Photo de profil",

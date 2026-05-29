@@ -10,7 +10,7 @@ import {
   SESSION_EXPIRED_EVENT,
   emitSessionExpired,
   onSessionExpired,
-} from "../sessionEvents";
+} from "@/services/sessionEvents";
 
 const mockedEmitter = DeviceEventEmitter as unknown as {
   emit: jest.Mock;

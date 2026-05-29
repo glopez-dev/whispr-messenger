@@ -14,10 +14,10 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { Avatar } from "./Avatar";
-import type { MessageReaction } from "../../types/messaging";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { Avatar } from "@/components/Chat/Avatar";
+import type { MessageReaction } from "@/types/messaging";
 
 export interface ReactionReactorsModalProps {
   visible: boolean;

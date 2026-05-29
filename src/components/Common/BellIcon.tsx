@@ -6,7 +6,7 @@
 import React, { memo } from "react";
 import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../theme/colors";
+import { colors } from "@/theme/colors";
 
 interface BellIconProps {
   unreadCount: number;

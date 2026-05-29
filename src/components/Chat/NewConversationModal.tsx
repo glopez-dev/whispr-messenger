@@ -18,14 +18,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors } from "../../theme/colors";
-import { Contact } from "../../types/contact";
-import { contactsAPI } from "../../services/contacts/api";
-import { messagingAPI } from "../../services/messaging/api";
-import { Avatar } from "./Avatar";
-import { logger } from "../../utils/logger";
-import { formatUsername } from "../../utils";
-import { useTheme } from "../../context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { Contact } from "@/types/contact";
+import { contactsAPI } from "@/services/contacts/api";
+import { messagingAPI } from "@/services/messaging/api";
+import { Avatar } from "@/components/Chat/Avatar";
+import { logger } from "@/utils/logger";
+import { formatUsername } from "@/utils";
+import { useTheme } from "@/context/ThemeContext";
 
 interface NewConversationModalProps {
   visible: boolean;

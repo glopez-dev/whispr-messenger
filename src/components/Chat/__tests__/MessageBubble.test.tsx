@@ -34,7 +34,7 @@ jest.mock("expo-haptics", () => ({
   NotificationFeedbackType: { Success: "success" },
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       primary: "#fff",
@@ -46,11 +46,11 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-jest.mock("../../../services/apiBase", () => ({
+jest.mock("@/services/apiBase", () => ({
   getApiBaseUrl: () => "https://example.test",
 }));
 
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: jest.fn().mockResolvedValue("tok") },
 }));
 
@@ -75,7 +75,7 @@ const mockNormalizeLinkPreview = jest.fn((raw?: any) => {
   };
 });
 
-jest.mock("../../../services/linkPreview", () => ({
+jest.mock("@/services/linkPreview", () => ({
   extractFirstUrl: (text?: string | null) => mockExtractFirstUrl(text),
   getLinkPreview: (url: string) => mockGetLinkPreview(url),
   normalizeLinkPreview: (raw?: any) => mockNormalizeLinkPreview(raw),
@@ -84,7 +84,7 @@ jest.mock("../../../services/linkPreview", () => ({
 // AudioMessage and MediaMessage are spied so we can prove they are NOT
 // rendered for tombstoned messages.
 const mockAudioSpy: jest.Mock = jest.fn();
-jest.mock("../AudioMessage", () => ({
+jest.mock("@/components/Chat/AudioMessage", () => ({
   AudioMessage: (props: any) => {
     mockAudioSpy(props);
     const { Text } = require("react-native");
@@ -97,7 +97,7 @@ jest.mock("../AudioMessage", () => ({
 }));
 
 const mockMediaSpy: jest.Mock = jest.fn();
-jest.mock("../MediaMessage", () => ({
+jest.mock("@/components/Chat/MediaMessage", () => ({
   MediaMessage: (props: any) => {
     mockMediaSpy(props);
     const { Text } = require("react-native");
@@ -109,7 +109,7 @@ jest.mock("../MediaMessage", () => ({
   },
 }));
 
-import { MessageBubble } from "../MessageBubble";
+import { MessageBubble } from "@/components/Chat/MessageBubble";
 
 const baseAudioMessage = {
   id: "msg-1",

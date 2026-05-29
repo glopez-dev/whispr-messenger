@@ -16,7 +16,7 @@ jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ goBack: mockGoBack }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     settings: { language: "fr" },
     getLocalizedText: (k: string) => k,
@@ -28,20 +28,20 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ deviceId: "d-1" }),
 }));
 
 const mockListDevices = jest.fn();
 const mockRevokeDevice = jest.fn();
-jest.mock("../../../services/SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   DeviceManagerService: {
     listDevices: (...a: unknown[]) => mockListDevices(...a),
     revokeDevice: (...a: unknown[]) => mockRevokeDevice(...a),
   },
 }));
 
-import { DevicesScreen } from "../DevicesScreen";
+import { DevicesScreen } from "@/screens/Settings/DevicesScreen";
 
 let alertSpy: jest.SpyInstance;
 

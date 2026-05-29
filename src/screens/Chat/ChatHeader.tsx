@@ -15,9 +15,9 @@ import {
 import { BlurView } from "expo-blur";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { Avatar } from "../../components/Chat/Avatar";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { Avatar } from "@/components/Chat/Avatar";
 
 interface ChatHeaderProps {
   conversationName: string;

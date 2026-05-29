@@ -3,14 +3,14 @@
 const mockSaveIdentityPrivateKey = jest.fn();
 const mockResetIdentityCache = jest.fn();
 
-jest.mock("../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     saveIdentityPrivateKey: (...args: any[]) =>
       mockSaveIdentityPrivateKey(...args),
   },
 }));
 
-jest.mock("../E2EEService", () => ({
+jest.mock("@/services/E2EEService", () => ({
   E2EEService: {
     resetIdentityCache: (...args: any[]) => mockResetIdentityCache(...args),
   },
@@ -56,7 +56,7 @@ jest.mock("tweetnacl-util", () => ({
   decodeBase64: jest.fn((s: string) => new Uint8Array(64).fill(0xab)),
 }));
 
-import { SignalKeyService } from "../SignalKeyService";
+import { SignalKeyService } from "@/services/SignalKeyService";
 import nacl from "tweetnacl";
 
 const mockedNacl = nacl as unknown as {
@@ -200,7 +200,9 @@ describe("SignalKeyService.generateKeyBundle context-aware", () => {
   beforeEach(() => {
     mockGetIdentityPrivateKey.mockReset();
     // Injecter getIdentityPrivateKey dans le mock TokenService existant
-    const TokenService = jest.requireMock("../TokenService").TokenService;
+    const TokenService = jest.requireMock(
+      "@/services/TokenService",
+    ).TokenService;
     TokenService.getIdentityPrivateKey = mockGetIdentityPrivateKey;
   });
 

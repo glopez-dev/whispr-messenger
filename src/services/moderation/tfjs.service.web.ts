@@ -1,11 +1,14 @@
-import type { GateResult } from "./moderation.types";
-import { imageUriToFloatTensor_0_255 } from "./image-to-tensor";
-import { INPUT_SIZE } from "./moderation.constants";
-import { decideV2FromProbs, decideV3FromProbs } from "./tfjs.decide";
+import type { GateResult } from "@/services/moderation/moderation.types";
+import { imageUriToFloatTensor_0_255 } from "@/services/moderation/image-to-tensor";
+import { INPUT_SIZE } from "@/services/moderation/moderation.constants";
+import {
+  decideV2FromProbs,
+  decideV3FromProbs,
+} from "@/services/moderation/tfjs.decide";
 import {
   getModerationModelVersion,
   type ModerationModelVersion,
-} from "./model-version";
+} from "@/services/moderation/model-version";
 
 // scope reduce: import core + converter + webgl au lieu du bundle complet @tensorflow/tfjs
 // (le bundle full = ~500KB min+gzip non tree-shakeable, on n'a besoin que de loadGraphModel + tensor4d)

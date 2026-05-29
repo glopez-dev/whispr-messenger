@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   type ViewStyle,
 } from "react-native";
-import { colors } from "../../theme/colors";
+import { colors } from "@/theme/colors";
 
 export interface MediaUploadProgressOverlayProps {
   progress?: number;

@@ -1,2 +1,2 @@
-export { MyProfileScreen } from "./MyProfileScreen";
-export { UserProfileScreen } from "./UserProfileScreen";
+export { MyProfileScreen } from "@/screens/Profile/MyProfileScreen";
+export { UserProfileScreen } from "@/screens/Profile/UserProfileScreen";

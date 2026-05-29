@@ -34,7 +34,7 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => ({ params: { sanction: mockSanction } }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { primary: "#000", secondary: "#111", tertiary: "#222" },
@@ -50,11 +50,11 @@ jest.mock("../../../context/ThemeContext", () => ({
 }));
 
 const mockCreateAppeal = jest.fn();
-jest.mock("../../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: () => ({ createAppeal: mockCreateAppeal }),
 }));
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] }, dark: "#000" },
     text: { light: "#fff", secondary: "#aaa" },
@@ -65,7 +65,7 @@ jest.mock("../../../theme/colors", () => ({
   withOpacity: (c: string) => c,
 }));
 
-import { AppealFormScreen } from "../AppealFormScreen";
+import { AppealFormScreen } from "@/screens/Moderation/AppealFormScreen";
 
 function allTouchables(root: any) {
   const out: any[] = [];

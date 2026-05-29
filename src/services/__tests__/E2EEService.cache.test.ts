@@ -37,7 +37,7 @@ jest.mock("react-native", () => ({
   Platform: { OS: "ios" },
 }));
 
-jest.mock("../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getIdentityPrivateKey: jest.fn(),
     getAccessToken: jest.fn(),
@@ -45,7 +45,7 @@ jest.mock("../TokenService", () => ({
   },
 }));
 
-jest.mock("../SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   SignalKeysService: {
     listDevices: jest.fn(),
     getKeyBundle: jest.fn(),
@@ -55,7 +55,7 @@ jest.mock("../SecurityService", () => ({
 import nacl from "tweetnacl";
 import { encodeBase64, decodeUTF8 } from "tweetnacl-util";
 
-import { E2EEService } from "../E2EEService";
+import { E2EEService } from "@/services/E2EEService";
 
 beforeEach(() => {
   mockFsFiles.clear();

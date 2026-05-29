@@ -1,4 +1,4 @@
-import { getModerationStrings, moderationStrings } from "../moderation";
+import { getModerationStrings, moderationStrings } from "@/i18n/moderation";
 
 describe("moderationStrings", () => {
   it("ships fr and en bundles with the same top-level sections", () => {

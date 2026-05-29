@@ -15,8 +15,8 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { colors } from "../../theme/colors";
-import { useModerationStore } from "../../store/moderationStore";
+import { colors } from "@/theme/colors";
+import { useModerationStore } from "@/store/moderationStore";
 
 const MIN_CHARS = 20;
 

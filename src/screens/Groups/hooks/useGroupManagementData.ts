@@ -1,12 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import * as Haptics from "expo-haptics";
-import {
-  groupsAPI,
-  GroupDetails,
-  GroupMember,
-} from "../../../services/groups/api";
-import { logger } from "../../../utils/logger";
+import { groupsAPI, GroupDetails, GroupMember } from "@/services/groups/api";
+import { logger } from "@/utils/logger";
 
 export interface UseGroupManagementDataOptions {
   groupId: string;

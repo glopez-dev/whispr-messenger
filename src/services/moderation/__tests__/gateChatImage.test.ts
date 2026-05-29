@@ -4,15 +4,15 @@
 
 const mockGate = jest.fn();
 
-jest.mock("../tfjs.service", () => ({
+jest.mock("@/services/moderation/tfjs.service", () => ({
   tfjsService: { gate: (...args: any[]) => mockGate(...args) },
 }));
 
-jest.mock("../../../utils/logger", () => ({
+jest.mock("@/utils/logger", () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
-import { gateChatImageBeforeSend } from "../gate-chat-image";
+import { gateChatImageBeforeSend } from "@/services/moderation/gate-chat-image";
 
 beforeEach(() => jest.clearAllMocks());
 

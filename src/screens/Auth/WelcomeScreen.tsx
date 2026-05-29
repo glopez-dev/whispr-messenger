@@ -12,11 +12,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { Button, Logo } from "../../components";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/types";
-import { AuthLanguageSwitcher } from "./AuthLanguageSwitcher";
+import { Button, Logo } from "@/components";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, spacing, typography } from "@/theme";
+import type { AuthStackParamList } from "@/navigation/types";
+import { AuthLanguageSwitcher } from "@/screens/Auth/AuthLanguageSwitcher";
 
 const WAITLIST_URL = "https://whispr-preprod.roadmvn.com/waitlist";
 

@@ -1,9 +1,9 @@
 import React from "react";
 import { Platform } from "react-native";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
-import { ContactsScreen } from "../ContactsScreen";
-import { contactsAPI } from "../../../services/contacts/api";
-import { messagingAPI } from "../../../services/messaging/api";
+import { ContactsScreen } from "@/screens/Contacts/ContactsScreen";
+import { contactsAPI } from "@/services/contacts/api";
+import { messagingAPI } from "@/services/messaging/api";
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -25,7 +25,7 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -40,7 +40,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isLoading: false,
@@ -50,7 +50,7 @@ jest.mock("../../../context/AuthContext", () => ({
     signOut: jest.fn(),
   }),
 }));
-jest.mock("../../../hooks/useWebSocket", () => ({
+jest.mock("@/hooks/useWebSocket", () => ({
   useWebSocket: () => ({
     joinConversationChannel: jest
       .fn()
@@ -60,10 +60,10 @@ jest.mock("../../../hooks/useWebSocket", () => ({
     sendTyping: jest.fn(),
   }),
 }));
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: jest.fn().mockResolvedValue("tok") },
 }));
-jest.mock("../../../services/contacts/api", () => ({
+jest.mock("@/services/contacts/api", () => ({
   contactsAPI: {
     getContacts: jest.fn(),
     getContactRequests: jest.fn(),
@@ -71,12 +71,12 @@ jest.mock("../../../services/contacts/api", () => ({
     refuseContactRequest: jest.fn(),
   },
 }));
-jest.mock("../../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     createDirectConversation: jest.fn(),
   },
 }));
-jest.mock("../../../components/Contacts/ContactItem", () => ({
+jest.mock("@/components/Contacts/ContactItem", () => ({
   ContactItem: ({ contact, onPress }: any) => {
     const { TouchableOpacity, Text } = require("react-native");
     return (
@@ -86,22 +86,22 @@ jest.mock("../../../components/Contacts/ContactItem", () => ({
     );
   },
 }));
-jest.mock("../../../components/Contacts/AddContactModal", () => ({
+jest.mock("@/components/Contacts/AddContactModal", () => ({
   AddContactModal: () => null,
 }));
-jest.mock("../../../components/Contacts/EditContactModal", () => ({
+jest.mock("@/components/Contacts/EditContactModal", () => ({
   EditContactModal: () => null,
 }));
-jest.mock("../../../components/Contacts/SyncContactsModal", () => ({
+jest.mock("@/components/Contacts/SyncContactsModal", () => ({
   SyncContactsModal: () => null,
 }));
-jest.mock("../../../components/Contacts/DeleteContactModal", () => ({
+jest.mock("@/components/Contacts/DeleteContactModal", () => ({
   DeleteContactModal: () => null,
 }));
 jest.mock("expo-blur", () => ({
   BlurView: ({ children }: any) => children,
 }));
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] } },
     primary: { main: "#6200ee", light: "#9c57ff" },
@@ -111,7 +111,7 @@ jest.mock("../../../theme/colors", () => ({
   },
   withOpacity: (color: string) => color,
 }));
-jest.mock("../../../components/Chat/SkeletonLoader", () => ({
+jest.mock("@/components/Chat/SkeletonLoader", () => ({
   ContactItemSkeleton: () => null,
   SkeletonLoader: () => null,
   ConversationSkeleton: () => null,
@@ -119,20 +119,20 @@ jest.mock("../../../components/Chat/SkeletonLoader", () => ({
   InboxItemSkeleton: () => null,
 }));
 const mockBellIcon = jest.fn(() => null);
-jest.mock("../../../components/Common/BellIcon", () => ({
+jest.mock("@/components/Common/BellIcon", () => ({
   BellIcon: (props: any) => mockBellIcon(props),
 }));
-jest.mock("../../../components/Common/InboxPanel", () => ({
+jest.mock("@/components/Common/InboxPanel", () => ({
   InboxPanel: () => null,
 }));
-jest.mock("../../../store/inboxStore", () => ({
+jest.mock("@/store/inboxStore", () => ({
   useInboxStore: (sel: any) => sel({ unread_count: 0, hydrate: jest.fn() }),
 }));
-jest.mock("../../../services/contacts/favorites", () => ({
+jest.mock("@/services/contacts/favorites", () => ({
   getFavoriteIds: jest.fn().mockResolvedValue(new Set()),
   toggleFavorite: jest.fn().mockResolvedValue(false),
 }));
-jest.mock("../../../utils/contactsFilter", () => ({
+jest.mock("@/utils/contactsFilter", () => ({
   filterAndSortContacts: (_contacts: any[]) => _contacts,
 }));
 

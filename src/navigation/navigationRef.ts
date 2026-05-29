@@ -2,7 +2,7 @@ import {
   CommonActions,
   createNavigationContainerRef,
 } from "@react-navigation/native";
-import type { AuthStackParamList } from "./types";
+import type { AuthStackParamList } from "@/navigation/types";
 
 type MinimalNavigationRef = {
   isReady: () => boolean;

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { BadgeService } from "../services/BadgeService";
-import { NotificationService } from "../services/NotificationService";
+import { BadgeService } from "@/services/BadgeService";
+import { NotificationService } from "@/services/NotificationService";
 
 /**
  * Synchronise le badge de l'icône au cold-start / après login en récupérant

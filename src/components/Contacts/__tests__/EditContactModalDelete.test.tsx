@@ -12,7 +12,7 @@ const mockDeleteContact = jest.fn();
 const mockUpdateContact = jest.fn();
 const mockBlockUser = jest.fn();
 
-jest.mock("../../../services/contacts/api", () => ({
+jest.mock("@/services/contacts/api", () => ({
   contactsAPI: {
     deleteContact: (...args: unknown[]) => mockDeleteContact(...args),
     updateContact: (...args: unknown[]) => mockUpdateContact(...args),
@@ -34,12 +34,12 @@ jest.mock("react-native-safe-area-context", () => {
   return { SafeAreaView: View };
 });
 
-jest.mock("../../Chat/Avatar", () => {
+jest.mock("@/components/Chat/Avatar", () => {
   const { View } = require("react-native");
   return { Avatar: View };
 });
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { dark: "#000", gradient: { app: ["#000", "#111"] } },
     text: { light: "#fff" },
@@ -49,7 +49,7 @@ jest.mock("../../../theme/colors", () => ({
   withOpacity: (c: string) => c,
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa", tertiary: "#888" },
@@ -69,7 +69,7 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-import { EditContactModal } from "../EditContactModal";
+import { EditContactModal } from "@/components/Contacts/EditContactModal";
 
 const baseContact = {
   id: "rel-1",

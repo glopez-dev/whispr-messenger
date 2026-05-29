@@ -1,19 +1,19 @@
 import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
-import { SafetyNumberModal } from "../SafetyNumberModal";
+import { SafetyNumberModal } from "@/components/Chat/SafetyNumberModal";
 
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
 }));
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ userId: "user-a", deviceId: "device-a" }),
 }));
 
 const mockGetKeyBundle = jest.fn();
 const mockListDevices = jest.fn();
-jest.mock("../../../services/SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   SignalKeysService: {
     getKeyBundle: (...a: unknown[]) => mockGetKeyBundle(...a),
     listDevices: (...a: unknown[]) => mockListDevices(...a),
@@ -21,7 +21,7 @@ jest.mock("../../../services/SecurityService", () => ({
 }));
 
 const mockComputeSafetyNumber = jest.fn();
-jest.mock("../../../services/E2EEService", () => ({
+jest.mock("@/services/E2EEService", () => ({
   computeSafetyNumber: (...a: unknown[]) => mockComputeSafetyNumber(...a),
 }));
 

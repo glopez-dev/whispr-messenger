@@ -3,8 +3,8 @@
  * and provides data to redirect to SanctionNoticeScreen.
  */
 
-import { sanctionsAPI } from "./moderationApi";
-import type { UserSanction } from "../../types/moderation";
+import { sanctionsAPI } from "@/services/moderation/moderationApi";
+import type { UserSanction } from "@/types/moderation";
 
 export interface BanCheckResult {
   banned: boolean;

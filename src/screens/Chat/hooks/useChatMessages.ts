@@ -4,11 +4,11 @@ import {
   MessageAttachment,
   MessageReaction,
   MessageWithRelations,
-} from "../../../types/messaging";
-import { messagingAPI } from "../../../services/messaging/api";
-import { cacheService } from "../../../services/messaging/cache";
-import { E2EEService } from "../../../services/E2EEService";
-import { logger } from "../../../utils/logger";
+} from "@/types/messaging";
+import { messagingAPI } from "@/services/messaging/api";
+import { cacheService } from "@/services/messaging/cache";
+import { E2EEService } from "@/services/E2EEService";
+import { logger } from "@/utils/logger";
 
 const MESSAGES_PAGE_SIZE = 50;
 

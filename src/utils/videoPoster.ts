@@ -15,7 +15,7 @@
  */
 
 import { NativeModules, Platform } from "react-native";
-import { logger } from "./logger";
+import { logger } from "@/utils/logger";
 
 type ExpoVideoThumbnailsModule = {
   getThumbnailAsync: (

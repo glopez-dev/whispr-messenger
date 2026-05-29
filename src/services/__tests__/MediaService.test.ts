@@ -1,17 +1,17 @@
 // Mock dependencies before importing MediaService.
-jest.mock("../AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: { refreshTokens: jest.fn() },
 }));
-jest.mock("../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: jest.fn().mockResolvedValue("tok") },
 }));
-jest.mock("../apiBase", () => ({
+jest.mock("@/services/apiBase", () => ({
   getApiBaseUrl: () => "https://api.test",
 }));
 jest.mock("react-native", () => ({ Platform: { OS: "web" } }));
 jest.mock("expo-file-system/legacy", () => ({}));
 
-import { MediaService, isUploadValidationError } from "../MediaService";
+import { MediaService, isUploadValidationError } from "@/services/MediaService";
 
 describe("MediaService.shareMediaWithRetry", () => {
   beforeEach(() => {

@@ -13,9 +13,9 @@ import Animated, {
   cancelAnimation,
   SharedValue,
 } from "react-native-reanimated";
-import { colors } from "../../theme/colors";
-import { useTheme } from "../../context/ThemeContext";
-import { Avatar } from "./Avatar";
+import { colors } from "@/theme/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { Avatar } from "@/components/Chat/Avatar";
 
 interface TypingIndicatorProps {
   userName?: string;

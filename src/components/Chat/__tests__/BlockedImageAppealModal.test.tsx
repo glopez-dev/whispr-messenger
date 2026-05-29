@@ -9,19 +9,19 @@ const mockCreateBlockedImageAppeal = jest.fn();
 
 jest.setTimeout(15000);
 
-jest.mock("../../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: () => ({
     createBlockedImageAppeal: mockCreateBlockedImageAppeal,
   }),
 }));
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     primary: { main: "#6200ee" },
   },
 }));
 
-import { BlockedImageAppealModal } from "../BlockedImageAppealModal";
+import { BlockedImageAppealModal } from "@/components/Chat/BlockedImageAppealModal";
 
 const baseProps = {
   visible: true,

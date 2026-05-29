@@ -1,7 +1,7 @@
 import {
   getMediaUploadOverlayState,
   type MediaSendClientMetadata,
-} from "../mediaUpload";
+} from "@/types/mediaUpload";
 
 describe("getMediaUploadOverlayState", () => {
   it("hides overlay when message is not sending", () => {

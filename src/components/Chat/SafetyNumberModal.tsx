@@ -10,10 +10,10 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAuth } from "../../context/AuthContext";
-import { SignalKeysService } from "../../services/SecurityService";
-import { computeSafetyNumber } from "../../services/E2EEService";
-import { colors } from "../../theme/colors";
+import { useAuth } from "@/context/AuthContext";
+import { SignalKeysService } from "@/services/SecurityService";
+import { computeSafetyNumber } from "@/services/E2EEService";
+import { colors } from "@/theme/colors";
 
 const SAFETY_STORAGE_PREFIX = "@whispr:safety:";
 

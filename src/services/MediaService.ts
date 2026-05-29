@@ -1,9 +1,9 @@
-import { AuthService } from "./AuthService";
-import { TokenService } from "./TokenService";
-import { getApiBaseUrl } from "./apiBase";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
 import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
-import { logger } from "../utils/logger";
+import { logger } from "@/utils/logger";
 
 type ApiError = Error & { status?: number; body?: unknown };
 

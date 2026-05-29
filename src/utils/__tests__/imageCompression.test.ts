@@ -31,7 +31,7 @@ import {
   compressImage,
   convertHeicToJpeg,
   detectImageFormatFromUri,
-} from "../imageCompression";
+} from "@/utils/imageCompression";
 
 describe("buildResizeAction (WHISPR-1039)", () => {
   const MAX_W = 1920;

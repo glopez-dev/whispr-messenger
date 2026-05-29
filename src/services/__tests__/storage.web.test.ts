@@ -2,12 +2,12 @@
  * @jest-environment jsdom
  */
 
-import { storage } from "../storage.web";
+import { storage } from "@/services/storage.web";
 import {
   WEB_VAULT_PREFIX,
   __resetForTests,
   unwrap,
-} from "../webCryptoVault.web";
+} from "@/services/webCryptoVault.web";
 
 const IDENTITY_KEY = "whispr.signal.identityKeyPrivate";
 

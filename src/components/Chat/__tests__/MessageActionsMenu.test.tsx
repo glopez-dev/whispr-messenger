@@ -9,10 +9,10 @@
 
 import React from "react";
 import { render } from "@testing-library/react-native";
-import { MessageActionsMenu } from "../MessageActionsMenu";
-import { MessageWithRelations } from "../../../types/messaging";
+import { MessageActionsMenu } from "@/components/Chat/MessageActionsMenu";
+import { MessageWithRelations } from "@/types/messaging";
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       primary: "#fff",

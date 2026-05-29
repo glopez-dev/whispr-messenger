@@ -6,9 +6,9 @@ import React from "react";
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { MessageWithRelations } from "../../types/messaging";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { MessageWithRelations } from "@/types/messaging";
 
 /** Menu : même famille que le chat mais bas très assombri (pas de corail vif sur toute la carte) */
 const MENU_GRADIENT = colors.background.gradient.app;

@@ -18,7 +18,7 @@ import {
   BubbleSilhouette,
   BUBBLE_TAIL_WIDTH,
   BUBBLE_TAIL_HEIGHT,
-} from "./BubbleSilhouette";
+} from "@/components/Chat/BubbleSilhouette";
 
 type Variant = "sent" | "received" | "failed";
 

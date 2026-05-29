@@ -34,11 +34,11 @@ jest.mock("expo-image-manipulator", () => ({
   SaveFormat: { JPEG: "jpeg" },
 }));
 
-jest.mock("../../utils/logger", () => ({
+jest.mock("@/utils/logger", () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
-jest.mock("../../services/moderation/moderationApi", () => ({
+jest.mock("@/services/moderation/moderationApi", () => ({
   reportsAPI: {
     getMyReports: (...args: any[]) => mockGetMyReports(...args),
     getReportQueue: (...args: any[]) => mockGetReportQueue(...args),
@@ -59,7 +59,7 @@ jest.mock("../../services/moderation/moderationApi", () => ({
   },
 }));
 
-import { useModerationStore } from "../moderationStore";
+import { useModerationStore } from "@/store/moderationStore";
 import { act } from "@testing-library/react-native";
 
 // ─── Helpers ─────────────────────────────────────────────────────

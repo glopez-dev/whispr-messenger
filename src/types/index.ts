@@ -1,4 +1,4 @@
 // Export all types from this file
-export * from "./messaging";
-export * from "./contact";
-export * from "./calls";
+export * from "@/types/messaging";
+export * from "@/types/contact";
+export * from "@/types/calls";

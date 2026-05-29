@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
-import { useTheme, type Language } from "../context/ThemeContext";
-import { localizeText } from "./strings";
+import { useTheme, type Language } from "@/context/ThemeContext";
+import { localizeText } from "@/i18n/strings";
 
 export interface UseI18nReturn {
   /** Current language ("fr" or "en"). */

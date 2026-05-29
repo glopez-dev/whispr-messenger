@@ -3,7 +3,7 @@
  * Back Elixir: validate_length(:reaction, max: 10)
  */
 
-import type { MessageReaction } from "../types/messaging";
+import type { MessageReaction } from "@/types/messaging";
 
 export const MAX_REACTION_GRAPHEMES = 10;
 export const MAX_DISTINCT_REACTIONS_PER_MESSAGE = 50;

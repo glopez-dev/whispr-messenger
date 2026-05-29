@@ -24,7 +24,7 @@ jest.mock("@react-native-async-storage/async-storage", () => {
 import React from "react";
 import { act, renderHook } from "@testing-library/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { TourProvider, useTour } from "../TourContext";
+import { TourProvider, useTour } from "@/context/TourContext";
 
 const TOUR_KEY = "@whispr:tour_active";
 

@@ -18,18 +18,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
-import { useTheme } from "../../../context/ThemeContext";
-import { formatUsername } from "../../../utils";
-import { detectMention } from "../../../utils/mentions";
+import { useTheme } from "@/context/ThemeContext";
+import { formatUsername } from "@/utils";
+import { detectMention } from "@/utils/mentions";
+import { useVoiceRecorder, RecordedAudio } from "@/hooks/useVoiceRecorder";
+import { Message } from "@/types/messaging";
+import { ReplyPreview } from "@/components/Chat/ReplyPreview";
 import {
-  useVoiceRecorder,
-  RecordedAudio,
-} from "../../../hooks/useVoiceRecorder";
-import { Message } from "../../../types/messaging";
-import { ReplyPreview } from "../ReplyPreview";
-import { CameraCapture, CameraCaptureResult } from "../CameraCapture";
-import { EmojiPickerSheet } from "../EmojiPickerSheet";
-import { AttachmentSheet, AttachmentAction } from "../AttachmentSheet";
+  CameraCapture,
+  CameraCaptureResult,
+} from "@/components/Chat/CameraCapture";
+import { EmojiPickerSheet } from "@/components/Chat/EmojiPickerSheet";
+import {
+  AttachmentSheet,
+  AttachmentAction,
+} from "@/components/Chat/AttachmentSheet";
 import {
   ComposerInput,
   MIN_INPUT_HEIGHT,
@@ -39,13 +42,13 @@ import {
   INPUT_EXTRA_TOP_PADDING,
   INPUT_EXTRA_BOTTOM_PADDING,
   MentionMember,
-} from "./ComposerInput";
-import { RecordingBar } from "./RecordingBar";
-import { RecordedAudioPreview } from "./RecordedAudioPreview";
-import { SendOrMicButton } from "./SendOrMicButton";
-import { AttachButton } from "./AttachButton";
+} from "@/components/Chat/MessageInput/ComposerInput";
+import { RecordingBar } from "@/components/Chat/MessageInput/RecordingBar";
+import { RecordedAudioPreview } from "@/components/Chat/MessageInput/RecordedAudioPreview";
+import { SendOrMicButton } from "@/components/Chat/MessageInput/SendOrMicButton";
+import { AttachButton } from "@/components/Chat/MessageInput/AttachButton";
 
-export { buildRecordingOptions } from "../../../hooks/useVoiceRecorder";
+export { buildRecordingOptions } from "@/hooks/useVoiceRecorder";
 
 interface MessageInputProps {
   onSend: (message: string, replyToId?: string, mentions?: string[]) => void;

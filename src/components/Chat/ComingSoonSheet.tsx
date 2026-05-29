@@ -2,8 +2,8 @@ import React from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, withOpacity } from "../../theme/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
 
 const APP_GRADIENT = colors.background.gradient.app;
 

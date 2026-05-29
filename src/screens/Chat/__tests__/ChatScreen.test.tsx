@@ -1,8 +1,8 @@
 import React from "react";
 import { Platform } from "react-native";
 import { render, waitFor } from "@testing-library/react-native";
-import { ChatScreen } from "../ChatScreen";
-import { messagingAPI } from "../../../services/messaging/api";
+import { ChatScreen } from "@/screens/Chat/ChatScreen";
+import { messagingAPI } from "@/services/messaging/api";
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -17,10 +17,10 @@ jest.mock("react-native-spotlight-tour", () => ({
     typeof children === "function" ? children({}) : children,
   AttachStep: ({ children }: any) => children,
 }));
-jest.mock("../../../components/Tour/TourAutoStart", () => ({
+jest.mock("@/components/Tour/TourAutoStart", () => ({
   TourAutoStart: () => null,
 }));
-jest.mock("../../../context/TourContext", () => ({
+jest.mock("@/context/TourContext", () => ({
   useTour: () => ({ isTourActive: false, skipTour: jest.fn() }),
 }));
 jest.mock("expo-linear-gradient", () => ({
@@ -36,7 +36,7 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
   NotificationFeedbackType: { Success: "success" },
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -51,7 +51,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isLoading: false,
@@ -61,7 +61,7 @@ jest.mock("../../../context/AuthContext", () => ({
     signOut: jest.fn(),
   }),
 }));
-jest.mock("../../../hooks/useWebSocket", () => ({
+jest.mock("@/hooks/useWebSocket", () => ({
   useWebSocket: () => ({
     joinConversationChannel: jest
       .fn()
@@ -71,7 +71,7 @@ jest.mock("../../../hooks/useWebSocket", () => ({
     sendTyping: jest.fn(),
   }),
 }));
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: jest.fn().mockResolvedValue("tok"),
     decodeAccessToken: jest
@@ -79,7 +79,7 @@ jest.mock("../../../services/TokenService", () => ({
       .mockReturnValue({ sub: "user-1", deviceId: "device-1" }),
   },
 }));
-jest.mock("../../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     getConversation: jest.fn(),
     getMessages: jest.fn(),
@@ -99,13 +99,13 @@ jest.mock("../../../services/messaging/api", () => ({
     addAttachment: jest.fn(),
   },
 }));
-jest.mock("../../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: { uploadMedia: jest.fn() },
 }));
-jest.mock("../../../services/SchedulingService", () => ({
+jest.mock("@/services/SchedulingService", () => ({
   SchedulingService: { createScheduledMessage: jest.fn() },
 }));
-jest.mock("../../../store/conversationsStore", () => {
+jest.mock("@/store/conversationsStore", () => {
   const state = {
     conversations: [],
     resetUnreadCount: jest.fn(),
@@ -117,61 +117,61 @@ jest.mock("../../../store/conversationsStore", () => {
   useConversationsStore.getState = () => state;
   return { useConversationsStore };
 });
-jest.mock("../../../store/presenceStore", () => ({
+jest.mock("@/store/presenceStore", () => ({
   usePresenceStore: (selector: any) =>
     selector({ onlineUserIds: new Set(), lastSeenAt: {} }),
 }));
-jest.mock("../../../components/Chat/MessageBubble", () => ({
+jest.mock("@/components/Chat/MessageBubble", () => ({
   MessageBubble: () => null,
 }));
-jest.mock("../../../components/Chat/MessageInput", () => ({
+jest.mock("@/components/Chat/MessageInput", () => ({
   MessageInput: () => null,
 }));
-jest.mock("../../../components/Chat/TypingIndicator", () => ({
+jest.mock("@/components/Chat/TypingIndicator", () => ({
   TypingIndicator: () => null,
 }));
-jest.mock("../../../components/Chat/Avatar", () => ({ Avatar: () => null }));
-jest.mock("../../../components/Chat/MessageActionsMenu", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/components/Chat/MessageActionsMenu", () => ({
   MessageActionsMenu: () => null,
 }));
-jest.mock("../../../components/Chat/ForwardMessageModal", () => ({
+jest.mock("@/components/Chat/ForwardMessageModal", () => ({
   ForwardMessageModal: () => null,
 }));
-jest.mock("../../../components/Chat/ReportMessageSheet", () => ({
+jest.mock("@/components/Chat/ReportMessageSheet", () => ({
   ReportMessageSheet: () => null,
 }));
-jest.mock("../../../services/moderation", () => ({
+jest.mock("@/services/moderation", () => ({
   gateChatImageBeforeSend: jest.fn().mockResolvedValue({ allowed: true }),
 }));
-jest.mock("../../../components/Chat/ReactionReactorsModal", () => ({
+jest.mock("@/components/Chat/ReactionReactorsModal", () => ({
   ReactionReactorsModal: () => null,
 }));
-jest.mock("../../../components/Chat/ReactionPicker", () => ({
+jest.mock("@/components/Chat/ReactionPicker", () => ({
   ReactionPicker: () => null,
 }));
-jest.mock("../../../components/Chat/DateSeparator", () => ({
+jest.mock("@/components/Chat/DateSeparator", () => ({
   DateSeparator: () => null,
 }));
-jest.mock("../../../components/Chat/SystemMessage", () => ({
+jest.mock("@/components/Chat/SystemMessage", () => ({
   SystemMessage: () => null,
 }));
-jest.mock("../../../components/Chat/MessageSearch", () => ({
+jest.mock("@/components/Chat/MessageSearch", () => ({
   MessageSearch: () => null,
 }));
-jest.mock("../../../components/Chat/PinnedMessagesBar", () => ({
+jest.mock("@/components/Chat/PinnedMessagesBar", () => ({
   PinnedMessagesBar: () => null,
 }));
-jest.mock("../../../components/Chat/EmptyChatState", () => ({
+jest.mock("@/components/Chat/EmptyChatState", () => ({
   EmptyChatState: () => null,
 }));
-jest.mock("../../../components/Chat/ScheduleDateTimePicker", () => ({
+jest.mock("@/components/Chat/ScheduleDateTimePicker", () => ({
   ScheduleDateTimePicker: () => null,
 }));
-jest.mock("../ChatHeader", () => ({ ChatHeader: () => null }));
-jest.mock("../../../utils/logger", () => ({
+jest.mock("@/screens/Chat/ChatHeader", () => ({ ChatHeader: () => null }));
+jest.mock("@/utils/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] }, dark: "#000" },
     primary: { main: "#6200ee" },

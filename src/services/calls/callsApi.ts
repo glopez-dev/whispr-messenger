@@ -1,12 +1,12 @@
-import { AuthService } from "../AuthService";
-import { TokenService } from "../TokenService";
-import { getApiBaseUrl } from "../apiBase";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
 import type {
   AcceptCallResponse,
   Call,
   CallType,
   InitiateCallResponse,
-} from "../../types/calls";
+} from "@/types/calls";
 
 const API_BASE = `${getApiBaseUrl()}/calls/api/v1`;
 

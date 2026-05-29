@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { formatUsername } from "../../utils";
+import { formatUsername } from "@/utils";
 import {
   View,
   Text,
@@ -42,19 +42,19 @@ import Animated, {
   FadeInDown,
   SlideInRight,
 } from "react-native-reanimated";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
-import { colors, withOpacity } from "../../theme/colors";
-import { typography } from "../../theme/typography";
-import { Avatar } from "../../components/Chat/Avatar";
-import { DangerConfirmModal } from "../../components/Common/DangerConfirmModal";
-import { ProfileTrigger } from "../../components/Profile/ProfileTrigger";
-import { logger } from "../../utils/logger";
-import { groupsAPI, GroupSettings } from "../../services/groups/api";
-import { AuthStackParamList } from "../../navigation/types";
-import { useConversationsStore } from "../../store/conversationsStore";
-import { useGroupData } from "./hooks/useGroupData";
-import { useGroupMemberActions } from "./hooks/useGroupMemberActions";
+import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { colors, withOpacity } from "@/theme/colors";
+import { typography } from "@/theme/typography";
+import { Avatar } from "@/components/Chat/Avatar";
+import { DangerConfirmModal } from "@/components/Common/DangerConfirmModal";
+import { ProfileTrigger } from "@/components/Profile/ProfileTrigger";
+import { logger } from "@/utils/logger";
+import { groupsAPI, GroupSettings } from "@/services/groups/api";
+import { AuthStackParamList } from "@/navigation/types";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { useGroupData } from "@/screens/Groups/hooks/useGroupData";
+import { useGroupMemberActions } from "@/screens/Groups/hooks/useGroupMemberActions";
 
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);

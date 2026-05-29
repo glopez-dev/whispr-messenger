@@ -1,4 +1,4 @@
-import type { Language } from "../context/ThemeContext";
+import type { Language } from "@/context/ThemeContext";
 
 export const localizedTexts: Record<Language, Record<string, string>> = {
   fr: {

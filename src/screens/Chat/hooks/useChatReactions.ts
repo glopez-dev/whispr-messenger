@@ -1,18 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import { Platform } from "react-native";
 import * as Haptics from "expo-haptics";
-import {
-  MessageReaction,
-  MessageWithRelations,
-} from "../../../types/messaging";
-import { messagingAPI } from "../../../services/messaging/api";
-import { logger } from "../../../utils/logger";
-import { showAlert } from "../../../utils/alert";
+import { MessageReaction, MessageWithRelations } from "@/types/messaging";
+import { messagingAPI } from "@/services/messaging/api";
+import { logger } from "@/utils/logger";
+import { showAlert } from "@/utils/alert";
 import {
   checkReactionLimits,
   userHasReaction,
   validateReactionEmoji,
-} from "../../../utils/reactionEmoji";
+} from "@/utils/reactionEmoji";
 
 export interface ChatMemberLike {
   id: string;

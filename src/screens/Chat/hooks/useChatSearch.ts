@@ -1,9 +1,12 @@
 import { useCallback, useState } from "react";
 import type { FlatList } from "react-native";
-import { MessageWithRelations } from "../../../types/messaging";
-import { messagingAPI } from "../../../services/messaging/api";
-import { logger } from "../../../utils/logger";
-import { ChatListItem, isDateSeparator } from "../helpers/dateSeparators";
+import { MessageWithRelations } from "@/types/messaging";
+import { messagingAPI } from "@/services/messaging/api";
+import { logger } from "@/utils/logger";
+import {
+  ChatListItem,
+  isDateSeparator,
+} from "@/screens/Chat/helpers/dateSeparators";
 
 export interface UseChatSearchOptions {
   conversationId: string;

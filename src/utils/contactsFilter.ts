@@ -1,4 +1,4 @@
-import type { Contact, ContactSearchParams } from "../types/contact";
+import type { Contact, ContactSearchParams } from "@/types/contact";
 
 const toLowerOrEmpty = (v: unknown): string =>
   v == null ? "" : String(v).toLowerCase();

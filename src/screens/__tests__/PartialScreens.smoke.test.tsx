@@ -103,7 +103,7 @@ jest.mock("react-native-gesture-handler", () => {
   };
 });
 
-jest.mock("../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   ThemeProvider: ({ children }: any) => children,
   useTheme: () => ({
     settings: { language: "fr", theme: "dark", backgroundPreset: "default" },
@@ -117,7 +117,7 @@ jest.mock("../../context/ThemeContext", () => ({
     updateSettings: jest.fn(),
   }),
 }));
-jest.mock("../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     userId: "me",
     isAuthenticated: true,
@@ -126,7 +126,7 @@ jest.mock("../../context/AuthContext", () => ({
     signOut: jest.fn(),
   }),
 }));
-jest.mock("../../context/MessageSwipeContext", () => ({
+jest.mock("@/context/MessageSwipeContext", () => ({
   MessageSwipeProvider: ({ children }: any) => children,
   useMessageSwipe: () => ({ swipingId: null, setSwipingId: jest.fn() }),
 }));
@@ -160,28 +160,28 @@ const mockStoreState: any = new Proxy(
   },
 );
 
-jest.mock("../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: (s?: any) => (s ? s(mockStoreState) : mockStoreState),
 }));
-jest.mock("../../store/presenceStore", () => ({
+jest.mock("@/store/presenceStore", () => ({
   usePresenceStore: (s?: any) => (s ? s(mockStoreState) : mockStoreState),
 }));
-jest.mock("../../store/uiStore", () => ({
+jest.mock("@/store/uiStore", () => ({
   useUIStore: (s?: any) => (s ? s(mockStoreState) : mockStoreState),
 }));
-jest.mock("../../store/callsStore", () => ({
+jest.mock("@/store/callsStore", () => ({
   useCallsStore: (s?: any) => (s ? s(mockStoreState) : mockStoreState),
 }));
-jest.mock("../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: (s?: any) => (s ? s(mockStoreState) : mockStoreState),
   useIsStaff: () => false,
   useIsAdmin: () => false,
   useMyRole: () => "user",
 }));
-jest.mock("../../store/inboxStore", () => ({
+jest.mock("@/store/inboxStore", () => ({
   useInboxStore: (s?: any) => (s ? s(mockStoreState) : mockStoreState),
 }));
-jest.mock("../../store/miniProfileCardStore", () => ({
+jest.mock("@/store/miniProfileCardStore", () => ({
   useMiniProfileCardStore: (s?: any) =>
     s ? s(mockStoreState) : mockStoreState,
 }));
@@ -190,14 +190,14 @@ const mockApiProxy = new Proxy(
   {},
   { get: () => jest.fn().mockResolvedValue([]) },
 );
-jest.mock("../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   __esModule: true,
   messagingAPI: mockApiProxy,
 }));
-jest.mock("../../services/messaging/cache", () => ({
+jest.mock("@/services/messaging/cache", () => ({
   cacheService: mockApiProxy,
 }));
-jest.mock("../../services/messaging/websocket", () => ({
+jest.mock("@/services/messaging/websocket", () => ({
   getSharedSocket: () => ({
     channel: () => ({
       on: jest.fn(),
@@ -211,16 +211,16 @@ jest.mock("../../services/messaging/websocket", () => ({
     addConnectionStateListener: jest.fn(() => () => undefined),
   }),
 }));
-jest.mock("../../services/contacts/api", () => ({
+jest.mock("@/services/contacts/api", () => ({
   contactsAPI: mockApiProxy,
 }));
-jest.mock("../../services/groups/api", () => ({
+jest.mock("@/services/groups/api", () => ({
   groupsAPI: mockApiProxy,
 }));
-jest.mock("../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: mockApiProxy,
 }));
-jest.mock("../../services/UserService", () => ({
+jest.mock("@/services/UserService", () => ({
   UserService: {
     getInstance: () => ({
       getProfile: jest.fn().mockResolvedValue({ success: true, profile: {} }),
@@ -228,56 +228,56 @@ jest.mock("../../services/UserService", () => ({
     }),
   },
 }));
-jest.mock("../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: jest.fn().mockResolvedValue("at"),
     decodeAccessToken: jest.fn().mockReturnValue({ sub: "me" }),
     clearAll: jest.fn().mockResolvedValue(undefined),
   },
 }));
-jest.mock("../../services/AppResetService", () => ({
+jest.mock("@/services/AppResetService", () => ({
   AppResetService: { resetAll: jest.fn().mockResolvedValue(undefined) },
 }));
-jest.mock("../../services/AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: {
     logout: jest.fn().mockResolvedValue(undefined),
     requestVerification: jest.fn().mockResolvedValue({ success: true }),
   },
 }));
-jest.mock("../../services/SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   DeviceManagerService: { listDevices: jest.fn().mockResolvedValue([]) },
   SecurityService: mockApiProxy,
 }));
-jest.mock("../../services/TwoFactorService", () => ({
+jest.mock("@/services/TwoFactorService", () => ({
   TwoFactorService: mockApiProxy,
 }));
-jest.mock("../../services/SignalKeyService", () => ({
+jest.mock("@/services/SignalKeyService", () => ({
   SignalKeyService: mockApiProxy,
 }));
-jest.mock("../../services/DeviceService", () => ({
+jest.mock("@/services/DeviceService", () => ({
   DeviceService: mockApiProxy,
 }));
-jest.mock("../../services/NotificationService", () => ({
+jest.mock("@/services/NotificationService", () => ({
   NotificationService: mockApiProxy,
 }));
-jest.mock("../../services/qrCode/qrCodeService", () => ({
+jest.mock("@/services/qrCode/qrCodeService", () => ({
   qrCodeService: {
     generateMyQRCode: jest.fn().mockResolvedValue("qr"),
     parseQRCode: jest.fn().mockResolvedValue({ kind: "user", userId: "u-1" }),
   },
 }));
-jest.mock("../../services/profile/miniProfileCache", () => ({
+jest.mock("@/services/profile/miniProfileCache", () => ({
   miniProfileCache: mockApiProxy,
 }));
-jest.mock("../../services/profile/batchFetch", () => ({
+jest.mock("@/services/profile/batchFetch", () => ({
   fetchProfilesBatch: jest
     .fn()
     .mockResolvedValue({ profiles: [], missing: [] }),
 }));
-jest.mock("../../services/profile/miniRelationCache", () => ({
+jest.mock("@/services/profile/miniRelationCache", () => ({
   miniRelationCache: mockApiProxy,
 }));
-jest.mock("../../services/profileSetupFlag", () => ({
+jest.mock("@/services/profileSetupFlag", () => ({
   profileSetupFlag: {
     get: jest.fn().mockResolvedValue("1"),
     markDone: jest.fn(),
@@ -285,7 +285,7 @@ jest.mock("../../services/profileSetupFlag", () => ({
   },
 }));
 
-jest.mock("../../hooks/useWebSocket", () => ({
+jest.mock("@/hooks/useWebSocket", () => ({
   useWebSocket: () => ({
     sendMessage: jest.fn(),
     markAsRead: jest.fn(),
@@ -295,15 +295,15 @@ jest.mock("../../hooks/useWebSocket", () => ({
     connectionState: "connected",
   }),
 }));
-jest.mock("../../hooks/useResolvedMediaUrl", () => ({
+jest.mock("@/hooks/useResolvedMediaUrl", () => ({
   useResolvedMediaUrl: () => ({ uri: null, ready: false }),
   prefetchResolvedMediaUris: jest.fn(),
 }));
-jest.mock("../../hooks/useOfflineQueueDrainer", () => ({
+jest.mock("@/hooks/useOfflineQueueDrainer", () => ({
   useOfflineQueueDrainer: jest.fn(),
 }));
-jest.mock("../../hooks/useBadgeSync", () => ({ useBadgeSync: jest.fn() }));
-jest.mock("../../hooks/useVoiceRecorder", () => ({
+jest.mock("@/hooks/useBadgeSync", () => ({ useBadgeSync: jest.fn() }));
+jest.mock("@/hooks/useVoiceRecorder", () => ({
   useVoiceRecorder: () => ({
     isRecording: false,
     duration: 0,
@@ -343,10 +343,10 @@ jest.mock("react-native-spotlight-tour", () => ({
     typeof children === "function" ? children({}) : children,
   AttachStep: ({ children }: any) => children,
 }));
-jest.mock("../../components/Tour/TourAutoStart", () => ({
+jest.mock("@/components/Tour/TourAutoStart", () => ({
   TourAutoStart: () => null,
 }));
-jest.mock("../../context/TourContext", () => ({
+jest.mock("@/context/TourContext", () => ({
   useTour: () => ({ isTourActive: false, skipTour: jest.fn() }),
 }));
 
@@ -361,11 +361,11 @@ const tryRender = (Component: React.FC) => {
   }
 };
 
-import { MyProfileScreen } from "../Profile/MyProfileScreen";
-import { SettingsScreen } from "../Settings/SettingsScreen";
-import { ConversationsListScreen } from "../Chat/ConversationsListScreen";
-import { SecurityKeysScreen } from "../Security/SecurityKeysScreen";
-import { QRCodeScannerScreen } from "../Contacts/QRCodeScannerScreen";
+import { MyProfileScreen } from "@/screens/Profile/MyProfileScreen";
+import { SettingsScreen } from "@/screens/Settings/SettingsScreen";
+import { ConversationsListScreen } from "@/screens/Chat/ConversationsListScreen";
+import { SecurityKeysScreen } from "@/screens/Security/SecurityKeysScreen";
+import { QRCodeScannerScreen } from "@/screens/Contacts/QRCodeScannerScreen";
 
 beforeEach(() => {
   jest.spyOn(console, "error").mockImplementation(() => {});

@@ -1,6 +1,6 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
-import { CallsScreen } from "../CallsScreen";
+import { CallsScreen } from "@/screens/Calls/CallsScreen";
 
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
@@ -9,16 +9,16 @@ jest.mock("react-native-safe-area-context", () => ({
   SafeAreaView: ({ children }: any) => children,
 }));
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
-jest.mock("../../../components/Navigation/BottomTabBar", () => ({
+jest.mock("@/components/Navigation/BottomTabBar", () => ({
   BottomTabBar: () => null,
 }));
-jest.mock("../CallHistoryScreen", () => ({
+jest.mock("@/screens/Calls/CallHistoryScreen", () => ({
   CallHistoryScreen: () => {
     const { Text } = require("react-native");
     return <Text>Call history content</Text>;
   },
 }));
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] } },
     primary: { main: "#6200ee" },

@@ -31,7 +31,7 @@ jest.mock("@react-navigation/stack", () => {
 });
 
 const mockSplashStub = jest.fn(() => null);
-jest.mock("../../screens/SplashScreen/SplashScreen", () => ({
+jest.mock("@/screens/SplashScreen/SplashScreen", () => ({
   SplashScreen: () => {
     mockSplashStub();
     const React = require("react");
@@ -41,15 +41,15 @@ jest.mock("../../screens/SplashScreen/SplashScreen", () => ({
 }));
 
 const mockUseAuth = jest.fn();
-jest.mock("../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-jest.mock("../../hooks/useOfflineQueueDrainer", () => ({
+jest.mock("@/hooks/useOfflineQueueDrainer", () => ({
   useOfflineQueueDrainer: jest.fn(),
 }));
 
-jest.mock("../../hooks/useNetworkMonitor", () => ({
+jest.mock("@/hooks/useNetworkMonitor", () => ({
   useNetworkMonitor: jest.fn(),
 }));
 
@@ -65,12 +65,12 @@ jest.mock("@react-native-community/netinfo", () => ({
 }));
 
 const mockFetchMyRole = jest.fn();
-jest.mock("../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: (selector: any) =>
     selector({ fetchMyRole: mockFetchMyRole }),
 }));
 
-jest.mock("../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: (selector: any) =>
     selector({
       conversations: [],
@@ -80,7 +80,7 @@ jest.mock("../../store/conversationsStore", () => ({
 }));
 
 const mockProfileGet = jest.fn().mockResolvedValue("1"); // "1"=done, "0"=pending, null=unknown
-jest.mock("../../services/profileSetupFlag", () => ({
+jest.mock("@/services/profileSetupFlag", () => ({
   profileSetupFlag: {
     get: (...args: unknown[]) => mockProfileGet(...args),
     markPending: jest.fn(),
@@ -89,34 +89,34 @@ jest.mock("../../services/profileSetupFlag", () => ({
   },
 }));
 
-jest.mock("../../services/contacts/api", () => ({
+jest.mock("@/services/contacts/api", () => ({
   contactsAPI: {
     getContacts: jest.fn().mockResolvedValue({ contacts: [], total: 0 }),
   },
 }));
-jest.mock("../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: jest.fn().mockResolvedValue("at") },
 }));
-jest.mock("../../services/UserService", () => ({
+jest.mock("@/services/UserService", () => ({
   UserService: {
     getInstance: () => ({
       getProfile: jest.fn().mockResolvedValue({ success: true, profile: {} }),
     }),
   },
 }));
-jest.mock("../../services/NotificationService", () => ({
+jest.mock("@/services/NotificationService", () => ({
   NotificationService: { initPushRegistration: jest.fn() },
 }));
-jest.mock("../../services/calls/systemCallProvider", () => ({
+jest.mock("@/services/calls/systemCallProvider", () => ({
   systemCallProvider: {
     initialize: jest.fn().mockResolvedValue(undefined),
     shutdown: jest.fn().mockResolvedValue(undefined),
   },
 }));
-jest.mock("../../services/calls/callNotificationBridge", () => ({
+jest.mock("@/services/calls/callNotificationBridge", () => ({
   initCallNotificationBridge: jest.fn(() => () => undefined),
 }));
-jest.mock("../../hooks/useCallsAvailable", () => ({
+jest.mock("@/hooks/useCallsAvailable", () => ({
   isCallsAvailable: () => false,
 }));
 
@@ -129,10 +129,10 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
     removeItem: (...args: unknown[]) => mockAsyncStorageRemoveItem(...args),
   },
 }));
-jest.mock("../../hooks/useResolvedMediaUrl", () => ({
+jest.mock("@/hooks/useResolvedMediaUrl", () => ({
   prefetchResolvedMediaUris: jest.fn(),
 }));
-jest.mock("../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     listConversations: jest
       .fn()
@@ -140,7 +140,7 @@ jest.mock("../../services/messaging/api", () => ({
     listMessages: jest.fn().mockResolvedValue({ messages: [] }),
   },
 }));
-jest.mock("../../services/messaging/cache", () => ({
+jest.mock("@/services/messaging/cache", () => ({
   cacheService: {
     loadConversations: jest.fn().mockResolvedValue([]),
     loadMessages: jest.fn().mockResolvedValue([]),
@@ -149,7 +149,7 @@ jest.mock("../../services/messaging/cache", () => ({
 
 import React from "react";
 import { act, render, waitFor } from "@testing-library/react-native";
-import { AuthNavigator } from "../AuthNavigator";
+import { AuthNavigator } from "@/navigation/AuthNavigator";
 
 const flush = async () => {
   await act(async () => {

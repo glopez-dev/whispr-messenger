@@ -1,6 +1,6 @@
-import { TokenService } from "../TokenService";
-import { getApiBaseUrl } from "../apiBase";
-import { messagingAPI } from "../messaging/api";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
+import { messagingAPI } from "@/services/messaging/api";
 
 const API_BASE_URL = `${getApiBaseUrl()}/user/v1`;
 const MESSAGING_API_URL = `${getApiBaseUrl()}/messaging/api/v1`;

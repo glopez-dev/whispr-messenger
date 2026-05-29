@@ -6,8 +6,8 @@
 
 import React from "react";
 import { Text, StyleSheet } from "react-native";
-import { MessageWithRelations } from "../../types/messaging";
-import { formatHourMinute } from "../../utils";
+import { MessageWithRelations } from "@/types/messaging";
+import { formatHourMinute } from "@/utils";
 
 type Status = NonNullable<MessageWithRelations["status"]>;
 

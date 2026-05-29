@@ -26,7 +26,7 @@ jest.mock("expo-image-picker", () => ({
   launchImageLibraryAsync: (...args: unknown[]) => mockLaunchLibrary(...args),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
@@ -37,12 +37,12 @@ jest.mock("../../../context/ThemeContext", () => ({
 }));
 
 const mockSubmit = jest.fn();
-jest.mock("../../../services/moderation/reportApi", () => ({
+jest.mock("@/services/moderation/reportApi", () => ({
   submitContentReport: (...args: unknown[]) => mockSubmit(...args),
 }));
 
-import { ReportMessageSheet } from "../ReportMessageSheet";
-import type { MessageWithRelations } from "../../../types/messaging";
+import { ReportMessageSheet } from "@/components/Chat/ReportMessageSheet";
+import type { MessageWithRelations } from "@/types/messaging";
 
 const baseMessage = {
   id: "msg-1",

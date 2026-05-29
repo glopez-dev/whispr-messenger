@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../../theme/colors";
+import { colors } from "@/theme/colors";
 
 export interface NotContactBannerProps {
   onAddContact: () => void;

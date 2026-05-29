@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { formatUsername } from "../../utils";
+import { formatUsername } from "@/utils";
 import {
   View,
   Text,
@@ -37,18 +37,18 @@ import Animated, {
   SlideInRight,
   SlideOutRight,
 } from "react-native-reanimated";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, withOpacity } from "../../theme/colors";
-import { typography } from "../../theme/typography";
-import { Avatar } from "../../components/Chat/Avatar";
-import { logger } from "../../utils/logger";
-import { groupsAPI, GroupMember } from "../../services/groups/api";
-import { contactsAPI, Contact } from "../../services/contacts/api";
-import { useAuth } from "../../context/AuthContext";
-import { AuthStackParamList } from "../../navigation/types";
-import { useConversationsStore } from "../../store/conversationsStore";
-import { useGroupManagementData } from "./hooks/useGroupManagementData";
-import { useGroupAvatar } from "./hooks/useGroupAvatar";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
+import { typography } from "@/theme/typography";
+import { Avatar } from "@/components/Chat/Avatar";
+import { logger } from "@/utils/logger";
+import { groupsAPI, GroupMember } from "@/services/groups/api";
+import { contactsAPI, Contact } from "@/services/contacts/api";
+import { useAuth } from "@/context/AuthContext";
+import { AuthStackParamList } from "@/navigation/types";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { useGroupManagementData } from "@/screens/Groups/hooks/useGroupManagementData";
+import { useGroupAvatar } from "@/screens/Groups/hooks/useGroupAvatar";
 
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);

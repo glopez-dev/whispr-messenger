@@ -21,7 +21,7 @@ jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ goBack: mockGoBack }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
@@ -30,20 +30,20 @@ jest.mock("../../../context/ThemeContext", () => ({
 }));
 
 const mockGenerateQR = jest.fn();
-jest.mock("../../../services/qrCode/qrCodeService", () => ({
+jest.mock("@/services/qrCode/qrCodeService", () => ({
   qrCodeService: {
     generateMyQRCode: (...a: unknown[]) => mockGenerateQR(...a),
   },
 }));
 
 const mockGetProfile = jest.fn();
-jest.mock("../../../services/UserService", () => ({
+jest.mock("@/services/UserService", () => ({
   UserService: {
     getInstance: () => ({ getProfile: () => mockGetProfile() }),
   },
 }));
 
-import { MyQRCodeScreen } from "../MyQRCodeScreen";
+import { MyQRCodeScreen } from "@/screens/Contacts/MyQRCodeScreen";
 
 let alertSpy: jest.SpyInstance;
 let shareSpy: jest.SpyInstance;

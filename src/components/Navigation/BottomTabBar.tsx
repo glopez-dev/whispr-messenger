@@ -17,19 +17,19 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { switchToRootTab } from "../../navigation/navigationRef";
-import type { AuthStackParamList } from "../../navigation/types";
-import { colors } from "../../theme/colors";
-import { useConversationsStore } from "../../store/conversationsStore";
-import { useUIStore } from "../../store/uiStore";
-import { useCallsStore } from "../../store/callsStore";
-import { useModerationStore, useIsStaff } from "../../store/moderationStore";
+import { switchToRootTab } from "@/navigation/navigationRef";
+import type { AuthStackParamList } from "@/navigation/types";
+import { colors } from "@/theme/colors";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { useUIStore } from "@/store/uiStore";
+import { useCallsStore } from "@/store/callsStore";
+import { useModerationStore, useIsStaff } from "@/store/moderationStore";
 import {
   FLOATING_TAB_BAR_BORDER_RADIUS as PILL_BORDER_RADIUS,
   FLOATING_TAB_BAR_BOTTOM_OFFSET as PILL_BOTTOM_OFFSET,
   FLOATING_TAB_BAR_HORIZONTAL_MARGIN as PILL_HORIZONTAL_MARGIN,
   FLOATING_TAB_BAR_PILL_HEIGHT as PILL_HEIGHT,
-} from "./floatingTabBarLayout";
+} from "@/components/Navigation/floatingTabBarLayout";
 
 const TEXT_LIGHT_COLOR = colors.text.light;
 const PRIMARY_MAIN_COLOR = colors.primary.main;

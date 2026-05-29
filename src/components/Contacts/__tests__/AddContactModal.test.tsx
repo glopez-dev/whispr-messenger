@@ -20,14 +20,14 @@ jest.mock("expo-linear-gradient", () => ({
 jest.mock("react-native-safe-area-context", () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
 }));
-jest.mock("../../Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
 
 const mockNavigate = jest.fn();
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ navigate: mockNavigate }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { secondary: "#222" },
@@ -37,13 +37,13 @@ jest.mock("../../../context/ThemeContext", () => ({
 }));
 
 let mockCurrentUserId: string | null = "me";
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ userId: mockCurrentUserId }),
 }));
 
 const mockSearchUsers = jest.fn();
 const mockSendContactRequest = jest.fn();
-jest.mock("../../../services/contacts/api", () => ({
+jest.mock("@/services/contacts/api", () => ({
   contactsAPI: {
     searchUsers: (...args: unknown[]) => mockSearchUsers(...args),
     sendContactRequest: (...args: unknown[]) => mockSendContactRequest(...args),
@@ -51,13 +51,13 @@ jest.mock("../../../services/contacts/api", () => ({
 }));
 
 const mockCreateDirect = jest.fn();
-jest.mock("../../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     createDirectConversation: (...args: unknown[]) => mockCreateDirect(...args),
   },
 }));
 
-import { AddContactModal } from "../AddContactModal";
+import { AddContactModal } from "@/components/Contacts/AddContactModal";
 
 const baseProps = {
   visible: true,

@@ -16,14 +16,14 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
-import { colors } from "../../theme/colors";
-import { TokenService } from "../../services/TokenService";
-import { DeviceManagerService } from "../../services/SecurityService";
-import { SignalKeyService } from "../../services/SignalKeyService";
-import { SignalKeysService } from "../../services/SecurityService";
-import type { AuthStackParamList } from "../../navigation/types";
+import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { colors } from "@/theme/colors";
+import { TokenService } from "@/services/TokenService";
+import { DeviceManagerService } from "@/services/SecurityService";
+import { SignalKeyService } from "@/services/SignalKeyService";
+import { SignalKeysService } from "@/services/SecurityService";
+import type { AuthStackParamList } from "@/navigation/types";
 
 // Lazy-load the web QR scanner so native bundles don't pull in browser-only deps.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

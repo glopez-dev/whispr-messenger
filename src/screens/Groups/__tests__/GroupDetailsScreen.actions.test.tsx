@@ -70,7 +70,7 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     settings: { backgroundPreset: "whispr" },
     getThemeColors: () => ({
@@ -95,7 +95,7 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isLoading: false,
@@ -106,13 +106,13 @@ jest.mock("../../../context/AuthContext", () => ({
   }),
 }));
 
-jest.mock("../../../components/Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
 
-jest.mock("../../../utils/logger", () => ({
+jest.mock("@/utils/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
-jest.mock("../../../services/groups/api", () => ({
+jest.mock("@/services/groups/api", () => ({
   groupsAPI: {
     getGroupDetails: jest.fn(),
     getGroupMembers: jest.fn(),
@@ -126,12 +126,12 @@ jest.mock("../../../services/groups/api", () => ({
   },
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const groupsAPI = require("../../../services/groups/api").groupsAPI as Record<
+const groupsAPI = require("@/services/groups/api").groupsAPI as Record<
   string,
   jest.Mock
 >;
 
-jest.mock("../../../store/conversationsStore", () => {
+jest.mock("@/store/conversationsStore", () => {
   const state = {
     conversations: [{ id: "conv1", name: "G", avatar_url: null, metadata: {} }],
     refreshConversations: jest.fn(),
@@ -143,7 +143,7 @@ jest.mock("../../../store/conversationsStore", () => {
   };
 });
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] }, dark: "#000" },
     text: { light: "#fff", secondary: "#aaa" },
@@ -153,14 +153,14 @@ jest.mock("../../../theme/colors", () => ({
   },
   withOpacity: (c: string) => c,
 }));
-jest.mock("../../../theme/typography", () => ({
+jest.mock("@/theme/typography", () => ({
   typography: {
     fontSize: { base: 14, sm: 12, lg: 18, xl: 22, xs: 10, xxxl: 32 },
     fontWeight: { bold: "700", medium: "500", semiBold: "600", normal: "400" },
   },
 }));
 
-import { GroupDetailsScreen } from "../GroupDetailsScreen";
+import { GroupDetailsScreen } from "@/screens/Groups/GroupDetailsScreen";
 
 const baseDetails = {
   id: "g1",

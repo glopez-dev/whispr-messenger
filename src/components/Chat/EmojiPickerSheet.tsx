@@ -18,14 +18,14 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
 import {
   EMOJI_PICKER_CATEGORIES,
   filterCategoriesBySearch,
   type EmojiCategory,
-} from "../../data/emojiPickerData";
-import { validateReactionEmoji } from "../../utils/reactionEmoji";
+} from "@/data/emojiPickerData";
+import { validateReactionEmoji } from "@/utils/reactionEmoji";
 
 export interface EmojiPickerSheetProps {
   visible: boolean;

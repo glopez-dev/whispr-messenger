@@ -1,4 +1,4 @@
-import { getApiBaseUrl, getWsBaseUrl } from "../services/apiBase";
+import { getApiBaseUrl, getWsBaseUrl } from "@/services/apiBase";
 
 const BASE = getApiBaseUrl();
 

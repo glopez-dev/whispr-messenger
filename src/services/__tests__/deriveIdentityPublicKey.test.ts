@@ -22,21 +22,21 @@ jest.mock("expo-crypto", () => ({
   }),
 }));
 
-jest.mock("../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     saveIdentityPrivateKey: jest.fn().mockResolvedValue(undefined),
     getIdentityPrivateKey: jest.fn().mockResolvedValue(null),
   },
 }));
 
-jest.mock("../E2EEService", () => ({
+jest.mock("@/services/E2EEService", () => ({
   E2EEService: {
     resetIdentityCache: jest.fn(),
   },
 }));
 
 import nacl from "tweetnacl";
-import { deriveIdentityPublicKey } from "../SignalKeyService";
+import { deriveIdentityPublicKey } from "@/services/SignalKeyService";
 
 describe("deriveIdentityPublicKey (real nacl)", () => {
   it("retourne une Uint8Array de 32 bytes", () => {

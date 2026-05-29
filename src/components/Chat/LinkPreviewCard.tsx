@@ -8,10 +8,10 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, withOpacity } from "../../theme/colors";
-import type { MessageLinkPreview } from "../../types/messaging";
-import { isHttpUrl, isReachableUrl } from "../../utils";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
+import type { MessageLinkPreview } from "@/types/messaging";
+import { isHttpUrl, isReachableUrl } from "@/utils";
 
 interface LinkPreviewCardProps {
   preview: MessageLinkPreview;

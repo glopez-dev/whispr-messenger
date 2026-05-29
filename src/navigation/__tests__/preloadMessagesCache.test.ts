@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock("../../services/E2EEService", () => ({
+jest.mock("@/services/E2EEService", () => ({
   E2EEService: {
     isEncryptedPayload: jest.fn(),
     decryptTextMessage: jest.fn(),
@@ -10,8 +10,8 @@ jest.mock("../../services/E2EEService", () => ({
 import {
   decryptMessageForCache,
   decryptMessagesForCache,
-} from "../preloadMessagesCache";
-import { E2EEService } from "../../services/E2EEService";
+} from "@/navigation/preloadMessagesCache";
+import { E2EEService } from "@/services/E2EEService";
 
 const mockIsEncrypted = E2EEService.isEncryptedPayload as jest.Mock;
 const mockDecryptText = E2EEService.decryptTextMessage as jest.Mock;

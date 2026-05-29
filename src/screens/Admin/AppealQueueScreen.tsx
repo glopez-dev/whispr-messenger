@@ -17,11 +17,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { useModerationStore } from "../../store/moderationStore";
-import { AdminGate, AppealCard } from "../../components/Moderation";
-import type { Appeal } from "../../types/moderation";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { useModerationStore } from "@/store/moderationStore";
+import { AdminGate, AppealCard } from "@/components/Moderation";
+import type { Appeal } from "@/types/moderation";
 
 export const AppealQueueScreen: React.FC = () => {
   const navigation = useNavigation<any>();

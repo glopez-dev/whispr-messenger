@@ -8,8 +8,8 @@ import {
   type RemoteAudioTrack,
   type LocalAudioTrack,
 } from "livekit-client";
-import { colors, withOpacity } from "../../theme/colors";
-import { Avatar } from "../Chat/Avatar";
+import { colors, withOpacity } from "@/theme/colors";
+import { Avatar } from "@/components/Chat/Avatar";
 
 interface Props {
   participant: Participant;

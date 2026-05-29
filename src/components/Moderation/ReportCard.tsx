@@ -5,9 +5,9 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../theme/colors";
-import { ReportStatusBadge } from "./ReportStatusBadge";
-import type { Report, ReportCategory } from "../../types/moderation";
+import { colors } from "@/theme/colors";
+import { ReportStatusBadge } from "@/components/Moderation/ReportStatusBadge";
+import type { Report, ReportCategory } from "@/types/moderation";
 
 const CATEGORY_ICONS: Record<ReportCategory, keyof typeof Ionicons.glyphMap> = {
   offensive: "alert-circle",

@@ -1,6 +1,6 @@
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
-import { canonicalizeMimeType } from "./mime";
+import { canonicalizeMimeType } from "@/utils/mime";
 
 /**
  * Force a neutral audio identity for upload: iOS may emit

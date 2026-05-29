@@ -37,7 +37,7 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
@@ -45,10 +45,10 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-jest.mock("../Avatar", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({
   Avatar: () => null,
 }));
-jest.mock("../../Profile/ProfileTrigger", () => ({
+jest.mock("@/components/Profile/ProfileTrigger", () => ({
   ProfileTrigger: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -60,12 +60,12 @@ let mockGroupAvatars: Record<
   Array<{ uri?: string; name: string }>
 > = {};
 
-jest.mock("../../../store/presenceStore", () => ({
+jest.mock("@/store/presenceStore", () => ({
   usePresenceStore: (selector: (s: any) => any) =>
     selector({ onlineUserIds: mockOnlineUserIds }),
 }));
 
-jest.mock("../../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: (selector: (s: any) => any) =>
     selector({
       groupAvatars: mockGroupAvatars,
@@ -75,14 +75,14 @@ jest.mock("../../../store/conversationsStore", () => ({
 }));
 
 const mockUseAuth = jest.fn(() => ({ userId: "me" }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: (...args: unknown[]) => mockUseAuth(...args),
 }));
 
 const mockGetConversation = jest.fn();
 const mockGetConversationMembers = jest.fn();
 const mockGetUserInfo = jest.fn();
-jest.mock("../../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     getConversation: (...args: unknown[]) => mockGetConversation(...args),
     getConversationMembers: (...args: unknown[]) =>
@@ -91,8 +91,8 @@ jest.mock("../../../services/messaging/api", () => ({
   },
 }));
 
-import ConversationItem from "../ConversationItem";
-import type { Conversation } from "../../../types/messaging";
+import ConversationItem from "@/components/Chat/ConversationItem";
+import type { Conversation } from "@/types/messaging";
 import * as Haptics from "expo-haptics";
 
 const FIXED_NOW = new Date("2026-06-15T10:00:00.000Z");

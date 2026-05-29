@@ -21,7 +21,7 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => ({ params: { conversationId: "conv-1" } }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => {
+jest.mock("@/context/ThemeContext", () => {
   const translations: Record<string, string> = {
     "scheduled.empty": "Aucun message programmé",
     "scheduled.emptyHint":
@@ -53,14 +53,14 @@ jest.mock("../../../context/ThemeContext", () => {
 
 const mockGetScheduled = jest.fn();
 const mockCancelScheduled = jest.fn();
-jest.mock("../../../services/SchedulingService", () => ({
+jest.mock("@/services/SchedulingService", () => ({
   SchedulingService: {
     getScheduledMessages: (...a: unknown[]) => mockGetScheduled(...a),
     cancelScheduledMessage: (...a: unknown[]) => mockCancelScheduled(...a),
   },
 }));
 
-import { ScheduledMessagesScreen } from "../ScheduledMessagesScreen";
+import { ScheduledMessagesScreen } from "@/screens/Chat/ScheduledMessagesScreen";
 
 let alertSpy: jest.SpyInstance;
 

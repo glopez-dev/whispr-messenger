@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
-import { TwoFactorVerifyLoginScreen } from "../TwoFactorVerifyLoginScreen";
-import { AuthService } from "../../../services/AuthService";
-import { TwoFactorService } from "../../../services/TwoFactorService";
-import { TokenService } from "../../../services/TokenService";
+import { TwoFactorVerifyLoginScreen } from "@/screens/Auth/TwoFactorVerifyLoginScreen";
+import { AuthService } from "@/services/AuthService";
+import { TwoFactorService } from "@/services/TwoFactorService";
+import { TokenService } from "@/services/TokenService";
 
 const mockReset = jest.fn();
 const mockGoBack = jest.fn();
@@ -41,7 +41,7 @@ jest.mock("expo-linear-gradient", () => ({
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -56,7 +56,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: false,
     isLoading: false,
@@ -66,30 +66,30 @@ jest.mock("../../../context/AuthContext", () => ({
     signOut: jest.fn(),
   }),
 }));
-jest.mock("../../../services/AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: {
     loginAfter2FA: jest.fn(),
   },
 }));
-jest.mock("../../../services/TwoFactorService", () => ({
+jest.mock("@/services/TwoFactorService", () => ({
   TwoFactorService: {
     useBackupCode: jest.fn(),
   },
 }));
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     saveTokens: jest.fn().mockResolvedValue(undefined),
     decodeAccessToken: jest.fn(),
   },
 }));
-jest.mock("../../../services/UserService", () => ({
+jest.mock("@/services/UserService", () => ({
   UserService: {
     getInstance: () => ({
       bootstrapAccount: jest.fn().mockResolvedValue(undefined),
     }),
   },
 }));
-jest.mock("../../../components/Toast/Toast", () => {
+jest.mock("@/components/Toast/Toast", () => {
   const { View } = require("react-native");
   return ({ visible }: any) => (visible ? <View testID="toast" /> : null);
 });

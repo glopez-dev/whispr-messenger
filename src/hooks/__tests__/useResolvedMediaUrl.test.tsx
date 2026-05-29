@@ -33,7 +33,7 @@ const mockFs = require("expo-file-system/legacy") as {
   writeAsStringAsync: jest.Mock;
 };
 
-jest.mock("../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: jest.fn(),
   },
@@ -46,8 +46,8 @@ import {
   setResolvedMediaCacheScope,
   clearResolvedMediaCache,
   prefetchResolvedMediaUris,
-} from "../useResolvedMediaUrl";
-import { TokenService } from "../../services/TokenService";
+} from "@/hooks/useResolvedMediaUrl";
+import { TokenService } from "@/services/TokenService";
 
 const mockGetAccessToken = TokenService.getAccessToken as jest.Mock;
 

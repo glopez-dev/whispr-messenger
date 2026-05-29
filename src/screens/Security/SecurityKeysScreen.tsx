@@ -20,19 +20,22 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 import * as Haptics from "expo-haptics";
-import Toast from "../../components/Toast/Toast";
+import Toast from "@/components/Toast/Toast";
 
-import { copyToClipboard } from "../../utils/clipboard";
-import { DeviceManagerService } from "../../services/SecurityService";
+import { copyToClipboard } from "@/utils/clipboard";
+import { DeviceManagerService } from "@/services/SecurityService";
 import {
   useDeviceKeys,
   type ConnectedDevice,
   type SecurityKey,
-} from "./hooks/useDeviceKeys";
-import { QRCodeModal, _qrCache } from "./components/QRCodeModal";
+} from "@/screens/Security/hooks/useDeviceKeys";
+import {
+  QRCodeModal,
+  _qrCache,
+} from "@/screens/Security/components/QRCodeModal";
 
 // Re-exported for the existing test suite which resets the module-level
 // QR challenge cache between cases.

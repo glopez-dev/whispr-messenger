@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, spacing, typography } from "../../theme";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, spacing, typography } from "@/theme";
 
 export const AuthLanguageSwitcher: React.FC = () => {
   const { settings, updateSettings, getLocalizedText } = useTheme();

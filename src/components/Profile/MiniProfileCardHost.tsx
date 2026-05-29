@@ -21,11 +21,11 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { useMiniProfileCard } from "../../store/miniProfileCardStore";
-import { useAuth } from "../../context/AuthContext";
-import { messagingAPI } from "../../services/messaging/api";
-import { MiniProfileCard } from "./MiniProfileCard";
-import type { AuthStackParamList } from "../../navigation/types";
+import { useMiniProfileCard } from "@/store/miniProfileCardStore";
+import { useAuth } from "@/context/AuthContext";
+import { messagingAPI } from "@/services/messaging/api";
+import { MiniProfileCard } from "@/components/Profile/MiniProfileCard";
+import type { AuthStackParamList } from "@/navigation/types";
 
 export const MiniProfileCardHost: React.FC = () => {
   const { isOpen, currentUserId: viewedUserId, close } = useMiniProfileCard();

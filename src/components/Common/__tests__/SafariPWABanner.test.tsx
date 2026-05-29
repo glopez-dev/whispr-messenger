@@ -16,7 +16,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     text: { light: "#fff" },
     primary: { main: "#fe7a5c" },
@@ -59,7 +59,7 @@ afterAll(() => {
   });
 });
 
-import { SafariPWABanner } from "../SafariPWABanner";
+import { SafariPWABanner } from "@/components/Common/SafariPWABanner";
 
 // Acces aux mocks via requireMock (evite le probleme de hoisting des jest.fn())
 function getStorageMocks() {

@@ -1,18 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock("../TokenService", () =>
-  require("../../__test-utils__/mockFactories").makeTokenServiceMock(),
+jest.mock("@/services/TokenService", () =>
+  require("@/__test-utils__/mockFactories").makeTokenServiceMock(),
 );
-jest.mock("../AuthService", () =>
-  require("../../__test-utils__/mockFactories").makeAuthServiceMock(),
+jest.mock("@/services/AuthService", () =>
+  require("@/__test-utils__/mockFactories").makeAuthServiceMock(),
 );
-jest.mock("../DeviceService", () =>
-  require("../../__test-utils__/mockFactories").makeDeviceServiceMock(),
+jest.mock("@/services/DeviceService", () =>
+  require("@/__test-utils__/mockFactories").makeDeviceServiceMock(),
 );
-jest.mock("../apiBase", () =>
-  require("../../__test-utils__/mockFactories").makeApiBaseMock(
-    "https://api.test",
-  ),
+jest.mock("@/services/apiBase", () =>
+  require("@/__test-utils__/mockFactories").makeApiBaseMock("https://api.test"),
 );
 
 // expo-notifications est chargé dynamiquement via require() dans loadExpoNotifications()
@@ -31,13 +29,10 @@ jest.mock("expo-notifications", () => ({
   addPushTokenListener: (...args: any[]) => mockAddPushTokenListener(...args),
 }));
 
-import { NotificationService } from "../NotificationService";
-import { TokenService } from "../TokenService";
-import { AuthService } from "../AuthService";
-import {
-  installFetchMock,
-  mockResponse,
-} from "../../__test-utils__/mockFactories";
+import { NotificationService } from "@/services/NotificationService";
+import { TokenService } from "@/services/TokenService";
+import { AuthService } from "@/services/AuthService";
+import { installFetchMock, mockResponse } from "@/__test-utils__/mockFactories";
 
 const mockedToken = TokenService as any;
 const mockedAuth = AuthService as any;
@@ -132,7 +127,8 @@ describe("NotificationService.unmuteConversation", () => {
 
 describe("NotificationService.registerDevice / unregisterDevice", () => {
   it("POSTs the token with device_id, platform, app_version, user_id", async () => {
-    const mockedDevice = require("../DeviceService").DeviceService as any;
+    const mockedDevice = require("@/services/DeviceService")
+      .DeviceService as any;
     mockedDevice.getOrCreateDeviceId.mockResolvedValue("dev-xyz");
     mockFetch.mockResolvedValueOnce(mockResponse({ status: 204 }));
 
@@ -205,7 +201,8 @@ describe("NotificationService.initPushRegistration", () => {
     // listener stub retourne une subscription supprimable
     mockAddPushTokenListener.mockReturnValue({ remove: jest.fn() });
 
-    const mockedDevice = require("../DeviceService").DeviceService as any;
+    const mockedDevice = require("@/services/DeviceService")
+      .DeviceService as any;
     mockedDevice.getOrCreateDeviceId.mockResolvedValue("dev-ios");
   });
 

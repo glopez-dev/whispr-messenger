@@ -8,9 +8,9 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as LocalAuthentication from "expo-local-authentication";
-import { Logo } from "../../components";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, spacing, typography } from "../../theme";
+import { Logo } from "@/components";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, spacing, typography } from "@/theme";
 
 interface BiometricLockScreenProps {
   onUnlock: () => void;

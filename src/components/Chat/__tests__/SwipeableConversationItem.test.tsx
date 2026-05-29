@@ -15,7 +15,7 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 
 // Replace the inner ConversationItem with a lightweight stub that exposes
 // a testID we can drive via fireEvent.press.
-jest.mock("../ConversationItem", () => {
+jest.mock("@/components/Chat/ConversationItem", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -106,7 +106,7 @@ jest.mock("@expo/vector-icons", () => {
 
 // Zustand store: factory must inline (babel hoist). Expose the Set via a
 // global so we can mutate it from tests.
-jest.mock("../../../store/conversationsStore", () => {
+jest.mock("@/store/conversationsStore", () => {
   const mockManuallyUnreadIds = new Set<string>();
   (
     globalThis as { __mockManuallyUnreadIds?: Set<string> }
@@ -121,7 +121,7 @@ const manuallyUnreadIds = (
   globalThis as { __mockManuallyUnreadIds: Set<string> }
 ).__mockManuallyUnreadIds;
 
-import { SwipeableConversationItem } from "../SwipeableConversationItem";
+import { SwipeableConversationItem } from "@/components/Chat/SwipeableConversationItem";
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -131,7 +131,7 @@ beforeEach(() => {
 const conv = {
   id: "c-1",
   unread_count: 0,
-} as unknown as import("../../../types/messaging").Conversation;
+} as unknown as import("@/types/messaging").Conversation;
 
 describe("SwipeableConversationItem — edit mode", () => {
   it("renders the bare ConversationItem when editMode is set", () => {

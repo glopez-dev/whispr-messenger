@@ -6,9 +6,9 @@ jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
 }));
-jest.mock("../Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
@@ -16,8 +16,8 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-import { ForwardMessageModal } from "../ForwardMessageModal";
-import type { Conversation } from "../../../types/messaging";
+import { ForwardMessageModal } from "@/components/Chat/ForwardMessageModal";
+import type { Conversation } from "@/types/messaging";
 
 const baseConv = (overrides: Partial<Conversation> = {}): Conversation => ({
   id: overrides.id ?? "c-1",

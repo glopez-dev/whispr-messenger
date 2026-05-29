@@ -46,10 +46,10 @@ import {
   ProfilePictureBlock,
   ProfileFieldRow,
   StatusChip,
-} from "../../components/Profile";
-import { formatUsername } from "../../utils";
-import { colors, spacing, typography } from "../../theme";
-import { UserService } from "../../services";
+} from "@/components/Profile";
+import { formatUsername } from "@/utils";
+import { colors, spacing, typography } from "@/theme";
+import { UserService } from "@/services";
 
 interface UserProfile {
   id: string;

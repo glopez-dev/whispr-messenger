@@ -1,5 +1,5 @@
-import type { Conversation, Message } from "../types/messaging";
-import { normalizeLinkPreview } from "../services/linkPreview";
+import type { Conversation, Message } from "@/types/messaging";
+import { normalizeLinkPreview } from "@/services/linkPreview";
 
 export interface ConversationPreviewSnippet {
   prefix?: string;

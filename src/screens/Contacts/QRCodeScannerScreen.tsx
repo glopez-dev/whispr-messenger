@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { formatUsername } from "../../utils";
+import { formatUsername } from "@/utils";
 import {
   View,
   Text,
@@ -20,12 +20,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/types";
+import type { AuthStackParamList } from "@/navigation/types";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { qrCodeService } from "../../services/qrCode/qrCodeService";
-import { contactsAPI } from "../../services/contacts/api";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { qrCodeService } from "@/services/qrCode/qrCodeService";
+import { contactsAPI } from "@/services/contacts/api";
 
 // Lazy-load the web QR scanner so native bundles don't pull in browser-only deps.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

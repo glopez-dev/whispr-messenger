@@ -17,13 +17,13 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../theme/colors";
+import { colors } from "@/theme/colors";
 import {
   uriNeedsAuthResolution,
   useResolvedMediaUrl,
-} from "../../hooks/useResolvedMediaUrl";
-import { useE2EEMedia } from "../../hooks/useE2EEMedia";
-import { MediaService } from "../../services/MediaService";
+} from "@/hooks/useResolvedMediaUrl";
+import { useE2EEMedia } from "@/hooks/useE2EEMedia";
+import { MediaService } from "@/services/MediaService";
 
 let AudioModule: any = null;
 let triedLoadingAudioModule = false;

@@ -13,7 +13,7 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#000", secondary: "#444", tertiary: "#888" },
@@ -21,8 +21,8 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-import { LinkPreviewCard } from "../LinkPreviewCard";
-import type { MessageLinkPreview } from "../../../types/messaging";
+import { LinkPreviewCard } from "@/components/Chat/LinkPreviewCard";
+import type { MessageLinkPreview } from "@/types/messaging";
 
 const basePreview = (url: string): MessageLinkPreview => ({
   url,

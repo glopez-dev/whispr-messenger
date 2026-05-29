@@ -18,11 +18,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { sanctionsAPI } from "../../services/moderation/moderationApi";
-import { AdminGate, SanctionBadge } from "../../components/Moderation";
-import type { SanctionType } from "../../types/moderation";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { sanctionsAPI } from "@/services/moderation/moderationApi";
+import { AdminGate, SanctionBadge } from "@/components/Moderation";
+import type { SanctionType } from "@/types/moderation";
 
 type RouteParams = {
   SanctionForm: {

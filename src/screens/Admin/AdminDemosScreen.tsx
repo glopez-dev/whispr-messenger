@@ -19,8 +19,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../theme/colors";
-import { AdminGate } from "../../components/Moderation";
+import { colors } from "@/theme/colors";
+import { AdminGate } from "@/components/Moderation";
 
 interface DemoModel {
   id: string;

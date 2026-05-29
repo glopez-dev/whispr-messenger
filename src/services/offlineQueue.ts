@@ -6,7 +6,7 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ExpoCrypto from "expo-crypto";
-import { storage } from "./storage";
+import { storage } from "@/services/storage";
 
 const QUEUE_KEY = "whispr.offline.message.queue";
 const QUEUE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — messages older than this are dropped on drain

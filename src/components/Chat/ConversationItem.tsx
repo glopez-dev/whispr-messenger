@@ -12,18 +12,18 @@ import {
 } from "react-native-reanimated";
 import Animated from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
-import { Conversation } from "../../types/messaging";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { Avatar } from "./Avatar";
+import { Conversation } from "@/types/messaging";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { Avatar } from "@/components/Chat/Avatar";
 import { Ionicons } from "@expo/vector-icons";
-import { usePresenceStore } from "../../store/presenceStore";
-import { useConversationsStore } from "../../store/conversationsStore";
-import { useAuth } from "../../context/AuthContext";
-import { getConversationDisplayName } from "../../utils";
-import { messagingAPI } from "../../services/messaging/api";
-import { buildConversationPreviewSnippet } from "../../utils/conversationPreview";
-import { ProfileTrigger } from "../Profile/ProfileTrigger";
+import { usePresenceStore } from "@/store/presenceStore";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { useAuth } from "@/context/AuthContext";
+import { getConversationDisplayName } from "@/utils";
+import { messagingAPI } from "@/services/messaging/api";
+import { buildConversationPreviewSnippet } from "@/utils/conversationPreview";
+import { ProfileTrigger } from "@/components/Profile/ProfileTrigger";
 
 const EMPTY_GROUP_AVATARS: Array<{ uri?: string; name: string }> = [];
 

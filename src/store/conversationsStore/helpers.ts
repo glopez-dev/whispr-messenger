@@ -1,7 +1,7 @@
-import { Conversation } from "../../types/messaging";
-import { messagingAPI } from "../../services/messaging/api";
-import { TokenService } from "../../services/TokenService";
-import { logger } from "../../utils/logger";
+import { Conversation } from "@/types/messaging";
+import { messagingAPI } from "@/services/messaging/api";
+import { TokenService } from "@/services/TokenService";
+import { logger } from "@/utils/logger";
 
 // Short grace period: absorbs transient empty fetches (e.g. first WS payload
 // arriving just after an HTTP fetch returns []) without flashing an empty UI.

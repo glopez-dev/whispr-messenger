@@ -1,8 +1,8 @@
 import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
-import { OtpScreen } from "../OtpScreen";
-import { AuthService } from "../../../services/AuthService";
-import { TokenService } from "../../../services/TokenService";
+import { OtpScreen } from "@/screens/Auth/OtpScreen";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -29,7 +29,7 @@ jest.mock("@react-navigation/native", () => ({
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -44,7 +44,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: false,
     isLoading: false,
@@ -54,7 +54,7 @@ jest.mock("../../../context/AuthContext", () => ({
     signOut: jest.fn(),
   }),
 }));
-jest.mock("../../../components", () => ({
+jest.mock("@/components", () => ({
   Button: ({ title, onPress, disabled }: any) => {
     const { TouchableOpacity, Text } = require("react-native");
     return (
@@ -64,7 +64,7 @@ jest.mock("../../../components", () => ({
     );
   },
 }));
-jest.mock("../../../services/AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: {
     confirmVerification: jest.fn(),
     register: jest.fn(),
@@ -72,13 +72,13 @@ jest.mock("../../../services/AuthService", () => ({
     requestVerification: jest.fn(),
   },
 }));
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     decodeAccessToken: jest.fn(),
     getAccessToken: jest.fn(),
   },
 }));
-jest.mock("../../../services/SignalKeyService", () => ({
+jest.mock("@/services/SignalKeyService", () => ({
   SignalKeyService: {
     generateKeyBundle: jest.fn().mockResolvedValue({
       signedPreKey: { keyId: 1, publicKey: "pk", signature: "sig" },
@@ -86,7 +86,7 @@ jest.mock("../../../services/SignalKeyService", () => ({
     }),
   },
 }));
-jest.mock("../../../services/DeviceService", () => ({
+jest.mock("@/services/DeviceService", () => ({
   DeviceService: {
     getDeviceInfo: jest.fn().mockResolvedValue({
       deviceId: "dev1",
@@ -98,13 +98,13 @@ jest.mock("../../../services/DeviceService", () => ({
     }),
   },
 }));
-jest.mock("../../../services/SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   SignalKeysService: {
     uploadSignedPrekey: jest.fn().mockResolvedValue({}),
     uploadPrekeys: jest.fn().mockResolvedValue({}),
   },
 }));
-jest.mock("../../../theme", () => ({
+jest.mock("@/theme", () => ({
   colors: {
     text: { light: "#fff" },
     primary: { main: "#6200ee" },

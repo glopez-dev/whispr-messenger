@@ -5,7 +5,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors } from "../../theme/colors";
+import { colors } from "@/theme/colors";
 
 // Extract color values for StyleSheet.create() to avoid runtime resolution issues
 const UI_ERROR_COLOR = colors.ui.error;

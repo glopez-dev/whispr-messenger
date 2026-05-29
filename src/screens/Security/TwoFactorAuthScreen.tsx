@@ -38,11 +38,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "@/context/ThemeContext";
 import * as Haptics from "expo-haptics";
-import Toast from "../../components/Toast/Toast";
-import { TwoFactorService } from "../../services/TwoFactorService";
-import type { AuthStackParamList } from "../../navigation/types";
+import Toast from "@/components/Toast/Toast";
+import { TwoFactorService } from "@/services/TwoFactorService";
+import type { AuthStackParamList } from "@/navigation/types";
 
 export const TwoFactorAuthScreen: React.FC = () => {
   const navigation =

@@ -1,5 +1,10 @@
-import { PinnedMessage } from "../../types/messaging";
-import { API_BASE_URL, authenticatedFetch, httpError, unwrap } from "./http";
+import { PinnedMessage } from "@/types/messaging";
+import {
+  API_BASE_URL,
+  authenticatedFetch,
+  httpError,
+  unwrap,
+} from "@/services/messaging/http";
 
 export const pinsAPI = {
   async pinMessage(conversationId: string, messageId: string): Promise<void> {

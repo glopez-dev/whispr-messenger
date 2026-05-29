@@ -1,10 +1,10 @@
-import { Conversation, Message } from "../../types/messaging";
-import { TokenService } from "../TokenService";
-import { getApiBaseUrl } from "../apiBase";
-import { snakecaseKeys } from "../../utils/caseTransform";
-import { logger } from "../../utils/logger";
-import { isValidUuid } from "../../utils";
-import { fetchProfilesBatch } from "../profile/batchFetch";
+import { Conversation, Message } from "@/types/messaging";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
+import { snakecaseKeys } from "@/utils/caseTransform";
+import { logger } from "@/utils/logger";
+import { isValidUuid } from "@/utils";
+import { fetchProfilesBatch } from "@/services/profile/batchFetch";
 import {
   API_BASE_URL,
   authenticatedFetch,
@@ -16,13 +16,13 @@ import {
   richHttpError,
   unwrap,
   type ApiError,
-} from "./http";
-import { attachmentsAPI } from "./attachments";
-import { pinsAPI } from "./pins";
-import { reactionsAPI } from "./reactions";
+} from "@/services/messaging/http";
+import { attachmentsAPI } from "@/services/messaging/attachments";
+import { pinsAPI } from "@/services/messaging/pins";
+import { reactionsAPI } from "@/services/messaging/reactions";
 
-export { mapBackendAttachment } from "./http";
-export type { ApiError } from "./http";
+export { mapBackendAttachment } from "@/services/messaging/http";
+export type { ApiError } from "@/services/messaging/http";
 
 // --- User profile cache ------------------------------------------------------
 // Avoid re-fetching the same /user/v1/profile/{id} on every render cycle. A

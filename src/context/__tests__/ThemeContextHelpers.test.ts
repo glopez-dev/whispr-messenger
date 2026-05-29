@@ -17,19 +17,19 @@ jest.mock("expo-image-manipulator", () => ({
   manipulateAsync: jest.fn(),
   SaveFormat: { JPEG: "jpeg", PNG: "png" },
 }));
-jest.mock("../../utils/imageCompression", () => ({
+jest.mock("@/utils/imageCompression", () => ({
   detectImageFormatFromUri: jest.fn(() => "jpg"),
 }));
-jest.mock("../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: jest.fn().mockResolvedValue("at") },
 }));
-jest.mock("../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: { uploadMedia: jest.fn() },
 }));
-jest.mock("../../services/UserService", () => ({
+jest.mock("@/services/UserService", () => ({
   UserService: { getInstance: () => ({ getProfile: jest.fn() }) },
 }));
-jest.mock("../../services/apiBase", () => ({
+jest.mock("@/services/apiBase", () => ({
   getApiBaseUrl: () => "https://api.test",
 }));
 
@@ -41,7 +41,7 @@ import {
   shouldApplyRemoteVisualPreferences,
   shouldSyncVisualPreferences,
   type GlobalSettings,
-} from "../ThemeContext";
+} from "@/context/ThemeContext";
 
 const settings = (overrides: Partial<GlobalSettings> = {}): GlobalSettings => ({
   theme: "dark",

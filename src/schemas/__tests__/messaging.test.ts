@@ -3,7 +3,7 @@ import {
   ConversationSchema,
   MessageSchema,
   NewConversationFormSchema,
-} from "../messaging";
+} from "@/schemas/messaging";
 
 describe("MessageSchema", () => {
   it("parses a minimal message and defaults metadata to {}", () => {

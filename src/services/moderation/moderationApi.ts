@@ -1,6 +1,6 @@
-import { TokenService } from "../TokenService";
-import { AuthService } from "../AuthService";
-import { getApiBaseUrl } from "../apiBase";
+import { TokenService } from "@/services/TokenService";
+import { AuthService } from "@/services/AuthService";
+import { getApiBaseUrl } from "@/services/apiBase";
 import type {
   Report,
   UserSanction,
@@ -11,7 +11,7 @@ import type {
   ConversationSanction,
   AuditLogEntry,
   UserRole,
-} from "../../types/moderation";
+} from "@/types/moderation";
 
 const MESSAGING_BASE = () => `${getApiBaseUrl()}/messaging/api/v1`;
 const USER_BASE = () => `${getApiBaseUrl()}/user/v1`;

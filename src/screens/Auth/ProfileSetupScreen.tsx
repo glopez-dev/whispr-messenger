@@ -34,15 +34,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { Button, Input } from "../../components";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
-import { MediaService } from "../../services/MediaService";
-import { UserService } from "../../services";
-import { profileSetupFlag } from "../../services/profileSetupFlag";
-import { isValidUsername, normalizeUsername } from "../../utils";
-import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/types";
+import { Button, Input } from "@/components";
+import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { MediaService } from "@/services/MediaService";
+import { UserService } from "@/services";
+import { profileSetupFlag } from "@/services/profileSetupFlag";
+import { isValidUsername, normalizeUsername } from "@/utils";
+import { colors, spacing, typography } from "@/theme";
+import type { AuthStackParamList } from "@/navigation/types";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "ProfileSetup">;
 

@@ -29,12 +29,12 @@ const mockSocket = {
   addConnectionStateListener: jest.fn(() => () => {}),
 };
 
-jest.mock("../../services/messaging/websocket", () => ({
+jest.mock("@/services/messaging/websocket", () => ({
   getSharedSocket: () => mockSocket,
 }));
 
 const mockApplyMessageUnread = jest.fn();
-jest.mock("../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: {
     getState: () => ({
       applyMessageUnread: mockApplyMessageUnread,
@@ -42,7 +42,7 @@ jest.mock("../../store/conversationsStore", () => ({
   },
 }));
 
-jest.mock("../../store/presenceStore", () => ({
+jest.mock("@/store/presenceStore", () => ({
   usePresenceStore: {
     getState: () => ({
       applyPresenceDiff: jest.fn(),
@@ -51,7 +51,7 @@ jest.mock("../../store/presenceStore", () => ({
   },
 }));
 
-jest.mock("../../store/callsStore", () => ({
+jest.mock("@/store/callsStore", () => ({
   useCallsStore: {
     getState: () => ({
       setIncoming: jest.fn(),
@@ -62,7 +62,7 @@ jest.mock("../../store/callsStore", () => ({
   },
 }));
 
-jest.mock("../../navigation/navigationRef", () => ({
+jest.mock("@/navigation/navigationRef", () => ({
   navigate: jest.fn(),
   navigationRef: {
     isReady: () => false,
@@ -70,7 +70,7 @@ jest.mock("../../navigation/navigationRef", () => ({
   },
 }));
 
-jest.mock("../../services/calls/systemCallProvider", () => ({
+jest.mock("@/services/calls/systemCallProvider", () => ({
   buildIncomingCallPresentation: jest.fn(),
   systemCallProvider: {
     isSupported: () => false,
@@ -79,23 +79,23 @@ jest.mock("../../services/calls/systemCallProvider", () => ({
   },
 }));
 
-jest.mock("../useCallsAvailable", () => ({
+jest.mock("@/hooks/useCallsAvailable", () => ({
   isCallsAvailable: () => true,
 }));
 
 const mockGetReadReceiptsEnabled = jest.fn(() => true);
-jest.mock("../../services/messaging/readReceiptsPref", () => ({
+jest.mock("@/services/messaging/readReceiptsPref", () => ({
   getReadReceiptsEnabled: () => mockGetReadReceiptsEnabled(),
 }));
 
 const mockGetTypingIndicatorEnabled = jest.fn(() => true);
-jest.mock("../../services/messaging/typingIndicatorPref", () => ({
+jest.mock("@/services/messaging/typingIndicatorPref", () => ({
   getTypingIndicatorEnabled: () => mockGetTypingIndicatorEnabled(),
 }));
 
 import React from "react";
 import { renderHook, act } from "@testing-library/react-native";
-import { useWebSocket } from "../useWebSocket";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 beforeEach(() => {
   mockChannelPush.mockClear();

@@ -1,10 +1,10 @@
 import nacl from "tweetnacl";
 import { encodeBase64, decodeBase64 } from "tweetnacl-util";
 import { getRandomBytes } from "expo-crypto";
-import { TokenService } from "./TokenService";
-import { E2EEService } from "./E2EEService";
-import { generateClientRandom } from "../utils/crypto";
-import type { SignalKeyBundleDto } from "../types/auth";
+import { TokenService } from "@/services/TokenService";
+import { E2EEService } from "@/services/E2EEService";
+import { generateClientRandom } from "@/utils/crypto";
+import type { SignalKeyBundleDto } from "@/types/auth";
 
 // tweetnacl looks for self.crypto which doesn't exist in Hermes — wire it up explicitly
 nacl.setPRNG((x: Uint8Array, n: number) => {

@@ -1,7 +1,7 @@
 import {
   isUploadValidationError,
   type UploadValidationError,
-} from "../services/MediaService";
+} from "@/services/MediaService";
 
 type ApiError = Error & { status?: number };
 

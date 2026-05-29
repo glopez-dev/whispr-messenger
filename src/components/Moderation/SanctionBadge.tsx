@@ -5,7 +5,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import type { SanctionType } from "../../types/moderation";
+import type { SanctionType } from "@/types/moderation";
 
 const SANCTION_CONFIG: Record<
   SanctionType,

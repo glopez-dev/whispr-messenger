@@ -19,7 +19,7 @@ jest.mock("react-native-svg", () => {
   };
 });
 
-import { BubbleSilhouette } from "../BubbleSilhouette";
+import { BubbleSilhouette } from "@/components/Chat/BubbleSilhouette";
 
 describe("BubbleSilhouette", () => {
   it("renders a right-side bubble with tail at default size", () => {

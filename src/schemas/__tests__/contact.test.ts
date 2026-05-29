@@ -5,7 +5,7 @@ import {
   ContactListResponseSchema,
   ContactSchema,
   EditContactFormSchema,
-} from "../contact";
+} from "@/schemas/contact";
 
 describe("ContactSchema", () => {
   it("parses a contact with an embedded user join", () => {

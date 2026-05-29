@@ -14,13 +14,13 @@ jest.mock("expo-image-picker", () => ({
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const imagePicker = require("expo-image-picker") as Record<string, jest.Mock>;
 
-jest.mock("../../../services/moderation", () => ({
+jest.mock("@/services/moderation", () => ({
   tfjsService: { gate: jest.fn() },
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { tfjsService } = require("../../../services/moderation");
+const { tfjsService } = require("@/services/moderation");
 
-import { ModerationTestScreen } from "../ModerationTestScreen";
+import { ModerationTestScreen } from "@/screens/Debug/ModerationTestScreen";
 
 function allOnPress(root: any) {
   const out: any[] = [];

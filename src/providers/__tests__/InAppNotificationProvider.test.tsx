@@ -1,21 +1,21 @@
 import React from "react";
 import { render, act } from "@testing-library/react-native";
-import { InAppNotificationProvider } from "../InAppNotificationProvider";
-import type { Message } from "../../types/messaging";
+import { InAppNotificationProvider } from "@/providers/InAppNotificationProvider";
+import type { Message } from "@/types/messaging";
 
 let capturedOptions: any;
 const mockApplyNewMessage = jest.fn();
 const mockGetAccessToken = jest.fn();
 const mockCurrentRoute = jest.fn();
 
-jest.mock("../../hooks/useWebSocket", () => ({
+jest.mock("@/hooks/useWebSocket", () => ({
   useWebSocket: (options: any) => {
     capturedOptions = options;
     return { connectionState: "connected" };
   },
 }));
 
-jest.mock("../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isLoading: false,
@@ -26,25 +26,25 @@ jest.mock("../../context/AuthContext", () => ({
   }),
 }));
 
-jest.mock("../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: () => mockGetAccessToken(),
   },
 }));
 
-jest.mock("../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: (selector: any) =>
     selector({ applyNewMessage: mockApplyNewMessage }),
 }));
 
-jest.mock("../../navigation/navigationRef", () => ({
+jest.mock("@/navigation/navigationRef", () => ({
   navigationRef: {
     getCurrentRoute: () => mockCurrentRoute(),
   },
 }));
 
 const mockShowToast = jest.fn();
-jest.mock("../../store/toastStore", () => ({
+jest.mock("@/store/toastStore", () => ({
   useToastStore: (selector: any) =>
     selector({
       show: mockShowToast,

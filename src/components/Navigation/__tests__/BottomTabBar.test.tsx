@@ -12,7 +12,7 @@ jest.mock("expo-blur", () => {
 });
 
 const mockSwitchToRootTab = jest.fn();
-jest.mock("../../../navigation/navigationRef", () => ({
+jest.mock("@/navigation/navigationRef", () => ({
   switchToRootTab: (...args: unknown[]) => mockSwitchToRootTab(...args),
 }));
 
@@ -24,22 +24,22 @@ let mockAppealQueue: unknown[] = [];
 let mockPendingAppeals: Record<string, { status: string }> = {};
 let mockBottomTabHidden = false;
 
-jest.mock("../../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: (selector: (s: any) => any) =>
     selector({
       conversations:
         mockUnreadTotal > 0 ? [{ unread_count: mockUnreadTotal }] : [],
     }),
 }));
-jest.mock("../../../store/callsStore", () => ({
+jest.mock("@/store/callsStore", () => ({
   useCallsStore: (selector: (s: any) => any) =>
     selector({ incoming: mockIncoming }),
 }));
-jest.mock("../../../store/uiStore", () => ({
+jest.mock("@/store/uiStore", () => ({
   useUIStore: (selector: (s: any) => any) =>
     selector({ bottomTabBarHidden: mockBottomTabHidden }),
 }));
-jest.mock("../../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: (selector: (s: any) => any) =>
     selector({
       reportQueue: mockReportQueue,
@@ -49,7 +49,7 @@ jest.mock("../../../store/moderationStore", () => ({
   useIsStaff: () => mockIsStaff,
 }));
 
-import { BottomTabBar } from "../BottomTabBar";
+import { BottomTabBar } from "@/components/Navigation/BottomTabBar";
 
 beforeEach(() => {
   mockSwitchToRootTab.mockReset();

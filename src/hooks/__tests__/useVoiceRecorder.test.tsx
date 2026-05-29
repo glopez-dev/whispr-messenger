@@ -95,7 +95,7 @@ import {
   useVoiceRecorder,
   buildRecordingOptions,
   type RecordedAudio,
-} from "../useVoiceRecorder";
+} from "@/hooks/useVoiceRecorder";
 
 // ---- helpers ----
 const RN = require("react-native");

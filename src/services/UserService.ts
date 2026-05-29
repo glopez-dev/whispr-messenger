@@ -3,11 +3,11 @@
  * Handles all user-related API calls
  */
 
-import { TokenService } from "./TokenService";
-import { AuthService } from "./AuthService";
-import { getApiBaseUrl } from "./apiBase";
-import { normalizeUsername } from "../utils";
-import { logger } from "../utils/logger";
+import { TokenService } from "@/services/TokenService";
+import { AuthService } from "@/services/AuthService";
+import { getApiBaseUrl } from "@/services/apiBase";
+import { normalizeUsername } from "@/utils";
+import { logger } from "@/utils/logger";
 
 // Types
 export interface UserVisualPreferences {

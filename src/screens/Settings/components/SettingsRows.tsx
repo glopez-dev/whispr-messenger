@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../../context/ThemeContext";
+import { useTheme } from "@/context/ThemeContext";
 
 type ThemeColors = ReturnType<ReturnType<typeof useTheme>["getThemeColors"]>;
 type GetFontSize = ReturnType<typeof useTheme>["getFontSize"];

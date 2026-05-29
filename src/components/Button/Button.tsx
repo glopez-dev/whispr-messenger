@@ -12,7 +12,7 @@ import {
   ViewStyle,
   TextStyle,
 } from "react-native";
-import { colors, spacing, borderRadius, shadows } from "../../theme";
+import { colors, spacing, borderRadius, shadows } from "@/theme";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "small" | "medium" | "large";

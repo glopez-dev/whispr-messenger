@@ -19,7 +19,7 @@ jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-import { ScheduleDateTimePicker } from "../ScheduleDateTimePicker";
+import { ScheduleDateTimePicker } from "@/components/Chat/ScheduleDateTimePicker";
 import * as Haptics from "expo-haptics";
 
 const FIXED_NOW = new Date("2026-06-15T10:30:00.000Z"); // Mon 15 Jun 2026, 10:30 UTC

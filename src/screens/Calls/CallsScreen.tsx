@@ -20,8 +20,8 @@ import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { CallHistoryScreen } from "./CallHistoryScreen";
-import { colors } from "../../theme/colors";
+import { CallHistoryScreen } from "@/screens/Calls/CallHistoryScreen";
+import { colors } from "@/theme/colors";
 
 export const CallsScreen: React.FC = () => {
   return (

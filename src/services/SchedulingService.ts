@@ -1,6 +1,6 @@
-import { AuthService } from "./AuthService";
-import { TokenService } from "./TokenService";
-import { getApiBaseUrl } from "./apiBase";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 type ApiError = Error & { status?: number; body?: unknown };
 

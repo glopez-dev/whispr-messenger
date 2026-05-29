@@ -2,7 +2,7 @@
 import React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { Button } from "../Button";
+import { Button } from "@/components/Button/Button";
 
 describe("Button", () => {
   it.each(["primary", "secondary", "ghost", "danger"] as const)(

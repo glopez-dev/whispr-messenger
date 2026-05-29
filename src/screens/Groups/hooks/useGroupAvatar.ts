@@ -2,10 +2,10 @@ import { useCallback } from "react";
 import { Alert, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { groupsAPI, GroupDetails } from "../../../services/groups/api";
-import { MediaService } from "../../../services/MediaService";
-import { Conversation } from "../../../types/messaging";
-import { logger } from "../../../utils/logger";
+import { groupsAPI, GroupDetails } from "@/services/groups/api";
+import { MediaService } from "@/services/MediaService";
+import { Conversation } from "@/types/messaging";
+import { logger } from "@/utils/logger";
 
 export interface UseGroupAvatarOptions {
   groupId: string;

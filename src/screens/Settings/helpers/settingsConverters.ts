@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { PrivacySettings, UserService } from "../../../services/UserService";
-import { NotificationSettings } from "../../../services/NotificationService";
-import { storage as secureStorage } from "../../../services/storage";
+import { PrivacySettings, UserService } from "@/services/UserService";
+import { NotificationSettings } from "@/services/NotificationService";
+import { storage as secureStorage } from "@/services/storage";
 
 export const STORAGE_KEYS = {
   privacy: "@whispr_settings_privacy",

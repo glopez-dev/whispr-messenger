@@ -25,13 +25,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, withOpacity } from "../../theme/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
 import {
   submitContentReport,
   type ReportCategoryId,
-} from "../../services/moderation/reportApi";
-import type { MessageWithRelations } from "../../types/messaging";
+} from "@/services/moderation/reportApi";
+import type { MessageWithRelations } from "@/types/messaging";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 const SHEET_MAX_H = SCREEN_H * 0.9;

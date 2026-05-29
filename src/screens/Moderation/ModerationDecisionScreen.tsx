@@ -6,8 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/types";
-import { colors, withOpacity } from "../../theme/colors";
+import type { AuthStackParamList } from "@/navigation/types";
+import { colors, withOpacity } from "@/theme/colors";
 
 type Nav = StackNavigationProp<AuthStackParamList, "ModerationDecision">;
 type DecisionRoute = RouteProp<AuthStackParamList, "ModerationDecision">;

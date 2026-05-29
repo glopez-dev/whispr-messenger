@@ -11,8 +11,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import QRCodeStyled from "react-native-qrcode-styled";
-import { useTheme } from "../../../context/ThemeContext";
-import { DeviceManagerService } from "../../../services/SecurityService";
+import { useTheme } from "@/context/ThemeContext";
+import { DeviceManagerService } from "@/services/SecurityService";
 
 const formatCountdown = (seconds: number): string => {
   const m = Math.floor(seconds / 60);

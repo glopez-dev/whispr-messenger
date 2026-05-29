@@ -38,12 +38,12 @@ const mockSocket = {
   }),
 };
 
-jest.mock("../../services/messaging/websocket", () => ({
+jest.mock("@/services/messaging/websocket", () => ({
   getSharedSocket: () => mockSocket,
 }));
 
 const mockApplyMessageUnread = jest.fn();
-jest.mock("../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: {
     getState: () => ({
       applyMessageUnread: mockApplyMessageUnread,
@@ -53,7 +53,7 @@ jest.mock("../../store/conversationsStore", () => ({
 
 const mockApplyPresenceDiff = jest.fn();
 const mockSetPresenceState = jest.fn();
-jest.mock("../../store/presenceStore", () => ({
+jest.mock("@/store/presenceStore", () => ({
   usePresenceStore: {
     getState: () => ({
       applyPresenceDiff: mockApplyPresenceDiff,
@@ -66,7 +66,7 @@ const mockSetIncoming = jest.fn();
 const mockCallsReset = jest.fn();
 let mockIncomingValue: unknown = null;
 const mockActive: unknown = null;
-jest.mock("../../store/callsStore", () => ({
+jest.mock("@/store/callsStore", () => ({
   useCallsStore: {
     getState: () => ({
       setIncoming: mockSetIncoming,
@@ -80,7 +80,7 @@ jest.mock("../../store/callsStore", () => ({
 }));
 
 const mockInboxAddNew = jest.fn();
-jest.mock("../../store/inboxStore", () => ({
+jest.mock("@/store/inboxStore", () => ({
   useInboxStore: {
     getState: () => ({
       addNew: mockInboxAddNew,
@@ -90,7 +90,7 @@ jest.mock("../../store/inboxStore", () => ({
 
 const mockNavigate = jest.fn();
 let mockCurrentRoute: { name: string } | null = null;
-jest.mock("../../navigation/navigationRef", () => ({
+jest.mock("@/navigation/navigationRef", () => ({
   navigate: (...a: unknown[]) => mockNavigate(...a),
   navigationRef: {
     isReady: () => true,
@@ -101,7 +101,7 @@ jest.mock("../../navigation/navigationRef", () => ({
 const mockSystemShow = jest.fn();
 const mockSystemEnd = jest.fn();
 let mockSystemIsSupported = false;
-jest.mock("../../services/calls/systemCallProvider", () => ({
+jest.mock("@/services/calls/systemCallProvider", () => ({
   buildIncomingCallPresentation: jest.fn((c: unknown) => c),
   systemCallProvider: {
     isSupported: () => mockSystemIsSupported,
@@ -111,22 +111,22 @@ jest.mock("../../services/calls/systemCallProvider", () => ({
 }));
 
 let mockCallsAvailable = true;
-jest.mock("../useCallsAvailable", () => ({
+jest.mock("@/hooks/useCallsAvailable", () => ({
   isCallsAvailable: () => mockCallsAvailable,
 }));
 
 const mockReadReceiptsEnabled = jest.fn(() => true);
-jest.mock("../../services/messaging/readReceiptsPref", () => ({
+jest.mock("@/services/messaging/readReceiptsPref", () => ({
   getReadReceiptsEnabled: () => mockReadReceiptsEnabled(),
 }));
 
 const mockTypingIndicatorEnabled = jest.fn(() => true);
-jest.mock("../../services/messaging/typingIndicatorPref", () => ({
+jest.mock("@/services/messaging/typingIndicatorPref", () => ({
   getTypingIndicatorEnabled: () => mockTypingIndicatorEnabled(),
 }));
 
 import { renderHook, act } from "@testing-library/react-native";
-import { useWebSocket } from "../useWebSocket";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { AppState } from "react-native";
 
 beforeEach(() => {

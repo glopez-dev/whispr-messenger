@@ -3,8 +3,8 @@
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Conversation, MessageWithRelations } from "../../types/messaging";
-import type { InboxItem } from "../../types/inbox";
+import { Conversation, MessageWithRelations } from "@/types/messaging";
+import type { InboxItem } from "@/types/inbox";
 
 const CACHE_KEY = "whispr.conversations.cache";
 const INBOX_CACHE_KEY = "whispr.inbox.cache";

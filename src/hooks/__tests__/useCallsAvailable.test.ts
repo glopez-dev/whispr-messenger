@@ -63,7 +63,7 @@ describe("useCallsAvailable", () => {
     const {
       getCallsAvailability,
       isCallsAvailable,
-    } = require("../useCallsAvailable");
+    } = require("@/hooks/useCallsAvailable");
 
     expect(getCallsAvailability()).toEqual({ available: true, reason: null });
     expect(isCallsAvailable()).toBe(true);
@@ -74,7 +74,7 @@ describe("useCallsAvailable", () => {
     const {
       getCallsAvailability,
       getCallsUnavailableMessage,
-    } = require("../useCallsAvailable");
+    } = require("@/hooks/useCallsAvailable");
 
     const result = getCallsAvailability();
     expect(result.available).toBe(false);
@@ -84,14 +84,14 @@ describe("useCallsAvailable", () => {
 
   it("returns available=true on web when browser has getUserMedia", () => {
     setupMocks({ platform: "web", browserGetUserMedia: true });
-    const { getCallsAvailability } = require("../useCallsAvailable");
+    const { getCallsAvailability } = require("@/hooks/useCallsAvailable");
 
     expect(getCallsAvailability()).toEqual({ available: true, reason: null });
   });
 
   it("returns reason=web-no-webrtc on web when getUserMedia is absent", () => {
     setupMocks({ platform: "web", browserGetUserMedia: false });
-    const { getCallsAvailability } = require("../useCallsAvailable");
+    const { getCallsAvailability } = require("@/hooks/useCallsAvailable");
 
     expect(getCallsAvailability()).toEqual({
       available: false,
@@ -101,7 +101,7 @@ describe("useCallsAvailable", () => {
 
   it("returns reason=no-webrtc when native module is missing", () => {
     setupMocks({ platform: "android", expoGo: false, hasWebRtc: false });
-    const { getCallsAvailability } = require("../useCallsAvailable");
+    const { getCallsAvailability } = require("@/hooks/useCallsAvailable");
 
     expect(getCallsAvailability()).toEqual({
       available: false,
@@ -111,7 +111,7 @@ describe("useCallsAvailable", () => {
 
   it("provides a French fallback message for each reason", () => {
     setupMocks({ platform: "ios" });
-    const { getCallsUnavailableMessage } = require("../useCallsAvailable");
+    const { getCallsUnavailableMessage } = require("@/hooks/useCallsAvailable");
 
     expect(getCallsUnavailableMessage("expo-go")).toContain("Expo Go");
     expect(getCallsUnavailableMessage("no-webrtc")).toContain("WebRTC");

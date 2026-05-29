@@ -25,7 +25,7 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => ({ params: mockRouteParams }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { primary: "#000", secondary: "#111", tertiary: "#222" },
@@ -42,14 +42,14 @@ jest.mock("../../../context/ThemeContext", () => ({
 
 const mockReviewAppeal = jest.fn();
 let mockAppealQueue: any[] = [];
-jest.mock("../../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: () => ({
     reviewAppeal: mockReviewAppeal,
     appealQueue: mockAppealQueue,
   }),
 }));
 
-jest.mock("../../../services/moderation/moderationApi", () => ({
+jest.mock("@/services/moderation/moderationApi", () => ({
   appealsAPI: { getAppeal: jest.fn() },
   sanctionsAPI: { getSanction: jest.fn(), liftSanction: jest.fn() },
 }));
@@ -57,14 +57,14 @@ jest.mock("../../../services/moderation/moderationApi", () => ({
 const {
   appealsAPI,
   sanctionsAPI,
-} = require("../../../services/moderation/moderationApi");
+} = require("@/services/moderation/moderationApi");
 
-jest.mock("../../../components/Moderation", () => ({
+jest.mock("@/components/Moderation", () => ({
   AdminGate: ({ children }: any) => children,
   SanctionBadge: () => null,
 }));
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] }, dark: "#000" },
     text: { light: "#fff", secondary: "#aaa" },
@@ -75,7 +75,7 @@ jest.mock("../../../theme/colors", () => ({
   withOpacity: (c: string) => c,
 }));
 
-import { AppealReviewScreen } from "../AppealReviewScreen";
+import { AppealReviewScreen } from "@/screens/Admin/AppealReviewScreen";
 
 const appealBase = {
   id: "ap-1",

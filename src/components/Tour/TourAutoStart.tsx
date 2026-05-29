@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useIsFocused } from "@react-navigation/native";
 import { useSpotlightTour } from "react-native-spotlight-tour";
-import { useTour } from "../../context/TourContext";
+import { useTour } from "@/context/TourContext";
 
 export const TourAutoStart: React.FC = () => {
   const { start } = useSpotlightTour();

@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import nacl from "tweetnacl";
 import { encodeBase64 } from "tweetnacl-util";
 
-import { E2EEService, __testing } from "../E2EEService";
-import { TokenService } from "../TokenService";
-import { SignalKeysService } from "../SecurityService";
+import { E2EEService, __testing } from "@/services/E2EEService";
+import { TokenService } from "@/services/TokenService";
+import { SignalKeysService } from "@/services/SecurityService";
 
-jest.mock("../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getIdentityPrivateKey: jest.fn(),
     getAccessToken: jest.fn(),
@@ -14,7 +14,7 @@ jest.mock("../TokenService", () => ({
   },
 }));
 
-jest.mock("../SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   SignalKeysService: {
     listDevices: jest.fn(),
     getKeyBundle: jest.fn(),

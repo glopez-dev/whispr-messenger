@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageWithRelations } from "../../../types/messaging";
+import { MessageWithRelations } from "@/types/messaging";
 
 /**
  * Owns the local UI state for the chat screen's self-contained modals that

@@ -1,3 +1,3 @@
-export { useConversationsStore } from "./conversationsStore";
-export type { ConversationsStatus } from "./conversationsStore";
-export { useInboxStore } from "./inboxStore";
+export { useConversationsStore } from "@/store/conversationsStore";
+export type { ConversationsStatus } from "@/store/conversationsStore";
+export { useInboxStore } from "@/store/inboxStore";

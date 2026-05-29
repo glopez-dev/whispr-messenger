@@ -1,27 +1,27 @@
-import { TokenService } from "./TokenService";
-import { DeviceService } from "./DeviceService";
-import { SignalKeyService } from "./SignalKeyService";
-import { E2EEService } from "./E2EEService";
-import { cacheService } from "./messaging/cache";
-import { getApiBaseUrl } from "./apiBase";
-import { emitSessionExpired } from "./sessionEvents";
-import { logger } from "../utils/logger";
+import { TokenService } from "@/services/TokenService";
+import { DeviceService } from "@/services/DeviceService";
+import { SignalKeyService } from "@/services/SignalKeyService";
+import { E2EEService } from "@/services/E2EEService";
+import { cacheService } from "@/services/messaging/cache";
+import { getApiBaseUrl } from "@/services/apiBase";
+import { emitSessionExpired } from "@/services/sessionEvents";
+import { logger } from "@/utils/logger";
 
 // NotificationService.handle401 appelle AuthService.refreshTokens : un
 // import statique réciproque crée un cycle module qui, sous Hermes /
 // Metro dev-client, peut résoudre l'un des deux côtés à `undefined` au
 // premier accès. On charge NotificationService à la demande pour casser
 // le cycle ; les sites d'appel sont fire-and-forget, le coût est nul.
-function notificationService(): typeof import("./NotificationService").NotificationService {
+function notificationService(): typeof import("@/services/NotificationService").NotificationService {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return require("./NotificationService").NotificationService;
+  return require("@/services/NotificationService").NotificationService;
 }
 import type {
   AuthPurpose,
   TokenPair,
   VerificationConfirmResponse,
   VerificationRequestResponse,
-} from "../types/auth";
+} from "@/types/auth";
 
 async function apiFetch<T>(
   path: string,
@@ -417,8 +417,8 @@ export const AuthService = {
   async loginAfter2FA(
     verificationId: string,
     twoFactorToken: string,
-    deviceInfo: import("../types/auth").DeviceInfo,
-    signalKeyBundle: import("../types/auth").SignalKeyBundleDto,
+    deviceInfo: import("@/types/auth").DeviceInfo,
+    signalKeyBundle: import("@/types/auth").SignalKeyBundleDto,
   ): Promise<TokenPair> {
     const tokens = await apiFetch<TokenPair>("/login/2fa", {
       method: "POST",

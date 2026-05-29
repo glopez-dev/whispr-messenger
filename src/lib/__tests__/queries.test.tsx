@@ -1,20 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock("../../services/TokenService", () =>
-  require("../../__test-utils__/mockFactories").makeTokenServiceMock(),
+jest.mock("@/services/TokenService", () =>
+  require("@/__test-utils__/mockFactories").makeTokenServiceMock(),
 );
-jest.mock("../../services/sessionEvents", () => ({
+jest.mock("@/services/sessionEvents", () => ({
   emitSessionExpired: jest.fn(),
 }));
 
 import { renderHook, waitFor } from "@testing-library/react-native";
 import { z } from "zod";
-import { useAuthenticatedMutation, useAuthenticatedQuery } from "../queries";
-import { TokenService } from "../../services/TokenService";
-import {
-  installFetchMock,
-  mockResponse,
-} from "../../__test-utils__/mockFactories";
-import { makeQueryWrapper } from "../../__test-utils__/queryWrapper";
+import { useAuthenticatedMutation, useAuthenticatedQuery } from "@/lib/queries";
+import { TokenService } from "@/services/TokenService";
+import { installFetchMock, mockResponse } from "@/__test-utils__/mockFactories";
+import { makeQueryWrapper } from "@/__test-utils__/queryWrapper";
 
 const mockedToken = TokenService as any;
 

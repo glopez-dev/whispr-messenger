@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Conversation, Message } from "../types/messaging";
-import { messagingAPI } from "../services/messaging/api";
-import { cacheService } from "../services/messaging/cache";
-import { NotificationService } from "../services/NotificationService";
-import { E2EEService } from "../services/E2EEService";
-import { logger } from "../utils/logger";
+import { Conversation, Message } from "@/types/messaging";
+import { messagingAPI } from "@/services/messaging/api";
+import { cacheService } from "@/services/messaging/cache";
+import { NotificationService } from "@/services/NotificationService";
+import { E2EEService } from "@/services/E2EEService";
+import { logger } from "@/utils/logger";
 import {
   EMPTY_STATE_GRACE_PERIOD_MS,
   MANUALLY_UNREAD_KEY,
@@ -14,7 +14,7 @@ import {
   getCurrentUserId,
   isEnrichedDisplayName,
   wasMessageSeen,
-} from "./conversationsStore/helpers";
+} from "@/store/conversationsStore/helpers";
 
 export type ConversationsStatus =
   | "loading"

@@ -1,4 +1,4 @@
-export { ContactsScreen } from "./ContactsScreen";
-export { BlockedUsersScreen } from "./BlockedUsersScreen";
-export { MyQRCodeScreen } from "./MyQRCodeScreen";
-export { QRCodeScannerScreen } from "./QRCodeScannerScreen";
+export { ContactsScreen } from "@/screens/Contacts/ContactsScreen";
+export { BlockedUsersScreen } from "@/screens/Contacts/BlockedUsersScreen";
+export { MyQRCodeScreen } from "@/screens/Contacts/MyQRCodeScreen";
+export { QRCodeScannerScreen } from "@/screens/Contacts/QRCodeScannerScreen";

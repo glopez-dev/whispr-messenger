@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
-import { getLegalDocumentUrl } from "../legalDocumentUrl";
+import { getLegalDocumentUrl } from "@/utils/legalDocumentUrl";
 
-jest.mock("../../services/apiBase", () => ({
+jest.mock("@/services/apiBase", () => ({
   getApiBaseUrl: () => "https://whispr-preprod.roadmvn.com",
 }));
 

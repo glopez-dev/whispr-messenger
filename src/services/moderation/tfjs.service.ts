@@ -4,14 +4,17 @@ import "@tensorflow/tfjs-backend-cpu";
 import { Asset } from "expo-asset";
 import { Buffer } from "buffer";
 import { Platform, InteractionManager } from "react-native";
-import type { GateResult } from "./moderation.types";
-import { imageUriToFloatTensor_0_255 } from "./image-to-tensor";
-import { INPUT_SIZE } from "./moderation.constants";
-import { decideV2FromProbs, decideV3FromProbs } from "./tfjs.decide";
+import type { GateResult } from "@/services/moderation/moderation.types";
+import { imageUriToFloatTensor_0_255 } from "@/services/moderation/image-to-tensor";
+import { INPUT_SIZE } from "@/services/moderation/moderation.constants";
+import {
+  decideV2FromProbs,
+  decideV3FromProbs,
+} from "@/services/moderation/tfjs.decide";
 import {
   getModerationModelVersion,
   type ModerationModelVersion,
-} from "./model-version";
+} from "@/services/moderation/model-version";
 
 export {
   decideV2FromProbs,
@@ -21,7 +24,7 @@ export {
   SECONDARY_FOOD_THRESHOLD,
   V2_FOOD_THRESHOLD_DEFAULT,
   V3_UNHEALTHY_THRESHOLD_DEFAULT,
-} from "./tfjs.decide";
+} from "@/services/moderation/tfjs.decide";
 
 // Manually register a React Native platform for Hermes compatibility
 class PlatformReactNativeManual implements tf.Platform {

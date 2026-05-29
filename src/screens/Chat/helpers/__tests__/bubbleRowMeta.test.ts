@@ -1,6 +1,6 @@
-import { deriveBubbleRowMeta } from "../bubbleRowMeta";
-import type { ChatListItem } from "../dateSeparators";
-import type { MessageWithRelations } from "../../../../types/messaging";
+import { deriveBubbleRowMeta } from "@/screens/Chat/helpers/bubbleRowMeta";
+import type { ChatListItem } from "@/screens/Chat/helpers/dateSeparators";
+import type { MessageWithRelations } from "@/types/messaging";
 
 const msg = (
   id: string,

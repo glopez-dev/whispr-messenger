@@ -1,4 +1,4 @@
-import { canonicalizeMimeType, resolveMimeType } from "../mime";
+import { canonicalizeMimeType, resolveMimeType } from "@/utils/mime";
 
 describe("resolveMimeType", () => {
   it("maps a known extension to its MIME type regardless of the kind hint", () => {
