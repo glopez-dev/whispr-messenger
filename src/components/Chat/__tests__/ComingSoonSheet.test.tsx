@@ -11,7 +11,7 @@ jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       primary: "#6200ee",
@@ -20,7 +20,7 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-import { ComingSoonSheet } from "../ComingSoonSheet";
+import { ComingSoonSheet } from "@/components/Chat/ComingSoonSheet";
 
 describe("ComingSoonSheet", () => {
   it("renders the title and description when visible", () => {

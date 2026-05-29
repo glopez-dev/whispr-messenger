@@ -1,4 +1,4 @@
-import { detectMention } from "../mentions";
+import { detectMention } from "@/utils/mentions";
 
 describe("detectMention", () => {
   it("returns null for direct conversations", () => {

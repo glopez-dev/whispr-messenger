@@ -1,9 +1,9 @@
 // Export all utilities from this file
-export { FormattedText } from "./textFormatter";
-export { logger } from "./logger";
-export { copyToClipboard } from "./clipboard";
-export { toSnakeCase, snakecaseKeys } from "./caseTransform";
-export { isReachableUrl, isHttpUrl } from "./urlFilters";
+export { FormattedText } from "@/utils/textFormatter";
+export { logger } from "@/utils/logger";
+export { copyToClipboard } from "@/utils/clipboard";
+export { toSnakeCase, snakecaseKeys } from "@/utils/caseTransform";
+export { isReachableUrl, isHttpUrl } from "@/utils/urlFilters";
 
 /**
  * Format a username for display with a single "@" prefix.

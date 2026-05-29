@@ -16,10 +16,10 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { Conversation } from "../../types/messaging";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { Avatar } from "./Avatar";
+import { Conversation } from "@/types/messaging";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { Avatar } from "@/components/Chat/Avatar";
 
 interface ForwardMessageModalProps {
   visible: boolean;

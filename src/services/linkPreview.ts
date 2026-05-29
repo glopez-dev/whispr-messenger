@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { MessageLinkPreview } from "../types/messaging";
-import { isReachableUrl } from "../utils";
+import type { MessageLinkPreview } from "@/types/messaging";
+import { isReachableUrl } from "@/utils";
 
 const LINK_PREVIEW_KEY_PREFIX = "whispr.link-preview.v2.";
 const SUCCESS_TTL_MS = 12 * 60 * 60 * 1000;

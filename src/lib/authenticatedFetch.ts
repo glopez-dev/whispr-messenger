@@ -1,5 +1,5 @@
-import { TokenService } from "../services/TokenService";
-import { emitSessionExpired } from "../services/sessionEvents";
+import { TokenService } from "@/services/TokenService";
+import { emitSessionExpired } from "@/services/sessionEvents";
 
 export interface AuthFetchOptions extends Omit<RequestInit, "headers"> {
   headers?: Record<string, string>;

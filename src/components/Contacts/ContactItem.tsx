@@ -6,11 +6,11 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { Contact } from "../../types/contact";
-import { Avatar } from "../Chat/Avatar";
-import { ProfileTrigger } from "../Profile/ProfileTrigger";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, withOpacity } from "../../theme/colors";
+import { Contact } from "@/types/contact";
+import { Avatar } from "@/components/Chat/Avatar";
+import { ProfileTrigger } from "@/components/Profile/ProfileTrigger";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
 
 interface ContactItemProps {
   contact: Contact;

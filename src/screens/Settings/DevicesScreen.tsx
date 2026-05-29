@@ -26,10 +26,10 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   DeviceManagerService,
   type DeviceInfo,
-} from "../../services/SecurityService";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
-import { colors } from "../../theme/colors";
+} from "@/services/SecurityService";
+import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { colors } from "@/theme/colors";
 
 function formatRelative(iso: string, lang: string): string {
   const ts = new Date(iso).getTime();

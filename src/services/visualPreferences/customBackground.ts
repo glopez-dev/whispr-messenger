@@ -1,7 +1,7 @@
 import * as FileSystem from "expo-file-system/legacy";
-import { detectImageFormatFromUri } from "../../utils/imageCompression";
-import { TokenService } from "../TokenService";
-import { getApiBaseUrl } from "../apiBase";
+import { detectImageFormatFromUri } from "@/utils/imageCompression";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 export const CUSTOM_BACKGROUND_DIR = "whispr-backgrounds";
 export const CUSTOM_BACKGROUND_BASENAME = "current-background";

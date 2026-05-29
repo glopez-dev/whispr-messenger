@@ -10,8 +10,8 @@ import {
   StyleSheet,
   Platform,
 } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
 
 interface ReactionButtonProps {
   emoji: string;

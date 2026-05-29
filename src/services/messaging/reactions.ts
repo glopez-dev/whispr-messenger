@@ -1,4 +1,9 @@
-import { API_BASE_URL, authenticatedFetch, httpError, unwrap } from "./http";
+import {
+  API_BASE_URL,
+  authenticatedFetch,
+  httpError,
+  unwrap,
+} from "@/services/messaging/http";
 
 export const reactionsAPI = {
   async addReaction(

@@ -12,9 +12,9 @@ import {
 } from "expo-crypto";
 import { Platform } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
-import { TokenService } from "./TokenService";
-import { SignalKeysService } from "./SecurityService";
-import { logger } from "../utils/logger";
+import { TokenService } from "@/services/TokenService";
+import { SignalKeysService } from "@/services/SecurityService";
+import { logger } from "@/utils/logger";
 
 nacl.setPRNG((x: Uint8Array, n: number) => {
   const bytes = getRandomBytes(n);

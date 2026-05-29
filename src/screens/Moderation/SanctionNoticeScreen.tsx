@@ -20,9 +20,9 @@ import {
   useFocusEffect,
 } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import type { UserSanction, SanctionType } from "../../types/moderation";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import type { UserSanction, SanctionType } from "@/types/moderation";
 
 type RouteParams = {
   SanctionNotice: { sanction: UserSanction };

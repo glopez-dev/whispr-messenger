@@ -6,8 +6,8 @@
  */
 
 import { act, renderHook } from "@testing-library/react-native";
-import { useChatModals } from "../useChatModals";
-import type { MessageWithRelations } from "../../../../types/messaging";
+import { useChatModals } from "@/screens/Chat/hooks/useChatModals";
+import type { MessageWithRelations } from "@/types/messaging";
 
 const msg = (id: string): MessageWithRelations =>
   ({ id, sender_id: "u1", message_type: "text" }) as MessageWithRelations;

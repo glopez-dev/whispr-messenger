@@ -30,7 +30,7 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => ({ params: { sanctionId: "sanction-1" } }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
@@ -52,11 +52,11 @@ type MockState = {
   fetchMyAppeals: jest.Mock;
 };
 let mockState: MockState;
-jest.mock("../../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: () => mockState,
 }));
 
-import { AppealStatusScreen } from "../AppealStatusScreen";
+import { AppealStatusScreen } from "@/screens/Moderation/AppealStatusScreen";
 
 beforeEach(() => {
   mockState = {

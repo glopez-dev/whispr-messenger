@@ -12,13 +12,13 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 
 const mockListCalls = jest.fn();
-jest.mock("../../../services/calls/callsApi", () => ({
+jest.mock("@/services/calls/callsApi", () => ({
   callsApi: { list: (...a: unknown[]) => mockListCalls(...a) },
 }));
 
 const mockGetConversation = jest.fn();
 const mockGetConversationMembers = jest.fn();
-jest.mock("../../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     getConversation: (...a: unknown[]) => mockGetConversation(...a),
     getConversationMembers: (...a: unknown[]) =>
@@ -26,14 +26,14 @@ jest.mock("../../../services/messaging/api", () => ({
   },
 }));
 
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: jest.fn().mockResolvedValue("at"),
     decodeAccessToken: jest.fn().mockReturnValue({ sub: "me" }),
   },
 }));
 
-jest.mock("../../../components/Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
 jest.mock("@react-navigation/native", () => ({
   useFocusEffect: jest.fn(),
 }));
@@ -42,14 +42,14 @@ jest.mock("react-native-spotlight-tour", () => ({
     typeof children === "function" ? children({}) : children,
   AttachStep: ({ children }: any) => children,
 }));
-jest.mock("../../../components/Tour/TourAutoStart", () => ({
+jest.mock("@/components/Tour/TourAutoStart", () => ({
   TourAutoStart: () => null,
 }));
-jest.mock("../../../context/TourContext", () => ({
+jest.mock("@/context/TourContext", () => ({
   useTour: () => ({ isTourActive: false, skipTour: jest.fn() }),
 }));
 
-import { CallHistoryScreen } from "../CallHistoryScreen";
+import { CallHistoryScreen } from "@/screens/Calls/CallHistoryScreen";
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -207,7 +207,9 @@ describe("affichage des sous-textes de dates dans les lignes d'appel", () => {
     // sous-texte "12s · HH:MM" sans mention du jour
     const subtext = await findByText(/^12s · \d{2}:\d{2}$/);
     expect(subtext).toBeTruthy();
-    expect(subtext.props.children).not.toMatch(/hier|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche/i);
+    expect(subtext.props.children).not.toMatch(
+      /hier|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche/i,
+    );
   });
 
   it("préfixe 'hier' pour un appel d'hier", async () => {
@@ -236,7 +238,9 @@ describe("affichage des sous-textes de dates dans les lignes d'appel", () => {
     const daysAgo3 = new Date();
     daysAgo3.setDate(daysAgo3.getDate() - 3);
     daysAgo3.setHours(9, 15, 0, 0);
-    const expectedWeekday = daysAgo3.toLocaleDateString("fr-FR", { weekday: "long" });
+    const expectedWeekday = daysAgo3.toLocaleDateString("fr-FR", {
+      weekday: "long",
+    });
     mockListCalls.mockResolvedValue({
       data: [
         {
@@ -250,7 +254,9 @@ describe("affichage des sous-textes de dates dans les lignes d'appel", () => {
       ],
     });
     const { findByText } = render(<CallHistoryScreen />);
-    const subtext = await findByText(new RegExp(`Manqué · ${expectedWeekday} \\d{2}:\\d{2}`));
+    const subtext = await findByText(
+      new RegExp(`Manqué · ${expectedWeekday} \\d{2}:\\d{2}`),
+    );
     expect(subtext).toBeTruthy();
   });
 
@@ -274,7 +280,11 @@ describe("affichage des sous-textes de dates dans les lignes d'appel", () => {
       ],
     });
     const { findByText } = render(<CallHistoryScreen />);
-    const subtext = await findByText(new RegExp(`5min \\d{2}s · ${expectedDay} ${expectedMonth} \\d{2}:\\d{2}`));
+    const subtext = await findByText(
+      new RegExp(
+        `5min \\d{2}s · ${expectedDay} ${expectedMonth} \\d{2}:\\d{2}`,
+      ),
+    );
     expect(subtext).toBeTruthy();
   });
 });
@@ -327,9 +337,12 @@ describe("section headers groupés par date", () => {
     const daysAgo2 = new Date();
     daysAgo2.setDate(daysAgo2.getDate() - 2);
     const weekday = daysAgo2.toLocaleDateString("fr-FR", { weekday: "long" });
-    const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    const capitalizedWeekday =
+      weekday.charAt(0).toUpperCase() + weekday.slice(1);
     const day = daysAgo2.getDate();
-    const month = daysAgo2.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+    const month = daysAgo2
+      .toLocaleDateString("fr-FR", { month: "short" })
+      .replace(".", "");
     const expectedHeader = `${capitalizedWeekday} ${day} ${month}`;
     mockListCalls.mockResolvedValue({
       data: [

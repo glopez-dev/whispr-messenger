@@ -1,9 +1,9 @@
 import * as ExpoCrypto from "expo-crypto";
 import { PermissionsAndroid, Platform } from "react-native";
-import { navigate, navigationRef } from "../../navigation/navigationRef";
-import { useCallsStore, type IncomingCallInfo } from "../../store/callsStore";
-import { isCallsAvailable } from "../../hooks/useCallsAvailable";
-import { logger } from "../../utils/logger";
+import { navigate, navigationRef } from "@/navigation/navigationRef";
+import { useCallsStore, type IncomingCallInfo } from "@/store/callsStore";
+import { isCallsAvailable } from "@/hooks/useCallsAvailable";
+import { logger } from "@/utils/logger";
 
 type CallKeepModule = typeof import("react-native-call-keeper").default;
 

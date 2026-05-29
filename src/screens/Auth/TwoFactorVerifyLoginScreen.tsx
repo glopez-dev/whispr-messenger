@@ -16,14 +16,14 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
-import { AuthService } from "../../services/AuthService";
-import { TwoFactorService } from "../../services/TwoFactorService";
-import { TokenService } from "../../services/TokenService";
-import { UserService } from "../../services/UserService";
-import Toast from "../../components/Toast/Toast";
-import type { AuthStackParamList } from "../../navigation/types";
+import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { AuthService } from "@/services/AuthService";
+import { TwoFactorService } from "@/services/TwoFactorService";
+import { TokenService } from "@/services/TokenService";
+import { UserService } from "@/services/UserService";
+import Toast from "@/components/Toast/Toast";
+import type { AuthStackParamList } from "@/navigation/types";
 
 type NavigationProp = StackNavigationProp<
   AuthStackParamList,

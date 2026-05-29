@@ -3,9 +3,9 @@ import {
   type AppStateStatus,
   type NativeEventSubscription,
 } from "react-native";
-import { AuthService } from "./AuthService";
-import { TokenService } from "./TokenService";
-import { logger } from "../utils/logger";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { logger } from "@/utils/logger";
 
 // Lead time (seconds) before JWT `exp` at which we fire a proactive refresh.
 // Must be strictly greater than the 60s buffer used by TokenService.isTokenExpired

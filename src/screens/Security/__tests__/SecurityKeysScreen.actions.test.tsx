@@ -15,7 +15,7 @@ jest.mock("react-native-safe-area-context", () => ({
   SafeAreaView: ({ children }: any) => children,
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isLoading: false,
@@ -33,7 +33,7 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
   NotificationFeedbackType: { Success: "success", Error: "error" },
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -48,11 +48,11 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../components/Toast/Toast", () => () => null);
-jest.mock("../../../utils/clipboard", () => ({
+jest.mock("@/components/Toast/Toast", () => () => null);
+jest.mock("@/utils/clipboard", () => ({
   copyToClipboard: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock("../../../services/SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   DeviceManagerService: {
     listDevices: jest.fn().mockResolvedValue([]),
     revokeDevice: jest.fn().mockResolvedValue(undefined),
@@ -65,7 +65,7 @@ jest.mock("../../../services/SecurityService", () => ({
   },
 }));
 
-import { SecurityKeysScreen } from "../SecurityKeysScreen";
+import { SecurityKeysScreen } from "@/screens/Security/SecurityKeysScreen";
 
 function allOnPress(root: any) {
   const out: any[] = [];

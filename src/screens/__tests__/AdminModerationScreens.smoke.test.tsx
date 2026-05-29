@@ -34,7 +34,7 @@ jest.mock("expo-haptics", () => ({
   },
 }));
 
-jest.mock("../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     settings: { language: "fr" },
     getLocalizedText: (k: string) => k,
@@ -49,7 +49,7 @@ jest.mock("../../context/ThemeContext", () => ({
 
 // Every Moderation component import is replaced by a children-passthrough
 // View — keeps the rendering tree alive without dragging the real impls in.
-jest.mock("../../components/Moderation", () => {
+jest.mock("@/components/Moderation", () => {
   const React = require("react");
   const { View } = require("react-native");
   const passthrough = ({ children }: { children: React.ReactNode }) =>
@@ -106,7 +106,7 @@ const mockModerationState: any = new Proxy(mockModerationDefaults, {
     return target[key];
   },
 });
-jest.mock("../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: (selector?: any) =>
     selector ? selector(mockModerationState) : mockModerationState,
   useIsStaff: () => true,
@@ -114,7 +114,7 @@ jest.mock("../../store/moderationStore", () => ({
   useMyRole: () => "admin",
 }));
 
-jest.mock("../../services/moderation/moderationApi", () => {
+jest.mock("@/services/moderation/moderationApi", () => {
   // Generic Proxy: every method on every API object returns a resolved
   // promise of an empty array — covers list/get/review/etc without
   // hand-listing every endpoint as the API surface evolves.
@@ -136,10 +136,10 @@ jest.mock("../../services/moderation/moderationApi", () => {
     },
   );
 });
-jest.mock("../../services/moderation/reportApi", () => ({
+jest.mock("@/services/moderation/reportApi", () => ({
   submitContentReport: jest.fn().mockResolvedValue({ ok: true }),
 }));
-jest.mock("../../services/moderation/appealApi", () => ({
+jest.mock("@/services/moderation/appealApi", () => ({
   appealApi: new Proxy({}, { get: () => jest.fn().mockResolvedValue(null) }),
 }));
 
@@ -154,22 +154,22 @@ const tryRender = (Component: React.FC) => {
   }
 };
 
-import { AppealQueueScreen } from "../Admin/AppealQueueScreen";
-import { AppealReviewScreen } from "../Admin/AppealReviewScreen";
-import { ModerationDashboardScreen } from "../Admin/ModerationDashboardScreen";
-import { ReportQueueScreen } from "../Admin/ReportQueueScreen";
-import { ReportReviewScreen } from "../Admin/ReportReviewScreen";
-import { SanctionFormScreen } from "../Admin/SanctionFormScreen";
-import { UserModerationScreen } from "../Admin/UserModerationScreen";
-import { AppealFormScreen } from "../Moderation/AppealFormScreen";
-import { AppealStatusScreen } from "../Moderation/AppealStatusScreen";
-import { ModerationAppealFormScreen } from "../Moderation/ModerationAppealFormScreen";
-import { ModerationAppealSubmittedScreen } from "../Moderation/ModerationAppealSubmittedScreen";
-import { ModerationDecisionScreen } from "../Moderation/ModerationDecisionScreen";
-import { MySanctionsScreen } from "../Moderation/MySanctionsScreen";
-import { ReportDetailScreen } from "../Moderation/ReportDetailScreen";
-import { ReportHistoryScreen } from "../Moderation/ReportHistoryScreen";
-import { SanctionNoticeScreen } from "../Moderation/SanctionNoticeScreen";
+import { AppealQueueScreen } from "@/screens/Admin/AppealQueueScreen";
+import { AppealReviewScreen } from "@/screens/Admin/AppealReviewScreen";
+import { ModerationDashboardScreen } from "@/screens/Admin/ModerationDashboardScreen";
+import { ReportQueueScreen } from "@/screens/Admin/ReportQueueScreen";
+import { ReportReviewScreen } from "@/screens/Admin/ReportReviewScreen";
+import { SanctionFormScreen } from "@/screens/Admin/SanctionFormScreen";
+import { UserModerationScreen } from "@/screens/Admin/UserModerationScreen";
+import { AppealFormScreen } from "@/screens/Moderation/AppealFormScreen";
+import { AppealStatusScreen } from "@/screens/Moderation/AppealStatusScreen";
+import { ModerationAppealFormScreen } from "@/screens/Moderation/ModerationAppealFormScreen";
+import { ModerationAppealSubmittedScreen } from "@/screens/Moderation/ModerationAppealSubmittedScreen";
+import { ModerationDecisionScreen } from "@/screens/Moderation/ModerationDecisionScreen";
+import { MySanctionsScreen } from "@/screens/Moderation/MySanctionsScreen";
+import { ReportDetailScreen } from "@/screens/Moderation/ReportDetailScreen";
+import { ReportHistoryScreen } from "@/screens/Moderation/ReportHistoryScreen";
+import { SanctionNoticeScreen } from "@/screens/Moderation/SanctionNoticeScreen";
 
 beforeEach(() => {
   jest.spyOn(console, "error").mockImplementation(() => {});

@@ -13,7 +13,7 @@ const mockSetCallEndReason = jest.fn();
 let mockActive: any = null;
 let mockCallEndReason: any = null;
 
-jest.mock("../../../store/callsStore", () => {
+jest.mock("@/store/callsStore", () => {
   const fn: any = (selector: any) =>
     selector({
       active: mockActive,
@@ -30,7 +30,7 @@ jest.mock("../../../store/callsStore", () => {
   return { useCallsStore: fn };
 });
 
-jest.mock("../../../services/calls/liveKitProvider", () => ({
+jest.mock("@/services/calls/liveKitProvider", () => ({
   callsLiveKit: {
     enableMic: jest.fn().mockResolvedValue(undefined),
     enableCamera: jest.fn().mockResolvedValue(undefined),
@@ -54,20 +54,20 @@ jest.mock("livekit-client", () => ({
   },
 }));
 
-jest.mock("../../../components/Calls/CallParticipantTile", () => ({
+jest.mock("@/components/Calls/CallParticipantTile", () => ({
   CallParticipantTile: () => null,
 }));
 
-jest.mock("../../../components/Calls/CallControls", () => ({
+jest.mock("@/components/Calls/CallControls", () => ({
   CallControls: () => null,
 }));
 
-jest.mock("../../../components/Toast/Toast", () => ({
+jest.mock("@/components/Toast/Toast", () => ({
   __esModule: true,
   default: () => null,
 }));
 
-import { InCallScreen } from "../InCallScreen";
+import { InCallScreen } from "@/screens/Calls/InCallScreen";
 
 describe("InCallScreen", () => {
   beforeEach(() => {

@@ -47,11 +47,11 @@ jest.mock("expo-image-manipulator", () => ({
   SaveFormat: { JPEG: "jpeg", PNG: "png" },
 }));
 
-jest.mock("../../utils/imageCompression", () => ({
+jest.mock("@/utils/imageCompression", () => ({
   detectImageFormatFromUri: jest.fn(() => "jpg"),
 }));
 
-jest.mock("../../services/UserService", () => {
+jest.mock("@/services/UserService", () => {
   const instance = {
     getProfile: jest.fn(),
     updateVisualPreferences: jest.fn(),
@@ -65,34 +65,34 @@ jest.mock("../../services/UserService", () => {
 });
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const __userInstance =
-  require("../../services/UserService").UserService.getInstance();
+  require("@/services/UserService").UserService.getInstance();
 const mockGetProfile = __userInstance.getProfile as jest.Mock;
 const mockUpdateVisualPreferences =
   __userInstance.updateVisualPreferences as jest.Mock;
 const mockUpdateProfileBackground =
   __userInstance.updateProfileBackground as jest.Mock;
 
-jest.mock("../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: { uploadMedia: jest.fn() },
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const mockUploadMedia = require("../../services/MediaService").MediaService
+const mockUploadMedia = require("@/services/MediaService").MediaService
   .uploadMedia as jest.Mock;
 
-jest.mock("../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: jest.fn().mockResolvedValue("at"),
     decodeAccessToken: jest.fn().mockReturnValue({ sub: "user-me" }),
   },
 }));
 
-jest.mock("../../services/apiBase", () => ({
+jest.mock("@/services/apiBase", () => ({
   getApiBaseUrl: () => "https://api.test",
 }));
 
 import React from "react";
 import { render, waitFor, act } from "@testing-library/react-native";
-import { ThemeProvider, useTheme } from "../ThemeContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const mockFs = require("expo-file-system/legacy") as Record<
@@ -115,12 +115,12 @@ beforeEach(() => {
   capturedTheme = null;
   // After clearAllMocks the inline factory mocks return undefined; restore.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const imageCompression = require("../../utils/imageCompression");
+  const imageCompression = require("@/utils/imageCompression");
   (imageCompression.detectImageFormatFromUri as jest.Mock).mockReturnValue(
     "jpg",
   );
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const tokenServiceMod = require("../../services/TokenService");
+  const tokenServiceMod = require("@/services/TokenService");
   (tokenServiceMod.TokenService.getAccessToken as jest.Mock).mockResolvedValue(
     "at",
   );
@@ -275,7 +275,7 @@ describe("ThemeProvider — saveCustomBackground", () => {
 
   it("falls back to direct copy (no manipulate) for GIFs to preserve animation", async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const imageCompression = require("../../utils/imageCompression");
+    const imageCompression = require("@/utils/imageCompression");
     imageCompression.detectImageFormatFromUri.mockReturnValueOnce("gif");
 
     await mountProvider();

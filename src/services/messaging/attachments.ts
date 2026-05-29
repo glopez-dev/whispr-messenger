@@ -4,7 +4,7 @@ import {
   httpError,
   mapBackendAttachment,
   unwrap,
-} from "./http";
+} from "@/services/messaging/http";
 
 export const attachmentsAPI = {
   async getAttachments(messageId: string) {

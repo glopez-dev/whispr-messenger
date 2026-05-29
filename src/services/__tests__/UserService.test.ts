@@ -1,27 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock("../TokenService", () =>
-  require("../../__test-utils__/mockFactories").makeTokenServiceMock(),
+jest.mock("@/services/TokenService", () =>
+  require("@/__test-utils__/mockFactories").makeTokenServiceMock(),
 );
-jest.mock("../AuthService", () =>
-  require("../../__test-utils__/mockFactories").makeAuthServiceMock(),
+jest.mock("@/services/AuthService", () =>
+  require("@/__test-utils__/mockFactories").makeAuthServiceMock(),
 );
-jest.mock("../apiBase", () =>
-  require("../../__test-utils__/mockFactories").makeApiBaseMock(
-    "https://api.test",
-  ),
+jest.mock("@/services/apiBase", () =>
+  require("@/__test-utils__/mockFactories").makeApiBaseMock("https://api.test"),
 );
-jest.mock("../../utils", () => ({
+jest.mock("@/utils", () => ({
   normalizeUsername: jest.fn((u: string) => u.toLowerCase().trim()),
 }));
 
-import { UserService } from "../UserService";
-import { TokenService } from "../TokenService";
-import { AuthService } from "../AuthService";
-import {
-  installFetchMock,
-  mockResponse,
-} from "../../__test-utils__/mockFactories";
+import { UserService } from "@/services/UserService";
+import { TokenService } from "@/services/TokenService";
+import { AuthService } from "@/services/AuthService";
+import { installFetchMock, mockResponse } from "@/__test-utils__/mockFactories";
 
 const mockedToken = TokenService as any;
 const mockedAuth = AuthService as any;

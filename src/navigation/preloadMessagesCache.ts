@@ -4,7 +4,7 @@
 // messages of the top conversations. Extracted from the navigator so the
 // (otherwise hard to reach) E2EE decryption branch is unit-testable.
 
-import { E2EEService } from "../services/E2EEService";
+import { E2EEService } from "@/services/E2EEService";
 
 /**
  * Decrypt one raw API message into the shape the chat screen cache expects.

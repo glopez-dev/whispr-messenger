@@ -1,4 +1,4 @@
 // Export all components from this file
-export { Logo } from "./Logo";
-export { Button } from "./Button";
-export { Input } from "./Input";
+export { Logo } from "@/components/Logo";
+export { Button } from "@/components/Button";
+export { Input } from "@/components/Input";

@@ -62,7 +62,7 @@ jest.mock("expo-image-picker", () => ({
 jest.mock("expo-document-picker", () => ({
   getDocumentAsync: jest.fn().mockResolvedValue({ canceled: true }),
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       primary: "#6200ee",
@@ -70,22 +70,22 @@ jest.mock("../../../context/ThemeContext", () => ({
     }),
   }),
 }));
-jest.mock("../ReplyPreview", () => ({
+jest.mock("@/components/Chat/ReplyPreview", () => ({
   ReplyPreview: () => null,
 }));
-jest.mock("../Avatar", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({
   Avatar: () => null,
 }));
-jest.mock("../CameraCapture", () => ({
+jest.mock("@/components/Chat/CameraCapture", () => ({
   CameraCapture: () => null,
 }));
-jest.mock("../EmojiPickerSheet", () => ({
+jest.mock("@/components/Chat/EmojiPickerSheet", () => ({
   EmojiPickerSheet: () => null,
 }));
-jest.mock("../AttachmentSheet", () => ({
+jest.mock("@/components/Chat/AttachmentSheet", () => ({
   AttachmentSheet: () => null,
 }));
-jest.mock("../ComingSoonSheet", () => ({
+jest.mock("@/components/Chat/ComingSoonSheet", () => ({
   ComingSoonSheet: () => null,
 }));
 jest.mock("react-native-gesture-handler", () => {
@@ -159,7 +159,10 @@ jest.mock("react-native-reanimated", () => {
   };
 });
 
-import { buildRecordingOptions, MessageInput } from "../MessageInput";
+import {
+  buildRecordingOptions,
+  MessageInput,
+} from "@/components/Chat/MessageInput";
 import {
   MIN_INPUT_HEIGHT,
   MAX_INPUT_HEIGHT,
@@ -167,7 +170,7 @@ import {
   INPUT_VERTICAL_PADDING,
   INPUT_EXTRA_TOP_PADDING,
   INPUT_EXTRA_BOTTOM_PADDING,
-} from "../MessageInput/ComposerInput";
+} from "@/components/Chat/MessageInput/ComposerInput";
 
 // Helper: calcule la hauteur attendue pour un nombre de lignes mesurees,
 // en fonction des constantes du ComposerInput (clamp entre MIN et MAX).

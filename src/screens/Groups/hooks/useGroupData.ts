@@ -6,8 +6,8 @@ import {
   GroupDetails,
   GroupMember,
   GroupSettings,
-} from "../../../services/groups/api";
-import { logger } from "../../../utils/logger";
+} from "@/services/groups/api";
+import { logger } from "@/utils/logger";
 
 export interface UseGroupDataOptions {
   groupId: string;

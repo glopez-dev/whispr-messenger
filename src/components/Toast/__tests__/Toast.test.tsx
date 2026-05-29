@@ -4,7 +4,7 @@ import { act, render } from "@testing-library/react-native";
 import { Animated } from "react-native";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { primary: "#000", secondary: "#111", tertiary: "#222" },
@@ -21,7 +21,7 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-import Toast from "../Toast";
+import Toast from "@/components/Toast/Toast";
 
 describe("Toast", () => {
   it("does not crash when visible=false", () => {

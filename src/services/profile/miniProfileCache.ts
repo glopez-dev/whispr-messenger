@@ -4,7 +4,7 @@
  * - TTL implicite 5 min : au-dela, l'entry est consideree stale et le caller
  *   est libre de refetch en background tout en affichant la version cachee.
  */
-import { UserProfile } from "../UserService";
+import { UserProfile } from "@/services/UserService";
 
 interface CacheEntry {
   profile: UserProfile;

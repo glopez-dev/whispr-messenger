@@ -4,8 +4,8 @@
 
 import React, { useMemo } from "react";
 import { View, StyleSheet } from "react-native";
-import { ReactionButton } from "./ReactionButton";
-import { MessageReaction } from "../../types/messaging";
+import { ReactionButton } from "@/components/Chat/ReactionButton";
+import { MessageReaction } from "@/types/messaging";
 
 interface ReactionBarProps {
   reactions: MessageReaction[];

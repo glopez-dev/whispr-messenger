@@ -3,8 +3,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { colors } from "../../../theme/colors";
-import type { RecordedAudio } from "../../../hooks/useVoiceRecorder";
+import { colors } from "@/theme/colors";
+import type { RecordedAudio } from "@/hooks/useVoiceRecorder";
 
 interface RecordedAudioPreviewProps {
   audio: RecordedAudio;

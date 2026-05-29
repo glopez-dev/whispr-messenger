@@ -2,8 +2,8 @@ import * as Device from "expo-device";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import * as ExpoCrypto from "expo-crypto";
-import type { DeviceInfo } from "../types/auth";
-import { storage } from "./storage";
+import type { DeviceInfo } from "@/types/auth";
+import { storage } from "@/services/storage";
 
 const DEVICE_ID_KEY = "whispr.device.id";
 

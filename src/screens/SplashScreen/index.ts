@@ -1,2 +1,2 @@
-export { SplashScreen } from "./SplashScreen";
-export { default } from "./SplashScreen";
+export { SplashScreen } from "@/screens/SplashScreen/SplashScreen";
+export { default } from "@/screens/SplashScreen/SplashScreen";

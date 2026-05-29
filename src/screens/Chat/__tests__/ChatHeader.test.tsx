@@ -32,7 +32,7 @@ jest.mock("expo-blur", () => {
   };
 });
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa" },
@@ -40,11 +40,11 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-jest.mock("../../../components/Chat/Avatar", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({
   Avatar: () => null,
 }));
 
-import { ChatHeader } from "../ChatHeader";
+import { ChatHeader } from "@/screens/Chat/ChatHeader";
 
 describe("ChatHeader back button", () => {
   beforeEach(() => {

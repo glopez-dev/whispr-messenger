@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { formatUsername } from "../../utils";
+import { formatUsername } from "@/utils";
 import {
   View,
   Text,
@@ -17,11 +17,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlockedUser } from "../../types/contact";
-import { contactsAPI } from "../../services/contacts/api";
-import { Avatar } from "../../components/Chat/Avatar";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
+import { BlockedUser } from "@/types/contact";
+import { contactsAPI } from "@/services/contacts/api";
+import { Avatar } from "@/components/Chat/Avatar";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
 
 export const BlockedUsersScreen: React.FC = () => {
   const navigation = useNavigation();

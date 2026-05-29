@@ -3,8 +3,8 @@ import { View, Text, StyleSheet } from "react-native";
 import { VideoTrack } from "@livekit/react-native";
 import { Track, type Participant } from "livekit-client";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors, withOpacity } from "../../theme/colors";
-import { Avatar } from "../Chat/Avatar";
+import { colors, withOpacity } from "@/theme/colors";
+import { Avatar } from "@/components/Chat/Avatar";
 
 interface Props {
   participant: Participant;

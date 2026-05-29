@@ -16,8 +16,8 @@ import {
   GestureType,
 } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
-import { EmptyChatState } from "../../../components/Chat/EmptyChatState";
-import type { ChatListItem } from "../helpers/dateSeparators";
+import { EmptyChatState } from "@/components/Chat/EmptyChatState";
+import type { ChatListItem } from "@/screens/Chat/helpers/dateSeparators";
 
 export interface ChatMessageListProps {
   flatListRef: React.RefObject<FlatList | null>;

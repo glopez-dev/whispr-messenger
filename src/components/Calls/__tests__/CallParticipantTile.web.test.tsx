@@ -16,11 +16,11 @@ jest.mock("react-native", () => require("react-native-web"));
 
 // Avatar → useResolvedMediaUrl → AuthService → DeviceService → expo-device
 // expo-device ne resout pas dans jest-expo node. On mocke AuthService ici.
-jest.mock("../../../services/AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: { refreshTokens: jest.fn().mockResolvedValue(undefined) },
 }));
 
-import { CallParticipantTile } from "../CallParticipantTile.web";
+import { CallParticipantTile } from "@/components/Calls/CallParticipantTile.web";
 
 type MockTrack = {
   attach: jest.Mock;

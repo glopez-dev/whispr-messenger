@@ -6,8 +6,8 @@
 import React, { useEffect, useRef } from "react";
 import { StyleSheet, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Logo } from "../../components/Logo";
-import { colors } from "../../theme";
+import { Logo } from "@/components/Logo";
+import { colors } from "@/theme";
 
 /**
  * Écran de marque affiché au cold start. La durée d’affichage est contrôlée

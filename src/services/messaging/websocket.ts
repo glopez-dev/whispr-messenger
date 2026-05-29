@@ -1,8 +1,8 @@
-import { getWsBaseUrl } from "../apiBase";
-import { TokenService } from "../TokenService";
-import { AuthService } from "../AuthService";
-import { emitSessionExpired } from "../sessionEvents";
-import { logger } from "../../utils/logger";
+import { getWsBaseUrl } from "@/services/apiBase";
+import { TokenService } from "@/services/TokenService";
+import { AuthService } from "@/services/AuthService";
+import { emitSessionExpired } from "@/services/sessionEvents";
+import { logger } from "@/utils/logger";
 
 type EventCallback = (data: any) => void;
 

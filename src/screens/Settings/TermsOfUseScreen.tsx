@@ -3,7 +3,7 @@
  */
 
 import React from "react";
-import { LegalDocumentView } from "./LegalDocumentView";
+import { LegalDocumentView } from "@/screens/Settings/LegalDocumentView";
 
 export const TermsOfUseScreen: React.FC = () => (
   <LegalDocumentView slug="terms" titleKey="about.termsOfUse" />

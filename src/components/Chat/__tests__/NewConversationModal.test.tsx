@@ -28,7 +28,7 @@ jest.mock("expo-haptics", () => ({
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
 }));
-jest.mock("../Avatar", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({
   Avatar: () => null,
 }));
 
@@ -37,7 +37,7 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => {
+jest.mock("@/context/ThemeContext", () => {
   const translations: Record<string, string> = {
     "notif.error": "Erreur",
     "newConversation.errorLoadContacts": "Impossible de charger les contacts",
@@ -63,20 +63,20 @@ const mockGetContacts = jest.fn();
 const mockCreateDirect = jest.fn();
 const mockCreateGroup = jest.fn();
 
-jest.mock("../../../services/contacts/api", () => ({
+jest.mock("@/services/contacts/api", () => ({
   contactsAPI: {
     getContacts: (...args: unknown[]) => mockGetContacts(...args),
   },
 }));
-jest.mock("../../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     createDirectConversation: (...args: unknown[]) => mockCreateDirect(...args),
     createGroupConversation: (...args: unknown[]) => mockCreateGroup(...args),
   },
 }));
 
-import { NewConversationModal } from "../NewConversationModal";
-import type { Contact } from "../../../types/contact";
+import { NewConversationModal } from "@/components/Chat/NewConversationModal";
+import type { Contact } from "@/types/contact";
 
 const makeContact = (overrides: Partial<Contact> = {}): Contact => ({
   id: overrides.id ?? "c-1",

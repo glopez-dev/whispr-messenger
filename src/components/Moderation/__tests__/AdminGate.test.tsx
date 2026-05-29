@@ -13,7 +13,7 @@ const mockStoreState = {
   isModerator: false,
 };
 
-jest.mock("../../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useModerationStore: (selector?: any) => {
     if (typeof selector === "function") {
       return selector(mockStoreState);
@@ -28,7 +28,7 @@ jest.mock("@expo/vector-icons", () => ({
   Ionicons: () => null,
 }));
 
-import { AdminGate } from "../AdminGate";
+import { AdminGate } from "@/components/Moderation/AdminGate";
 
 // ─── Helpers ─────────────────────────────────────────────────────
 

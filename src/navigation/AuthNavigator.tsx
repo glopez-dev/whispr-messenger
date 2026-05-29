@@ -1,38 +1,38 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { CallsUnavailableScreen } from "../screens/Calls/CallsUnavailableScreen";
-import { isCallsAvailable } from "../hooks/useCallsAvailable";
-import { WelcomeScreen } from "../screens/Auth/WelcomeScreen";
-import { PhoneInputScreen } from "../screens/Auth/PhoneInputScreen";
-import { OtpScreen } from "../screens/Auth/OtpScreen";
-import { ProfileSetupScreen } from "../screens/Auth/ProfileSetupScreen";
-import { MyProfileScreen } from "../screens/Profile/MyProfileScreen";
-import { UserProfileScreen } from "../screens/Profile/UserProfileScreen";
-import { SettingsScreen } from "../screens/Settings/SettingsScreen";
-import { AboutContentScreen } from "../screens/Settings/AboutContentScreen";
-import { PrivacyPolicyScreen } from "../screens/Settings/PrivacyPolicyScreen";
-import { TermsOfUseScreen } from "../screens/Settings/TermsOfUseScreen";
-import { DevicesScreen } from "../screens/Settings/DevicesScreen";
-import { SecurityKeysScreen } from "../screens/Security/SecurityKeysScreen";
-import { TwoFactorAuthScreen } from "../screens/Security/TwoFactorAuthScreen";
-import { TwoFactorSetupScreen } from "../screens/Security/TwoFactorSetupScreen";
-import { TwoFactorVerifyScreen } from "../screens/Security/TwoFactorVerifyScreen";
-import { TwoFactorBackupCodesScreen } from "../screens/Security/TwoFactorBackupCodesScreen";
-import { RecoveryCodesScreen } from "../screens/Auth/RecoveryCodesScreen";
-import { RecoveryCodeEntryScreen } from "../screens/Auth/RecoveryCodeEntryScreen";
-import { ConversationsListScreen } from "../screens/Chat/ConversationsListScreen";
-import { ArchivedConversationsScreen } from "../screens/Chat/ArchivedConversationsScreen";
-import { ChatScreen } from "../screens/Chat/ChatScreen";
-import { ContactsScreen } from "../screens/Contacts/ContactsScreen";
-import { BlockedUsersScreen } from "../screens/Contacts/BlockedUsersScreen";
-import { MyQRCodeScreen } from "../screens/Contacts/MyQRCodeScreen";
-import { GroupDetailsScreen } from "../screens/Groups/GroupDetailsScreen";
-import { GroupManagementScreen } from "../screens/Groups/GroupManagementScreen";
-import { ScheduledMessagesScreen } from "../screens/Chat/ScheduledMessagesScreen";
-import { ModerationTestScreen } from "../screens/Debug/ModerationTestScreen";
-import { ModerationDecisionScreen } from "../screens/Moderation/ModerationDecisionScreen";
-import { ModerationAppealFormScreen } from "../screens/Moderation/ModerationAppealFormScreen";
-import { ModerationAppealSubmittedScreen } from "../screens/Moderation/ModerationAppealSubmittedScreen";
+import { CallsUnavailableScreen } from "@/screens/Calls/CallsUnavailableScreen";
+import { isCallsAvailable } from "@/hooks/useCallsAvailable";
+import { WelcomeScreen } from "@/screens/Auth/WelcomeScreen";
+import { PhoneInputScreen } from "@/screens/Auth/PhoneInputScreen";
+import { OtpScreen } from "@/screens/Auth/OtpScreen";
+import { ProfileSetupScreen } from "@/screens/Auth/ProfileSetupScreen";
+import { MyProfileScreen } from "@/screens/Profile/MyProfileScreen";
+import { UserProfileScreen } from "@/screens/Profile/UserProfileScreen";
+import { SettingsScreen } from "@/screens/Settings/SettingsScreen";
+import { AboutContentScreen } from "@/screens/Settings/AboutContentScreen";
+import { PrivacyPolicyScreen } from "@/screens/Settings/PrivacyPolicyScreen";
+import { TermsOfUseScreen } from "@/screens/Settings/TermsOfUseScreen";
+import { DevicesScreen } from "@/screens/Settings/DevicesScreen";
+import { SecurityKeysScreen } from "@/screens/Security/SecurityKeysScreen";
+import { TwoFactorAuthScreen } from "@/screens/Security/TwoFactorAuthScreen";
+import { TwoFactorSetupScreen } from "@/screens/Security/TwoFactorSetupScreen";
+import { TwoFactorVerifyScreen } from "@/screens/Security/TwoFactorVerifyScreen";
+import { TwoFactorBackupCodesScreen } from "@/screens/Security/TwoFactorBackupCodesScreen";
+import { RecoveryCodesScreen } from "@/screens/Auth/RecoveryCodesScreen";
+import { RecoveryCodeEntryScreen } from "@/screens/Auth/RecoveryCodeEntryScreen";
+import { ConversationsListScreen } from "@/screens/Chat/ConversationsListScreen";
+import { ArchivedConversationsScreen } from "@/screens/Chat/ArchivedConversationsScreen";
+import { ChatScreen } from "@/screens/Chat/ChatScreen";
+import { ContactsScreen } from "@/screens/Contacts/ContactsScreen";
+import { BlockedUsersScreen } from "@/screens/Contacts/BlockedUsersScreen";
+import { MyQRCodeScreen } from "@/screens/Contacts/MyQRCodeScreen";
+import { GroupDetailsScreen } from "@/screens/Groups/GroupDetailsScreen";
+import { GroupManagementScreen } from "@/screens/Groups/GroupManagementScreen";
+import { ScheduledMessagesScreen } from "@/screens/Chat/ScheduledMessagesScreen";
+import { ModerationTestScreen } from "@/screens/Debug/ModerationTestScreen";
+import { ModerationDecisionScreen } from "@/screens/Moderation/ModerationDecisionScreen";
+import { ModerationAppealFormScreen } from "@/screens/Moderation/ModerationAppealFormScreen";
+import { ModerationAppealSubmittedScreen } from "@/screens/Moderation/ModerationAppealSubmittedScreen";
 import {
   ReportHistoryScreen,
   ReportDetailScreen,
@@ -40,7 +40,7 @@ import {
   MySanctionsScreen,
   AppealFormScreen,
   AppealStatusScreen,
-} from "../screens/Moderation";
+} from "@/screens/Moderation";
 import {
   AdminDemosScreen,
   ModerationDashboardScreen,
@@ -50,34 +50,34 @@ import {
   AppealReviewScreen,
   UserModerationScreen,
   SanctionFormScreen,
-} from "../screens/Admin";
+} from "@/screens/Admin";
 
 import { AppState } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
-import { useAuth } from "../context/AuthContext";
-import { useOfflineQueueDrainer } from "../hooks/useOfflineQueueDrainer";
-import { useNetworkMonitor } from "../hooks/useNetworkMonitor";
-import { useModerationStore } from "../store/moderationStore";
-import { useConversationsStore } from "../store/conversationsStore";
-import { profileSetupFlag } from "../services/profileSetupFlag";
-import { SplashScreen } from "../screens/SplashScreen/SplashScreen";
-import { OnboardingScreen } from "../screens/Auth/OnboardingScreen";
-import { AccountRecoveredScreen } from "../screens/Auth/AccountRecoveredScreen";
-import { BiometricLockScreen } from "../screens/Auth/BiometricLockScreen";
+import { useAuth } from "@/context/AuthContext";
+import { useOfflineQueueDrainer } from "@/hooks/useOfflineQueueDrainer";
+import { useNetworkMonitor } from "@/hooks/useNetworkMonitor";
+import { useModerationStore } from "@/store/moderationStore";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { profileSetupFlag } from "@/services/profileSetupFlag";
+import { SplashScreen } from "@/screens/SplashScreen/SplashScreen";
+import { OnboardingScreen } from "@/screens/Auth/OnboardingScreen";
+import { AccountRecoveredScreen } from "@/screens/Auth/AccountRecoveredScreen";
+import { BiometricLockScreen } from "@/screens/Auth/BiometricLockScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { storage as secureStorage } from "../services/storage";
-import { TourProvider } from "../context/TourContext";
-import { contactsAPI } from "../services/contacts/api";
-import { TokenService } from "../services/TokenService";
-import { UserService } from "../services/UserService";
-import { NotificationService } from "../services/NotificationService";
-import { systemCallProvider } from "../services/calls/systemCallProvider";
-import { initCallNotificationBridge } from "../services/calls/callNotificationBridge";
-import { prefetchResolvedMediaUris } from "../hooks/useResolvedMediaUrl";
-import { messagingAPI } from "../services/messaging/api";
-import { cacheService } from "../services/messaging/cache";
-import { decryptMessagesForCache } from "./preloadMessagesCache";
-import type { AuthStackParamList } from "./types";
+import { storage as secureStorage } from "@/services/storage";
+import { TourProvider } from "@/context/TourContext";
+import { contactsAPI } from "@/services/contacts/api";
+import { TokenService } from "@/services/TokenService";
+import { UserService } from "@/services/UserService";
+import { NotificationService } from "@/services/NotificationService";
+import { systemCallProvider } from "@/services/calls/systemCallProvider";
+import { initCallNotificationBridge } from "@/services/calls/callNotificationBridge";
+import { prefetchResolvedMediaUris } from "@/hooks/useResolvedMediaUrl";
+import { messagingAPI } from "@/services/messaging/api";
+import { cacheService } from "@/services/messaging/cache";
+import { decryptMessagesForCache } from "@/navigation/preloadMessagesCache";
+import type { AuthStackParamList } from "@/navigation/types";
 
 /** Durée minimale du splash in-app (ms), en parallèle avec validateSession. */
 const SPLASH_MIN_MS = 2000;
@@ -256,14 +256,14 @@ export const AuthNavigator: React.FC = () => {
     preload().catch(() => {});
     void systemCallProvider.initialize().catch(() => {});
     try {
-      require("../screens/Contacts/QRCodeScannerScreen");
+      require("@/screens/Contacts/QRCodeScannerScreen");
     } catch {}
     if (hasCallsSupport) {
       try {
-        require("../screens/Calls/CallsScreen");
-        require("../screens/Calls/IncomingCallScreen");
-        require("../screens/Calls/InCallScreen");
-        require("../screens/Calls/CallHistoryScreen");
+        require("@/screens/Calls/CallsScreen");
+        require("@/screens/Calls/IncomingCallScreen");
+        require("@/screens/Calls/InCallScreen");
+        require("@/screens/Calls/CallHistoryScreen");
       } catch {}
     }
     return () => {
@@ -369,7 +369,7 @@ export const AuthNavigator: React.FC = () => {
         <Stack.Screen
           name="TwoFactorVerifyLogin"
           getComponent={() =>
-            require("../screens/Auth/TwoFactorVerifyLoginScreen")
+            require("@/screens/Auth/TwoFactorVerifyLoginScreen")
               .TwoFactorVerifyLoginScreen
           }
           options={{ gestureEnabled: false }}
@@ -412,14 +412,14 @@ export const AuthNavigator: React.FC = () => {
         <Stack.Screen
           name="QRCodeScanner"
           getComponent={() =>
-            require("../screens/Contacts/QRCodeScannerScreen")
+            require("@/screens/Contacts/QRCodeScannerScreen")
               .QRCodeScannerScreen
           }
         />
         <Stack.Screen
           name="DevicePairingScanner"
           getComponent={() =>
-            require("../screens/Auth/DevicePairingScannerScreen")
+            require("@/screens/Auth/DevicePairingScannerScreen")
               .DevicePairingScannerScreen
           }
         />
@@ -437,7 +437,7 @@ export const AuthNavigator: React.FC = () => {
           name="Calls"
           getComponent={() =>
             hasCallsSupport
-              ? require("../screens/Calls/CallsScreen").CallsScreen
+              ? require("@/screens/Calls/CallsScreen").CallsScreen
               : CallsUnavailableScreen
           }
         />
@@ -445,8 +445,7 @@ export const AuthNavigator: React.FC = () => {
           name="IncomingCall"
           getComponent={() =>
             hasCallsSupport
-              ? require("../screens/Calls/IncomingCallScreen")
-                  .IncomingCallScreen
+              ? require("@/screens/Calls/IncomingCallScreen").IncomingCallScreen
               : CallsUnavailableScreen
           }
           options={{
@@ -459,7 +458,7 @@ export const AuthNavigator: React.FC = () => {
           name="InCall"
           getComponent={() =>
             hasCallsSupport
-              ? require("../screens/Calls/InCallScreen").InCallScreen
+              ? require("@/screens/Calls/InCallScreen").InCallScreen
               : CallsUnavailableScreen
           }
           options={{ headerShown: false, gestureEnabled: false }}
@@ -468,7 +467,7 @@ export const AuthNavigator: React.FC = () => {
           name="CallHistory"
           getComponent={() =>
             hasCallsSupport
-              ? require("../screens/Calls/CallHistoryScreen").CallHistoryScreen
+              ? require("@/screens/Calls/CallHistoryScreen").CallHistoryScreen
               : CallsUnavailableScreen
           }
           options={{ title: "Appels" }}

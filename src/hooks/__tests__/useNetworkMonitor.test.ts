@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react-native";
 import { act } from "@testing-library/react-native";
-import { useNetworkMonitor } from "../useNetworkMonitor";
+import { useNetworkMonitor } from "@/hooks/useNetworkMonitor";
 
 let netInfoCallback: ((state: object) => void) | null = null;
 const mockUnsubscribe = jest.fn();
@@ -16,11 +16,11 @@ jest.mock("@react-native-community/netinfo", () => ({
   },
 }));
 
-jest.mock("../../services/messaging/websocket", () => ({
+jest.mock("@/services/messaging/websocket", () => ({
   getSharedSocket: jest.fn(() => ({ nudge: mockNudge })),
 }));
 
-jest.mock("../../utils/logger", () => ({
+jest.mock("@/utils/logger", () => ({
   logger: { info: jest.fn(), error: jest.fn() },
 }));
 
@@ -97,7 +97,7 @@ describe("useNetworkMonitor", () => {
   });
 
   it("does not throw when getSharedSocket throws (socket not yet initialised)", () => {
-    const { getSharedSocket } = require("../../services/messaging/websocket");
+    const { getSharedSocket } = require("@/services/messaging/websocket");
     (getSharedSocket as jest.Mock).mockImplementationOnce(() => {
       throw new Error("socket not ready");
     });

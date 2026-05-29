@@ -1,7 +1,7 @@
 import {
   resolveConversationMemberIds,
   resolveConversationMemberIdsNow,
-} from "../resolveMembers";
+} from "@/utils/resolveMembers";
 
 describe("resolveConversationMemberIds", () => {
   const baseOpts = { selfId: "self" };

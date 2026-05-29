@@ -9,7 +9,7 @@ import { z, type ZodType } from "zod";
 import {
   authenticatedFetch,
   type AuthFetchOptions,
-} from "./authenticatedFetch";
+} from "@/lib/authenticatedFetch";
 
 /**
  * Convenience options:

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { formatUsername } from "../../utils";
+import { formatUsername } from "@/utils";
 import {
   View,
   Text,
@@ -21,12 +21,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Contacts from "expo-contacts";
-import { UserSearchResult, PhoneContact } from "../../types/contact";
-import { contactsAPI } from "../../services/contacts/api";
-import { Avatar } from "../Chat/Avatar";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { normalizePhoneToE164 } from "../../utils/phoneUtils";
+import { UserSearchResult, PhoneContact } from "@/types/contact";
+import { contactsAPI } from "@/services/contacts/api";
+import { Avatar } from "@/components/Chat/Avatar";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { normalizePhoneToE164 } from "@/utils/phoneUtils";
 
 interface SyncContactsModalProps {
   visible: boolean;

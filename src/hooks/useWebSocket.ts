@@ -11,22 +11,22 @@ import { AppState } from "react-native";
 import {
   getSharedSocket,
   ConnectionState,
-} from "../services/messaging/websocket";
-import { Conversation, Message } from "../types/messaging";
-import { usePresenceStore } from "../store/presenceStore";
-import { useCallsStore } from "../store/callsStore";
-import { useConversationsStore } from "../store/conversationsStore";
-import { navigate, navigationRef } from "../navigation/navigationRef";
-import type { CallType } from "../types/calls";
+} from "@/services/messaging/websocket";
+import { Conversation, Message } from "@/types/messaging";
+import { usePresenceStore } from "@/store/presenceStore";
+import { useCallsStore } from "@/store/callsStore";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { navigate, navigationRef } from "@/navigation/navigationRef";
+import type { CallType } from "@/types/calls";
 import {
   buildIncomingCallPresentation,
   systemCallProvider,
-} from "../services/calls/systemCallProvider";
-import { isCallsAvailable } from "./useCallsAvailable";
-import { getReadReceiptsEnabled } from "../services/messaging/readReceiptsPref";
-import { getTypingIndicatorEnabled } from "../services/messaging/typingIndicatorPref";
-import { useInboxStore } from "../store/inboxStore";
-import type { InboxItem } from "../types/inbox";
+} from "@/services/calls/systemCallProvider";
+import { isCallsAvailable } from "@/hooks/useCallsAvailable";
+import { getReadReceiptsEnabled } from "@/services/messaging/readReceiptsPref";
+import { getTypingIndicatorEnabled } from "@/services/messaging/typingIndicatorPref";
+import { useInboxStore } from "@/store/inboxStore";
+import type { InboxItem } from "@/types/inbox";
 
 /** Payload normalisé (snake_case) pour reaction_added / reaction_removed */
 export interface ReactionRealtimePayload {

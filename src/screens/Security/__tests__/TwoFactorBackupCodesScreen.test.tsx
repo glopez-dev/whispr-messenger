@@ -1,6 +1,6 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
-import { TwoFactorBackupCodesScreen } from "../TwoFactorBackupCodesScreen";
+import { TwoFactorBackupCodesScreen } from "@/screens/Security/TwoFactorBackupCodesScreen";
 
 const mockGoBack = jest.fn();
 const mockAddListener = jest.fn().mockReturnValue(() => {});
@@ -25,7 +25,7 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
   NotificationFeedbackType: { Success: "success" },
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -40,8 +40,8 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../components/Toast/Toast", () => () => null);
-jest.mock("../../../utils/clipboard", () => ({
+jest.mock("@/components/Toast/Toast", () => () => null);
+jest.mock("@/utils/clipboard", () => ({
   copyToClipboard: jest.fn(),
 }));
 

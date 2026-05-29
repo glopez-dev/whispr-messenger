@@ -36,7 +36,7 @@ const mockAppState = rnMock.AppState;
 const mockGetAccessToken = jest.fn<Promise<string | null>, []>();
 const mockMsUntilProactiveRefresh = jest.fn<number, [string, number?]>();
 
-jest.mock("../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: (...args: unknown[]) => mockGetAccessToken(...(args as [])),
     msUntilProactiveRefresh: (...args: unknown[]) =>
@@ -45,13 +45,13 @@ jest.mock("../TokenService", () => ({
 }));
 
 const mockRefreshTokens = jest.fn<Promise<void>, []>();
-jest.mock("../AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: {
     refreshTokens: (...args: unknown[]) => mockRefreshTokens(...(args as [])),
   },
 }));
 
-import { TokenRefreshScheduler } from "../TokenRefreshScheduler";
+import { TokenRefreshScheduler } from "@/services/TokenRefreshScheduler";
 
 // ─── Helpers ─────────────────────────────────────────────────────
 

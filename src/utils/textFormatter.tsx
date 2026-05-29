@@ -5,7 +5,7 @@
 
 import React from "react";
 import { Text, TextStyle, StyleSheet, StyleProp } from "react-native";
-import { colors } from "../theme/colors";
+import { colors } from "@/theme/colors";
 
 // Extract color values for StyleSheet.create() to avoid runtime resolution issues
 const PRIMARY_MAIN_COLOR = colors.primary.main;

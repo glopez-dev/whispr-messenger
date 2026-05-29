@@ -6,8 +6,8 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, withOpacity } from "../../theme/colors";
-import { useTheme } from "../../context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
+import { useTheme } from "@/context/ThemeContext";
 
 interface EmptyStateProps {
   onNewConversation?: () => void;

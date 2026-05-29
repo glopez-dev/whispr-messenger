@@ -7,7 +7,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
-import { colors } from "../../../theme/colors";
+import { colors } from "@/theme/colors";
 
 const SPRING_CONFIG = { damping: 14, stiffness: 220, mass: 0.6 } as const;
 

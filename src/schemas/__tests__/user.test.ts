@@ -4,7 +4,7 @@ import {
   ProfileSetupFormSchema,
   UserSchema,
   UsernameSchema,
-} from "../user";
+} from "@/schemas/user";
 
 describe("UserSchema", () => {
   it("parses a fully-populated backend user", () => {

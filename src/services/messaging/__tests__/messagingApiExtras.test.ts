@@ -4,16 +4,17 @@
  * the same module that the existing test file doesn't touch.
  */
 
-jest.mock("../../TokenService", () =>
-  require("../../../__test-utils__/mockFactories").makeTokenServiceMock(),
+jest.mock("@/services/TokenService", () =>
+  require("@/__test-utils__/mockFactories").makeTokenServiceMock(),
 );
-jest.mock("../../apiBase", () =>
-  require("../../../__test-utils__/mockFactories").makeApiBaseMock(
-    "https://api.test",
-  ),
+jest.mock("@/services/apiBase", () =>
+  require("@/__test-utils__/mockFactories").makeApiBaseMock("https://api.test"),
 );
 
-import { invalidateUserInfoCache, mapBackendAttachment } from "../api";
+import {
+  invalidateUserInfoCache,
+  mapBackendAttachment,
+} from "@/services/messaging/api";
 
 describe("mapBackendAttachment", () => {
   it("uses the explicit file_type when it is a known media kind", () => {

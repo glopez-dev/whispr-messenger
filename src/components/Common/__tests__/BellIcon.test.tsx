@@ -1,9 +1,9 @@
 import React from "react";
 import { render, fireEvent } from "@testing-library/react-native";
-import { BellIcon } from "../BellIcon";
+import { BellIcon } from "@/components/Common/BellIcon";
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     text: { light: "#fff" },
     ui: { error: "#f00" },

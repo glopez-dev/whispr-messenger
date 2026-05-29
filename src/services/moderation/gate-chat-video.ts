@@ -1,8 +1,8 @@
 import { NativeModules, Platform } from "react-native";
-import { tfjsService } from "./tfjs.service";
-import { logger } from "../../utils/logger";
-import { getModerationModelVersion } from "./model-version";
-import type { GateChatImageResult } from "./gate-chat-image";
+import { tfjsService } from "@/services/moderation/tfjs.service";
+import { logger } from "@/utils/logger";
+import { getModerationModelVersion } from "@/services/moderation/model-version";
+import type { GateChatImageResult } from "@/services/moderation/gate-chat-image";
 
 type ExpoVideoThumbnailsModule = {
   getThumbnailAsync: (

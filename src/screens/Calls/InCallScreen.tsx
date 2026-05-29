@@ -6,18 +6,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallsStore } from "../../store/callsStore";
-import type { CallEndReason } from "../../store/callsStore";
-import Toast from "../../components/Toast/Toast";
-import type { ToastType } from "../../components/Toast/Toast";
-import { callsLiveKit } from "../../services/calls/liveKitProvider";
-import { systemCallProvider } from "../../services/calls/systemCallProvider";
-import { CallParticipantTile } from "../../components/Calls/CallParticipantTile";
-import { CallControls } from "../../components/Calls/CallControls";
-import { colors, withOpacity } from "../../theme/colors";
-import { Avatar } from "../../components/Chat/Avatar";
-import { messagingAPI } from "../../services/messaging/api";
-import { TokenService } from "../../services/TokenService";
+import { useCallsStore } from "@/store/callsStore";
+import type { CallEndReason } from "@/store/callsStore";
+import Toast from "@/components/Toast/Toast";
+import type { ToastType } from "@/components/Toast/Toast";
+import { callsLiveKit } from "@/services/calls/liveKitProvider";
+import { systemCallProvider } from "@/services/calls/systemCallProvider";
+import { CallParticipantTile } from "@/components/Calls/CallParticipantTile";
+import { CallControls } from "@/components/Calls/CallControls";
+import { colors, withOpacity } from "@/theme/colors";
+import { Avatar } from "@/components/Chat/Avatar";
+import { messagingAPI } from "@/services/messaging/api";
+import { TokenService } from "@/services/TokenService";
 
 /**
  * In-call UI: status header (ringing/connected + elapsed time), grid of

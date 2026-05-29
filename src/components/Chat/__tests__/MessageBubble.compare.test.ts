@@ -4,8 +4,8 @@
 // No rendering, no native mocks — purely the equality predicate. Each test
 // changes exactly one field at a time so we know which check it exercises.
 
-import { areMessageBubblePropsEqual } from "../MessageBubble";
-import type { MessageWithRelations } from "../../../types/messaging";
+import { areMessageBubblePropsEqual } from "@/components/Chat/MessageBubble";
+import type { MessageWithRelations } from "@/types/messaging";
 
 const baseMessage = (): MessageWithRelations =>
   ({

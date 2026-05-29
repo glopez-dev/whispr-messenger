@@ -14,9 +14,9 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { colors } from "../../theme/colors";
-import { QUICK_REACTION_DEFAULTS } from "../../data/emojiPickerData";
-import { EmojiPickerSheet } from "./EmojiPickerSheet";
+import { colors } from "@/theme/colors";
+import { QUICK_REACTION_DEFAULTS } from "@/data/emojiPickerData";
+import { EmojiPickerSheet } from "@/components/Chat/EmojiPickerSheet";
 
 interface ReactionPickerProps {
   visible: boolean;

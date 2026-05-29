@@ -9,7 +9,7 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { formatUsername } from "../../utils";
+import { formatUsername } from "@/utils";
 import {
   View,
   Text,
@@ -25,14 +25,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/types";
+import type { AuthStackParamList } from "@/navigation/types";
 import { Ionicons } from "@expo/vector-icons";
 import QRCodeStyled from "react-native-qrcode-styled";
 import { Circle, Path } from "react-native-svg";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { qrCodeService } from "../../services/qrCode/qrCodeService";
-import { UserService } from "../../services/UserService";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { qrCodeService } from "@/services/qrCode/qrCodeService";
+import { UserService } from "@/services/UserService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const QR_SIZE = Math.min(SCREEN_WIDTH - 64, 280);

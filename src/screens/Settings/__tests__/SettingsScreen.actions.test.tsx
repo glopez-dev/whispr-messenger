@@ -33,7 +33,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   multiSet: jest.fn().mockResolvedValue(null),
   multiRemove: jest.fn().mockResolvedValue(null),
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     settings: { theme: "dark", language: "fr", fontSize: "medium" },
     updateSettings: mockUpdateSettings,
@@ -50,7 +50,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isLoading: false,
@@ -63,7 +63,7 @@ jest.mock("../../../context/AuthContext", () => ({
 
 const mockGetPrivacy = jest.fn();
 const mockUpdatePrivacy = jest.fn();
-jest.mock("../../../services/UserService", () => ({
+jest.mock("@/services/UserService", () => ({
   UserService: {
     getInstance: () => ({
       getPrivacySettings: mockGetPrivacy,
@@ -72,7 +72,7 @@ jest.mock("../../../services/UserService", () => ({
   },
 }));
 
-jest.mock("../../../services/NotificationService", () => ({
+jest.mock("@/services/NotificationService", () => ({
   NotificationService: {
     getSettings: jest.fn().mockResolvedValue({
       push_enabled: true,
@@ -83,14 +83,14 @@ jest.mock("../../../services/NotificationService", () => ({
   },
 }));
 
-jest.mock("../../../services/moderation", () => ({
+jest.mock("@/services/moderation", () => ({
   DEFAULT_MODERATION_MODEL: "v2",
   getModerationModelVersion: jest.fn().mockResolvedValue("v2"),
   setModerationModelVersion: jest.fn().mockResolvedValue(undefined),
 }));
 
 const secureStoreBackend: Record<string, string> = {};
-jest.mock("../../../services/storage", () => ({
+jest.mock("@/services/storage", () => ({
   storage: {
     getItem: jest.fn(async (key: string) => secureStoreBackend[key] ?? null),
     setItem: jest.fn(async (key: string, value: string) => {
@@ -103,7 +103,7 @@ jest.mock("../../../services/storage", () => ({
 }));
 
 import { Alert } from "react-native";
-import { SettingsScreen } from "../SettingsScreen";
+import { SettingsScreen } from "@/screens/Settings/SettingsScreen";
 
 function allTouchables(root: any): Array<{ props: any }> {
   const out: Array<{ props: any }> = [];

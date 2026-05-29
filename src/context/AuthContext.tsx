@@ -6,22 +6,22 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { AuthService } from "../services/AuthService";
-import { AppResetService } from "../services/AppResetService";
-import { NotificationService } from "../services/NotificationService";
-import { tokenRefreshScheduler } from "../services/TokenRefreshScheduler";
-import { destroySharedSocket } from "../services/messaging/websocket";
-import { useConversationsStore } from "../store/conversationsStore";
-import { usePresenceStore } from "../store/presenceStore";
-import { useModerationStore } from "../store/moderationStore";
-import { useCallsStore } from "../store/callsStore";
-import { onSessionExpired } from "../services/sessionEvents";
-import { useBadgeSync } from "../hooks/useBadgeSync";
-import { systemCallProvider } from "../services/calls/systemCallProvider";
+import { AuthService } from "@/services/AuthService";
+import { AppResetService } from "@/services/AppResetService";
+import { NotificationService } from "@/services/NotificationService";
+import { tokenRefreshScheduler } from "@/services/TokenRefreshScheduler";
+import { destroySharedSocket } from "@/services/messaging/websocket";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { usePresenceStore } from "@/store/presenceStore";
+import { useModerationStore } from "@/store/moderationStore";
+import { useCallsStore } from "@/store/callsStore";
+import { onSessionExpired } from "@/services/sessionEvents";
+import { useBadgeSync } from "@/hooks/useBadgeSync";
+import { systemCallProvider } from "@/services/calls/systemCallProvider";
 import {
   clearResolvedMediaCache,
   setResolvedMediaCacheScope,
-} from "../hooks/useResolvedMediaUrl";
+} from "@/hooks/useResolvedMediaUrl";
 
 interface AuthState {
   isAuthenticated: boolean;

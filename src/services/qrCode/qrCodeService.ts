@@ -2,8 +2,8 @@
  * QRCodeService — génération / parsing des QR contacts (schéma whispr://)
  */
 
-import { TokenService } from "../TokenService";
-import { UserService } from "../UserService";
+import { TokenService } from "@/services/TokenService";
+import { UserService } from "@/services/UserService";
 
 export interface QRCodeData {
   type: "contact";

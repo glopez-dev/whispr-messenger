@@ -1,8 +1,8 @@
 import React from "react";
 import { Alert } from "react-native";
 import { render, waitFor, fireEvent } from "@testing-library/react-native";
-import { GroupDetailsScreen } from "../GroupDetailsScreen";
-import { groupsAPI } from "../../../services/groups/api";
+import { GroupDetailsScreen } from "@/screens/Groups/GroupDetailsScreen";
+import { groupsAPI } from "@/services/groups/api";
 
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
@@ -54,7 +54,7 @@ jest.mock("react-native-reanimated", () => {
     createAnimatedComponent: (c: any) => c,
   };
 });
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -79,7 +79,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     },
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isLoading: false,
@@ -89,11 +89,11 @@ jest.mock("../../../context/AuthContext", () => ({
     signOut: jest.fn(),
   }),
 }));
-jest.mock("../../../components/Chat/Avatar", () => ({ Avatar: () => null }));
-jest.mock("../../../utils/logger", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/utils/logger", () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
-jest.mock("../../../services/groups/api", () => ({
+jest.mock("@/services/groups/api", () => ({
   groupsAPI: {
     getGroupDetails: jest.fn(),
     getGroupMembers: jest.fn(),
@@ -106,7 +106,7 @@ jest.mock("../../../services/groups/api", () => ({
     kickMember: jest.fn(),
   },
 }));
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] }, dark: "#000" },
     text: { light: "#fff" },
@@ -116,7 +116,7 @@ jest.mock("../../../theme/colors", () => ({
   },
   withOpacity: (c: string) => c,
 }));
-jest.mock("../../../theme/typography", () => ({
+jest.mock("@/theme/typography", () => ({
   typography: {
     fontSize: { base: 14, sm: 12, lg: 18, xl: 22, xs: 10, xxxl: 32 },
     fontWeight: { bold: "700", medium: "500", semiBold: "600", normal: "400" },

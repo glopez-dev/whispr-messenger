@@ -13,7 +13,7 @@
  */
 import React, { useCallback, useRef } from "react";
 import { Pressable, Platform, View, GestureResponderEvent } from "react-native";
-import { useMiniProfileCard } from "../../store/miniProfileCardStore";
+import { useMiniProfileCard } from "@/store/miniProfileCardStore";
 
 interface ProfileTriggerProps {
   userId: string;

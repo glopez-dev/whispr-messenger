@@ -17,16 +17,16 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, withOpacity } from "../../theme/colors";
-import { UserService, UserProfile } from "../../services/UserService";
-import { contactsAPI } from "../../services/contacts/api";
-import { getCached, setCached } from "../../services/profile/miniProfileCache";
+import { colors, withOpacity } from "@/theme/colors";
+import { UserService, UserProfile } from "@/services/UserService";
+import { contactsAPI } from "@/services/contacts/api";
+import { getCached, setCached } from "@/services/profile/miniProfileCache";
 import {
   getCachedRelation,
   invalidateCachedRelation,
   setCachedRelation,
   type Relation,
-} from "../../services/profile/miniRelationCache";
+} from "@/services/profile/miniRelationCache";
 
 type CardState = "loading" | "loaded" | "error" | "notFound";
 

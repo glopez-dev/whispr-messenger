@@ -16,23 +16,23 @@ import { AppState, useColorScheme } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
-import { colors } from "../theme/colors";
-import { detectImageFormatFromUri } from "../utils/imageCompression";
-import { TokenService } from "../services/TokenService";
-import { MediaService } from "../services/MediaService";
+import { colors } from "@/theme/colors";
+import { detectImageFormatFromUri } from "@/utils/imageCompression";
+import { TokenService } from "@/services/TokenService";
+import { MediaService } from "@/services/MediaService";
 import {
   UserService,
   type UserProfile,
   type UserVisualPreferences,
-} from "../services/UserService";
+} from "@/services/UserService";
 import {
   deleteAllCustomBackgroundVariants,
   downloadRemoteBackgroundToLocal,
   findExistingCustomBackgroundUri,
   getCustomBackgroundTargetUri,
   getFileMimeType,
-} from "../services/visualPreferences/customBackground";
-import { localizeText } from "../i18n/strings";
+} from "@/services/visualPreferences/customBackground";
+import { localizeText } from "@/i18n/strings";
 
 // Types
 export type Theme = "light" | "dark" | "auto";

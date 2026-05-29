@@ -4,8 +4,8 @@
 
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
 
 interface SystemMessageProps {
   content: string;

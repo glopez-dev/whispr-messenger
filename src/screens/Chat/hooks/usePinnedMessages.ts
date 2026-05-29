@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
-import { MessageWithRelations, PinnedMessage } from "../../../types/messaging";
-import { messagingAPI } from "../../../services/messaging/api";
-import { logger } from "../../../utils/logger";
+import { MessageWithRelations, PinnedMessage } from "@/types/messaging";
+import { messagingAPI } from "@/services/messaging/api";
+import { logger } from "@/utils/logger";
 
 export interface UsePinnedMessagesOptions {
   conversationId: string;

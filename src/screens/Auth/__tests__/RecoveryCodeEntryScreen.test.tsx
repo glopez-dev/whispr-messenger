@@ -1,8 +1,8 @@
 import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
-import { RecoveryCodeEntryScreen } from "../RecoveryCodeEntryScreen";
-import { AuthService } from "../../../services/AuthService";
-import { TokenService } from "../../../services/TokenService";
+import { RecoveryCodeEntryScreen } from "@/screens/Auth/RecoveryCodeEntryScreen";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
 
 const mockGoBack = jest.fn();
 const mockReset = jest.fn();
@@ -17,29 +17,29 @@ jest.mock("expo-linear-gradient", () => ({
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0 }),
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({ background: { gradient: ["#000", "#111"] } }),
     getFontSize: () => 16,
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     signIn: mockSignIn,
   }),
 }));
-jest.mock("../../../services/AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: {
     redeemRecoveryCode: jest.fn(),
   },
 }));
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     decodeAccessToken: jest.fn(),
   },
 }));
-jest.mock("../../../components", () => ({
+jest.mock("@/components", () => ({
   Button: ({ title, onPress, disabled }: any) => {
     const { TouchableOpacity, Text } = require("react-native");
     return (
@@ -53,7 +53,7 @@ jest.mock("../../../components", () => ({
     );
   },
 }));
-jest.mock("../../../theme", () => ({
+jest.mock("@/theme", () => ({
   colors: {
     text: { light: "#fff" },
     primary: { main: "#6200ee" },

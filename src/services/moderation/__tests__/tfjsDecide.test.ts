@@ -46,7 +46,7 @@ jest.mock(
     virtual: true,
   },
 );
-jest.mock("../image-to-tensor", () => ({
+jest.mock("@/services/moderation/image-to-tensor", () => ({
   imageUriToFloatTensor_0_255: jest.fn(),
 }));
 jest.mock("@react-native-async-storage/async-storage", () => ({
@@ -54,8 +54,8 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   setItem: jest.fn().mockResolvedValue(undefined),
 }));
 
-import { decideFromProbs } from "../tfjs.service";
-import { CLASS_NAMES } from "../moderation.constants";
+import { decideFromProbs } from "@/services/moderation/tfjs.service";
+import { CLASS_NAMES } from "@/services/moderation/moderation.constants";
 
 function probsFor(
   overrides: Partial<Record<(typeof CLASS_NAMES)[number], number>>,

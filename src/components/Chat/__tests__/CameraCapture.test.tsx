@@ -79,7 +79,7 @@ jest.mock(
   { virtual: true },
 );
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa", tertiary: "#666" },
@@ -88,7 +88,7 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-import { CameraCapture } from "../CameraCapture";
+import { CameraCapture } from "@/components/Chat/CameraCapture";
 
 const defaultProps = {
   visible: true,

@@ -1,12 +1,12 @@
-import { TokenService } from "./TokenService";
-import { AuthService } from "./AuthService";
-import { getApiBaseUrl } from "./apiBase";
+import { TokenService } from "@/services/TokenService";
+import { AuthService } from "@/services/AuthService";
+import { getApiBaseUrl } from "@/services/apiBase";
 import type {
   TwoFactorStatusResponse,
   TwoFactorSetupResponse,
   TwoFactorBackupCodesResponse,
   TwoFactorBackupCodesRemainingResponse,
-} from "../types/auth";
+} from "@/types/auth";
 
 function getAuthBaseUrl(): string {
   return `${getApiBaseUrl()}/auth/v1`;
@@ -113,14 +113,11 @@ export const TwoFactorService = {
   async useBackupCode(
     code: string,
     verificationId: string,
-  ): Promise<import("../types/auth").TokenPair> {
-    return apiFetch<import("../types/auth").TokenPair>(
-      "/2fa/backup-codes/use",
-      {
-        method: "POST",
-        body: JSON.stringify({ verificationId, recoveryCode: code }),
-      },
-    );
+  ): Promise<import("@/types/auth").TokenPair> {
+    return apiFetch<import("@/types/auth").TokenPair>("/2fa/backup-codes/use", {
+      method: "POST",
+      body: JSON.stringify({ verificationId, recoveryCode: code }),
+    });
   },
 };
 

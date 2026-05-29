@@ -8,19 +8,19 @@
 const mockFetch = jest.fn();
 (global as any).fetch = mockFetch;
 
-jest.mock("../../TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: jest.fn().mockResolvedValue("mock-token"),
   },
 }));
 
-jest.mock("../../AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: {
     refreshTokens: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
-jest.mock("../../apiBase", () => ({
+jest.mock("@/services/apiBase", () => ({
   getApiBaseUrl: () => "https://api.test.com",
 }));
 
@@ -31,7 +31,7 @@ import {
   rolesAPI,
   auditAPI,
   conversationSanctionsAPI,
-} from "../moderationApi";
+} from "@/services/moderation/moderationApi";
 
 // ─── Helpers ─────────────────────────────────────────────────────
 

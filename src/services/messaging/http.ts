@@ -1,8 +1,8 @@
-import { AuthService } from "../AuthService";
-import { TokenService } from "../TokenService";
-import { getApiBaseUrl } from "../apiBase";
-import { snakecaseKeys } from "../../utils/caseTransform";
-import { isReachableUrl } from "../../utils";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
+import { snakecaseKeys } from "@/utils/caseTransform";
+import { isReachableUrl } from "@/utils";
 
 export const API_BASE_URL = `${getApiBaseUrl()}/messaging/api/v1`;
 

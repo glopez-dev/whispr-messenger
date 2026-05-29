@@ -11,8 +11,8 @@ import {
   Pressable,
   Platform,
 } from "react-native";
-import { Avatar } from "./Avatar";
-import { ProfileTrigger } from "../Profile/ProfileTrigger";
+import { Avatar } from "@/components/Chat/Avatar";
+import { ProfileTrigger } from "@/components/Profile/ProfileTrigger";
 import {
   useSharedValue,
   useAnimatedStyle,
@@ -24,37 +24,37 @@ import * as Haptics from "expo-haptics";
 import type {
   MessageLinkPreview,
   MessageWithRelations,
-} from "../../types/messaging";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { ReactionBar } from "./ReactionBar";
-import { ReplyPreview } from "./ReplyPreview";
-import { ReactionPicker } from "./ReactionPicker";
-import { MediaMessage } from "./MediaMessage";
-import { AudioMessage } from "./AudioMessage";
-import { MediaUploadProgressOverlay } from "./MediaUploadProgressOverlay";
+} from "@/types/messaging";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { ReactionBar } from "@/components/Chat/ReactionBar";
+import { ReplyPreview } from "@/components/Chat/ReplyPreview";
+import { ReactionPicker } from "@/components/Chat/ReactionPicker";
+import { MediaMessage } from "@/components/Chat/MediaMessage";
+import { AudioMessage } from "@/components/Chat/AudioMessage";
+import { MediaUploadProgressOverlay } from "@/components/Chat/MediaUploadProgressOverlay";
 import {
   getMediaUploadOverlayState,
   type MediaSendClientMetadata,
-} from "../../types/mediaUpload";
-import { LinkPreviewCard } from "./LinkPreviewCard";
-import { MaskedBubbleSurface } from "./MaskedBubbleSurface";
-import { MessageStatusLabel } from "./MessageStatusLabel";
-import { useMessageSwipe } from "../../context/MessageSwipeContext";
-import { FormattedText } from "../../utils/textFormatter";
-import { formatHourMinute, isReachableUrl } from "../../utils";
+} from "@/types/mediaUpload";
+import { LinkPreviewCard } from "@/components/Chat/LinkPreviewCard";
+import { MaskedBubbleSurface } from "@/components/Chat/MaskedBubbleSurface";
+import { MessageStatusLabel } from "@/components/Chat/MessageStatusLabel";
+import { useMessageSwipe } from "@/context/MessageSwipeContext";
+import { FormattedText } from "@/utils/textFormatter";
+import { formatHourMinute, isReachableUrl } from "@/utils";
 import {
   buildMetadataAttachment,
   deliveryStatusesEqual,
   resolveMediaUrl,
   shouldRenderMessage,
-} from "./messageBubbleHelpers";
-import { E2EEService } from "../../services/E2EEService";
+} from "@/components/Chat/messageBubbleHelpers";
+import { E2EEService } from "@/services/E2EEService";
 import {
   extractFirstUrl,
   getLinkPreview,
   normalizeLinkPreview,
-} from "../../services/linkPreview";
+} from "@/services/linkPreview";
 
 interface MessageBubbleProps {
   message: MessageWithRelations;

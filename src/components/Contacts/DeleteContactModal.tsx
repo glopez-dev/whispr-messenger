@@ -6,10 +6,10 @@
  */
 
 import React, { useState } from "react";
-import { Contact } from "../../types/contact";
-import { useTheme } from "../../context/ThemeContext";
-import { contactsAPI } from "../../services/contacts/api";
-import { DangerConfirmModal } from "../Common/DangerConfirmModal";
+import { Contact } from "@/types/contact";
+import { useTheme } from "@/context/ThemeContext";
+import { contactsAPI } from "@/services/contacts/api";
+import { DangerConfirmModal } from "@/components/Common/DangerConfirmModal";
 
 interface DeleteContactModalProps {
   visible: boolean;

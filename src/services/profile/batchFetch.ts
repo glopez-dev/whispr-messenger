@@ -15,7 +15,7 @@
  *   avec concurrence limitee a 5 pour eviter de saturer le throttler
  *   (WHISPR-1435 - evite que 1 chunk fail = tous les profils perdus)
  */
-import { getApiBaseUrl } from "../apiBase";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 const BATCH_MAX_SIZE = 100;
 // concurrence max pour le fallback per-id quand le batch echoue

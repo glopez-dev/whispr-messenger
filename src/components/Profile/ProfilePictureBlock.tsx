@@ -7,8 +7,8 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Avatar } from "../Chat/Avatar";
-import { colors, spacing, typography } from "../../theme";
+import { Avatar } from "@/components/Chat/Avatar";
+import { colors, spacing, typography } from "@/theme";
 
 interface ProfilePictureBlockProps {
   uri?: string;

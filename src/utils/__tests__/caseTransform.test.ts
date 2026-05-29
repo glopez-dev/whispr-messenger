@@ -1,4 +1,4 @@
-import { toSnakeCase, snakecaseKeys } from "../caseTransform";
+import { toSnakeCase, snakecaseKeys } from "@/utils/caseTransform";
 
 describe("toSnakeCase", () => {
   it("converts a camelCase string to snake_case", () => {

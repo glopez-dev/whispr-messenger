@@ -27,8 +27,8 @@ import {
   SpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
-import { TourTooltip } from "../../components/Tour/TourTooltip";
-import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+import { TourTooltip } from "@/components/Tour/TourTooltip";
+import { TourAutoStart } from "@/components/Tour/TourAutoStart";
 import {
   View,
   StyleSheet,
@@ -50,36 +50,36 @@ import {
   FLOATING_TAB_BAR_HORIZONTAL_MARGIN,
   FLOATING_TAB_BAR_PILL_HEIGHT,
   FLOATING_TAB_BAR_RESERVED_SPACE,
-} from "../../components/Navigation/floatingTabBarLayout";
+} from "@/components/Navigation/floatingTabBarLayout";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Conversation, Message } from "../../types/messaging";
-import { useAuth } from "../../context/AuthContext";
-import { useWebSocket } from "../../hooks/useWebSocket";
-import { TokenService } from "../../services/TokenService";
-import { SwipeableConversationItem } from "../../components/Chat/SwipeableConversationItem";
-import { EmptyState } from "../../components/Chat/EmptyState";
-import { ConversationSkeleton } from "../../components/Chat/SkeletonLoader";
-import { NewConversationModal } from "../../components/Chat/NewConversationModal";
-import { useTheme } from "../../context/ThemeContext";
-import { AuthStackParamList } from "../../navigation/types";
-import { colors } from "../../theme/colors";
-import Toast from "../../components/Toast/Toast";
-import { useConversationsStore } from "../../store/conversationsStore";
-import { useUIStore } from "../../store/uiStore";
-import { messagingAPI } from "../../services/messaging/api";
-import { OfflineBanner } from "../../components/Chat/OfflineBanner";
-import { getConversationDisplayName } from "../../utils";
-import { BellIcon } from "../../components/Common/BellIcon";
-import { InboxPanel } from "../../components/Common/InboxPanel";
-import { SafariPWABanner } from "../../components/Common/SafariPWABanner";
-import { useInboxStore } from "../../store/inboxStore";
+import { Conversation, Message } from "@/types/messaging";
+import { useAuth } from "@/context/AuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { TokenService } from "@/services/TokenService";
+import { SwipeableConversationItem } from "@/components/Chat/SwipeableConversationItem";
+import { EmptyState } from "@/components/Chat/EmptyState";
+import { ConversationSkeleton } from "@/components/Chat/SkeletonLoader";
+import { NewConversationModal } from "@/components/Chat/NewConversationModal";
+import { useTheme } from "@/context/ThemeContext";
+import { AuthStackParamList } from "@/navigation/types";
+import { colors } from "@/theme/colors";
+import Toast from "@/components/Toast/Toast";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { useUIStore } from "@/store/uiStore";
+import { messagingAPI } from "@/services/messaging/api";
+import { OfflineBanner } from "@/components/Chat/OfflineBanner";
+import { getConversationDisplayName } from "@/utils";
+import { BellIcon } from "@/components/Common/BellIcon";
+import { InboxPanel } from "@/components/Common/InboxPanel";
+import { SafariPWABanner } from "@/components/Common/SafariPWABanner";
+import { useInboxStore } from "@/store/inboxStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SafetyNumberModal } from "../../components/Chat/SafetyNumberModal";
+import { SafetyNumberModal } from "@/components/Chat/SafetyNumberModal";
 
 const SAFETY_STORAGE_PREFIX = "@whispr:safety:";
 

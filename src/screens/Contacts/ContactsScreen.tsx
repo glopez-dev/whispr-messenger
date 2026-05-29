@@ -28,9 +28,9 @@ import {
   SpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
-import { TourTooltip } from "../../components/Tour/TourTooltip";
-import { TourAutoStart } from "../../components/Tour/TourAutoStart";
-import { formatUsername } from "../../utils";
+import { TourTooltip } from "@/components/Tour/TourTooltip";
+import { TourAutoStart } from "@/components/Tour/TourAutoStart";
+import { formatUsername } from "@/utils";
 import {
   View,
   StyleSheet,
@@ -47,39 +47,32 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { FLOATING_TAB_BAR_RESERVED_SPACE } from "../../components/Navigation/floatingTabBarLayout";
+import { FLOATING_TAB_BAR_RESERVED_SPACE } from "@/components/Navigation/floatingTabBarLayout";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/types";
+import type { AuthStackParamList } from "@/navigation/types";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  Contact,
-  ContactSearchParams,
-  ContactRequest,
-} from "../../types/contact";
-import { contactsAPI } from "../../services/contacts/api";
-import { messagingAPI } from "../../services/messaging/api";
-import { TokenService } from "../../services/TokenService";
-import { ContactItem } from "../../components/Contacts/ContactItem";
-import { AddContactModal } from "../../components/Contacts/AddContactModal";
-import { EditContactModal } from "../../components/Contacts/EditContactModal";
-import { SyncContactsModal } from "../../components/Contacts/SyncContactsModal";
-import { DeleteContactModal } from "../../components/Contacts/DeleteContactModal";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, withOpacity } from "../../theme/colors";
-import { useAuth } from "../../context/AuthContext";
-import { useWebSocket } from "../../hooks/useWebSocket";
-import {
-  getFavoriteIds,
-  toggleFavorite,
-} from "../../services/contacts/favorites";
-import { filterAndSortContacts } from "../../utils/contactsFilter";
-import { ContactItemSkeleton } from "../../components/Chat/SkeletonLoader";
-import { BellIcon } from "../../components/Common/BellIcon";
-import { InboxPanel } from "../../components/Common/InboxPanel";
-import { useInboxStore } from "../../store/inboxStore";
+import { Contact, ContactSearchParams, ContactRequest } from "@/types/contact";
+import { contactsAPI } from "@/services/contacts/api";
+import { messagingAPI } from "@/services/messaging/api";
+import { TokenService } from "@/services/TokenService";
+import { ContactItem } from "@/components/Contacts/ContactItem";
+import { AddContactModal } from "@/components/Contacts/AddContactModal";
+import { EditContactModal } from "@/components/Contacts/EditContactModal";
+import { SyncContactsModal } from "@/components/Contacts/SyncContactsModal";
+import { DeleteContactModal } from "@/components/Contacts/DeleteContactModal";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
+import { useAuth } from "@/context/AuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { getFavoriteIds, toggleFavorite } from "@/services/contacts/favorites";
+import { filterAndSortContacts } from "@/utils/contactsFilter";
+import { ContactItemSkeleton } from "@/components/Chat/SkeletonLoader";
+import { BellIcon } from "@/components/Common/BellIcon";
+import { InboxPanel } from "@/components/Common/InboxPanel";
+import { useInboxStore } from "@/store/inboxStore";
 
 declare module "@expo/vector-icons";
 

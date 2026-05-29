@@ -8,20 +8,20 @@ import type {
   AppealEvidence,
   ReportStats,
   UserRole,
-} from "../types/moderation";
+} from "@/types/moderation";
 import {
   reportsAPI,
   sanctionsAPI,
   appealsAPI,
   rolesAPI,
-} from "../services/moderation/moderationApi";
-import { logger } from "../utils/logger";
+} from "@/services/moderation/moderationApi";
+import { logger } from "@/utils/logger";
 import {
   buildAppealThumbnailBase64,
   buildAppealWebDataUri,
   copyAppealImageToCache,
   deleteAppealCacheFile,
-} from "./moderationStore/helpers";
+} from "@/store/moderationStore/helpers";
 
 export interface PendingBlockedImageAppeal {
   appealId: string;

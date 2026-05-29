@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { formatUsername } from "../../utils";
+import { formatUsername } from "@/utils";
 import {
   View,
   Text,
@@ -19,13 +19,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { Contact } from "../../types/contact";
-import { contactsAPI } from "../../services/contacts/api";
-import { Avatar } from "../Chat/Avatar";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
+import { Contact } from "@/types/contact";
+import { contactsAPI } from "@/services/contacts/api";
+import { Avatar } from "@/components/Chat/Avatar";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
 import { useNavigation } from "@react-navigation/native";
-import { DangerConfirmModal } from "../Common/DangerConfirmModal";
+import { DangerConfirmModal } from "@/components/Common/DangerConfirmModal";
 
 interface EditContactModalProps {
   visible: boolean;

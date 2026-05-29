@@ -5,9 +5,9 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../theme/colors";
-import { SanctionBadge } from "./SanctionBadge";
-import type { Appeal, SanctionType } from "../../types/moderation";
+import { colors } from "@/theme/colors";
+import { SanctionBadge } from "@/components/Moderation/SanctionBadge";
+import type { Appeal, SanctionType } from "@/types/moderation";
 
 const formatTimeAgo = (dateStr: string): string => {
   const now = Date.now();

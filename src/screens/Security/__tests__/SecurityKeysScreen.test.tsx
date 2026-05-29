@@ -1,6 +1,9 @@
 import React from "react";
 import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
-import { SecurityKeysScreen, _qrCache } from "../SecurityKeysScreen";
+import {
+  SecurityKeysScreen,
+  _qrCache,
+} from "@/screens/Security/SecurityKeysScreen";
 
 const mockGoBack = jest.fn();
 jest.mock("@react-navigation/native", () => ({
@@ -15,7 +18,7 @@ jest.mock("expo-haptics", () => ({
   impactAsync: jest.fn(),
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ userId: "test-user-id", deviceId: "test-device-id" }),
 }));
 jest.mock("expo-crypto", () => ({
@@ -26,7 +29,7 @@ jest.mock("expo-crypto", () => ({
     ),
   CryptoDigestAlgorithm: { SHA256: "SHA-256" },
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -41,8 +44,8 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../components/Toast/Toast", () => () => null);
-jest.mock("../../../utils/clipboard", () => ({
+jest.mock("@/components/Toast/Toast", () => () => null);
+jest.mock("@/utils/clipboard", () => ({
   copyToClipboard: jest.fn(),
 }));
 jest.mock("react-native-qrcode-styled", () => () => null);
@@ -51,7 +54,7 @@ const mockListDevices = jest.fn();
 const mockRevokeDevice = jest.fn();
 const mockGenerateQRChallenge = jest.fn();
 const mockGetKeyBundle = jest.fn();
-jest.mock("../../../services/SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   DeviceManagerService: {
     listDevices: (...a: unknown[]) => mockListDevices(...a),
     revokeDevice: (...a: unknown[]) => mockRevokeDevice(...a),

@@ -3,7 +3,7 @@ import {
   QUICK_REACTION_DEFAULTS,
   filterCategoriesBySearch,
   getAllPickerEmojis,
-} from "../emojiPickerData";
+} from "@/data/emojiPickerData";
 
 describe("emojiPickerData constants", () => {
   it("ships a non-empty list of categories with the required shape", () => {

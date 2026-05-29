@@ -20,7 +20,7 @@ jest.mock("react-native", () => ({
 // AuthService est importe par useResolvedMediaUrl pour le retry 401 ;
 // on le mock ici pour eviter que expo-device ne soit resolu dans le
 // contexte jest-node (il necessite un module natif).
-jest.mock("../../services/AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: { refreshTokens: jest.fn().mockResolvedValue(undefined) },
 }));
 
@@ -28,7 +28,7 @@ import {
   probeMediaUrlThrottled,
   streamMediaToRenderableUri,
   streamMediaToRenderableUriThrottled,
-} from "../useResolvedMediaUrl";
+} from "@/hooks/useResolvedMediaUrl";
 
 // The wrapper calls the inner function which on web hits URL.createObjectURL.
 // Make Blob round-trippable through that path in jsdom.

@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import { useWebSocket } from "../hooks/useWebSocket";
-import { navigationRef } from "../navigation/navigationRef";
-import { TokenService } from "../services/TokenService";
-import { useConversationsStore } from "../store/conversationsStore";
-import { useToastStore } from "../store/toastStore";
-import type { Message } from "../types/messaging";
+import { useAuth } from "@/context/AuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { navigationRef } from "@/navigation/navigationRef";
+import { TokenService } from "@/services/TokenService";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { useToastStore } from "@/store/toastStore";
+import type { Message } from "@/types/messaging";
 
 type RouteParams = {
   conversationId?: string;

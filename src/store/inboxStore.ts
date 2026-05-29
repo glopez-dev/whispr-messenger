@@ -5,9 +5,9 @@
  */
 
 import { create } from "zustand";
-import { inboxApi } from "../services/inboxApi";
-import { cacheService } from "../services/messaging/cache";
-import type { InboxItem } from "../types/inbox";
+import { inboxApi } from "@/services/inboxApi";
+import { cacheService } from "@/services/messaging/cache";
+import type { InboxItem } from "@/types/inbox";
 
 const INBOX_PAGE_SIZE = 20;
 

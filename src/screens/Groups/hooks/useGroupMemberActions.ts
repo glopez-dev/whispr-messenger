@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import * as Haptics from "expo-haptics";
-import { groupsAPI, GroupMember } from "../../../services/groups/api";
-import { contactsAPI, Contact } from "../../../services/contacts/api";
-import { messagingAPI } from "../../../services/messaging/api";
-import { logger } from "../../../utils/logger";
+import { groupsAPI, GroupMember } from "@/services/groups/api";
+import { contactsAPI, Contact } from "@/services/contacts/api";
+import { messagingAPI } from "@/services/messaging/api";
+import { logger } from "@/utils/logger";
 
 /** Blocked when the only admin tries to demote themselves. */
 export function isSelfDemotionBlocked(

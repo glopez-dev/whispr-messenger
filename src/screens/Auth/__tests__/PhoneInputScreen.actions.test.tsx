@@ -20,7 +20,7 @@ jest.mock("expo-linear-gradient", () => ({
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {
@@ -37,7 +37,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     updateSettings: jest.fn(),
   }),
 }));
-jest.mock("../../../components", () => ({
+jest.mock("@/components", () => ({
   Button: ({ title, onPress, disabled }: any) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { TouchableOpacity, Text } = require("react-native");
@@ -52,13 +52,13 @@ jest.mock("../../../components", () => ({
   },
 }));
 
-jest.mock("../../../services/AuthService", () => ({
+jest.mock("@/services/AuthService", () => ({
   AuthService: { requestVerification: jest.fn() },
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { AuthService } = require("../../../services/AuthService");
+const { AuthService } = require("@/services/AuthService");
 
-jest.mock("../../../theme", () => ({
+jest.mock("@/theme", () => ({
   colors: {
     text: { light: "#fff", placeholder: "#888" },
     primary: { main: "#6200ee" },
@@ -68,13 +68,13 @@ jest.mock("../../../theme", () => ({
   spacing: { xl: 24, xs: 4, md: 16, lg: 20, sm: 8, base: 12, xxxl: 40 },
   typography: { fontSize: { xxxl: 32, md: 16, base: 14, sm: 12, lg: 18 } },
 }));
-jest.mock("../../../utils/phoneUtils", () => ({
+jest.mock("@/utils/phoneUtils", () => ({
   normalizePhoneToE164: (digits: string, code: string) => `${code}${digits}`,
 }));
 jest.mock("../assets/images/logo-icon.png", () => 1, { virtual: true });
 jest.mock("./assets/images/logo-icon.png", () => 1, { virtual: true });
 
-import { PhoneInputScreen } from "../PhoneInputScreen";
+import { PhoneInputScreen } from "@/screens/Auth/PhoneInputScreen";
 
 beforeEach(() => {
   jest.clearAllMocks();

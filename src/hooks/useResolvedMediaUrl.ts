@@ -18,8 +18,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
-import { TokenService } from "../services/TokenService";
-import { AuthService } from "../services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { AuthService } from "@/services/AuthService";
 import * as FileSystem from "expo-file-system/legacy";
 
 type NativeCacheEntry = { resolvedUri: string; storedAt: number };

@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "../../../context/ThemeContext";
-import { formatUsername } from "../../../utils";
-import { Avatar } from "../Avatar";
+import { useTheme } from "@/context/ThemeContext";
+import { formatUsername } from "@/utils";
+import { Avatar } from "@/components/Chat/Avatar";
 
 export const MIN_INPUT_HEIGHT = 40;
 export const MAX_INPUT_HEIGHT = 350;

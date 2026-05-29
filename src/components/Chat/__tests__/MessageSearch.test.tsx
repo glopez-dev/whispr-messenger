@@ -16,7 +16,7 @@ jest.mock("@expo/vector-icons", () => {
   return new Proxy({ __esModule: true, default: Noop }, { get: () => Noop });
 });
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: {
@@ -35,7 +35,7 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-import { MessageSearch } from "../MessageSearch";
+import { MessageSearch } from "@/components/Chat/MessageSearch";
 
 function collectTouchables(root: {
   props?: { onPress?: () => void };

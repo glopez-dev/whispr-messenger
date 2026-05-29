@@ -2,9 +2,9 @@
  * Content report API — POST /api/v1/moderation/report (interfaces.md)
  */
 
-import { AuthService } from "../AuthService";
-import { TokenService } from "../TokenService";
-import { getApiBaseUrl } from "../apiBase";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 const REPORT_PATH = "/messaging/api/v1/reports";
 

@@ -1,28 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock("../../TokenService", () =>
-  require("../../../__test-utils__/mockFactories").makeTokenServiceMock(),
+jest.mock("@/services/TokenService", () =>
+  require("@/__test-utils__/mockFactories").makeTokenServiceMock(),
 );
-jest.mock("../../apiBase", () =>
-  require("../../../__test-utils__/mockFactories").makeApiBaseMock(
-    "https://api.test",
-  ),
+jest.mock("@/services/apiBase", () =>
+  require("@/__test-utils__/mockFactories").makeApiBaseMock("https://api.test"),
 );
 
 const mockUpdateGroupMemberRole = jest.fn();
-jest.mock("../../messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     updateGroupMemberRole: (...args: any[]) =>
       mockUpdateGroupMemberRole(...args),
   },
 }));
 
-import { groupsAPI } from "../api";
-import { TokenService } from "../../TokenService";
-import {
-  installFetchMock,
-  mockResponse,
-} from "../../../__test-utils__/mockFactories";
+import { groupsAPI } from "@/services/groups/api";
+import { TokenService } from "@/services/TokenService";
+import { installFetchMock, mockResponse } from "@/__test-utils__/mockFactories";
 
 const mockedToken = TokenService as any;
 const USER_BASE = "https://api.test/user/v1";

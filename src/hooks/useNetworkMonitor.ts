@@ -11,8 +11,8 @@
 
 import { useEffect, useRef } from "react";
 import NetInfo from "@react-native-community/netinfo";
-import { getSharedSocket } from "../services/messaging/websocket";
-import { logger } from "../utils/logger";
+import { getSharedSocket } from "@/services/messaging/websocket";
+import { logger } from "@/utils/logger";
 
 export function useNetworkMonitor(): void {
   // Track the previous reachability state so we only nudge on the

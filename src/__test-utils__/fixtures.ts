@@ -1,4 +1,4 @@
-import type { TokenPair } from "../types/auth";
+import type { TokenPair } from "@/types/auth";
 
 const base64urlEncode = (s: string): string =>
   Buffer.from(s, "utf8")

@@ -1,8 +1,8 @@
 import { AppState, type AppStateStatus } from "react-native";
-import { SignalKeyService } from "./SignalKeyService";
-import { SignalKeysService } from "./SecurityService";
-import { TokenService } from "./TokenService";
-import { logger } from "../utils/logger";
+import { SignalKeyService } from "@/services/SignalKeyService";
+import { SignalKeysService } from "@/services/SecurityService";
+import { TokenService } from "@/services/TokenService";
+import { logger } from "@/utils/logger";
 
 // WHISPR-1399 - les pre-keys one-time s epuisent au fil des nouvelles
 // sessions E2EE. Sans renouvellement, forward secrecy degradee silencieusement.

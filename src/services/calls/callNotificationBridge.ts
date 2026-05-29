@@ -1,10 +1,10 @@
 import { AppState, Platform } from "react-native";
-import { navigate } from "../../navigation/navigationRef";
-import { useCallsStore, type IncomingCallInfo } from "../../store/callsStore";
+import { navigate } from "@/navigation/navigationRef";
+import { useCallsStore, type IncomingCallInfo } from "@/store/callsStore";
 import {
   buildIncomingCallPresentation,
   systemCallProvider,
-} from "./systemCallProvider";
+} from "@/services/calls/systemCallProvider";
 
 type NotificationsModule = {
   addNotificationReceivedListener: (

@@ -1,6 +1,6 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
-import { MyProfileScreen } from "../MyProfileScreen";
+import { MyProfileScreen } from "@/screens/Profile/MyProfileScreen";
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -36,13 +36,13 @@ jest.mock("expo-image-picker", () => ({
   MediaTypeOptions: { Images: "Images" },
 }));
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
-jest.mock("../../../components/Chat/Avatar", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({
   Avatar: () => null,
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ userId: "user-123" }),
 }));
-jest.mock("../../../components", () => ({
+jest.mock("@/components", () => ({
   Logo: () => null,
   Button: ({ title, onPress, disabled }: any) => {
     const { TouchableOpacity, Text } = require("react-native");
@@ -53,7 +53,7 @@ jest.mock("../../../components", () => ({
     );
   },
 }));
-jest.mock("../../../services", () => {
+jest.mock("@/services", () => {
   const singleton = {
     getProfile: jest.fn().mockResolvedValue({
       success: true,
@@ -71,7 +71,7 @@ jest.mock("../../../services", () => {
   };
   return { UserService: { getInstance: () => singleton } };
 });
-jest.mock("../../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: {
     uploadMedia: jest
       .fn()
@@ -79,7 +79,7 @@ jest.mock("../../../services/MediaService", () => ({
     getMediaMetadata: jest.fn().mockResolvedValue({ id: "media-1" }),
   },
 }));
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: {
       gradient: { app: ["#000", "#111"] },
@@ -99,7 +99,7 @@ jest.mock("../../../theme/colors", () => ({
   },
   withOpacity: (c: string) => c,
 }));
-jest.mock("../../../theme", () => ({
+jest.mock("@/theme", () => ({
   colors: {
     text: {
       light: "#fff",
@@ -155,7 +155,7 @@ describe("MyProfileScreen — save flow", () => {
   beforeEach(() => jest.clearAllMocks());
 
   it("aborts the save when a required field becomes empty", async () => {
-    const services = require("../../../services") as {
+    const services = require("@/services") as {
       UserService: { getInstance: () => { updateProfile: jest.Mock } };
     };
     const mockInstance = services.UserService.getInstance();
@@ -176,7 +176,7 @@ describe("MyProfileScreen — save flow", () => {
   });
 
   it("calls UserService.updateProfile on a successful save", async () => {
-    const services = require("../../../services") as {
+    const services = require("@/services") as {
       UserService: {
         getInstance: () => {
           updateProfile: jest.Mock;
@@ -212,7 +212,7 @@ describe("MyProfileScreen — save flow", () => {
   });
 
   it("allows typing a cyrillic username in edit mode and normalizes it on save", async () => {
-    const services = require("../../../services") as {
+    const services = require("@/services") as {
       UserService: {
         getInstance: () => {
           updateProfile: jest.Mock;
@@ -247,7 +247,7 @@ describe("MyProfileScreen — save flow", () => {
     // mais phoneNumber absent. normalizeProfile convertit phoneNumber absent
     // en "" ce qui ecrasait l'etat precedent et faisait disparaitre le numero
     // dans l'UI.
-    const services = require("../../../services") as {
+    const services = require("@/services") as {
       UserService: {
         getInstance: () => {
           updateProfile: jest.Mock;

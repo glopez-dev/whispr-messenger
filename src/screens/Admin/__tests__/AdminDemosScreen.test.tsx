@@ -1,6 +1,6 @@
 import React from "react";
 import { render, waitFor } from "@testing-library/react-native";
-import { AdminDemosScreen } from "../AdminDemosScreen";
+import { AdminDemosScreen } from "@/screens/Admin/AdminDemosScreen";
 
 const mockGoBack = jest.fn();
 
@@ -21,21 +21,21 @@ jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] } },
     primary: { main: "#6200ee" },
   },
 }));
 
-jest.mock("../../../store/moderationStore", () => ({
+jest.mock("@/store/moderationStore", () => ({
   useIsStaff: jest.fn(() => true),
 }));
 
-jest.mock("../../../components/Moderation", () => ({
+jest.mock("@/components/Moderation", () => ({
   AdminGate: ({ children }: any) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { useIsStaff } = require("../../../store/moderationStore");
+    const { useIsStaff } = require("@/store/moderationStore");
     const isStaff = useIsStaff();
     if (!isStaff) {
       const { Text } = require("react-native");
@@ -92,7 +92,7 @@ describe("AdminDemosScreen", () => {
 
   it("affiche 'Acces refuse' si l'utilisateur n'est pas staff", async () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { useIsStaff } = require("../../../store/moderationStore");
+    const { useIsStaff } = require("@/store/moderationStore");
     (useIsStaff as jest.Mock).mockReturnValue(false);
 
     const { getByText, queryByText } = render(<AdminDemosScreen />);

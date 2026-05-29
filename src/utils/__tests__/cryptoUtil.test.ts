@@ -11,7 +11,7 @@ jest.mock("expo-crypto", () => ({
   },
 }));
 
-import { generateClientRandom } from "../crypto";
+import { generateClientRandom } from "@/utils/crypto";
 
 describe("generateClientRandom", () => {
   it("retourne un entier dans le range Uint32", () => {

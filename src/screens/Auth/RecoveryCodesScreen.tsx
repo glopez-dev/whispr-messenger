@@ -14,12 +14,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { Button } from "../../components";
-import { useTheme } from "../../context/ThemeContext";
-import { AuthService } from "../../services/AuthService";
-import { profileSetupFlag } from "../../services/profileSetupFlag";
-import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/types";
+import { Button } from "@/components";
+import { useTheme } from "@/context/ThemeContext";
+import { AuthService } from "@/services/AuthService";
+import { profileSetupFlag } from "@/services/profileSetupFlag";
+import { colors, spacing, typography } from "@/theme";
+import type { AuthStackParamList } from "@/navigation/types";
 
 type NavigationProp = StackNavigationProp<AuthStackParamList, "RecoveryCodes">;
 type RecoveryCodesRouteProp = RouteProp<AuthStackParamList, "RecoveryCodes">;

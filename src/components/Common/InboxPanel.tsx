@@ -22,18 +22,18 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import type { AuthStackParamList } from "../../navigation/types";
-import { useInboxStore } from "../../store/inboxStore";
-import { colors, withOpacity } from "../../theme/colors";
-import { Avatar } from "../Chat/Avatar";
-import { InboxItemSkeleton } from "../Chat/SkeletonLoader";
+import type { AuthStackParamList } from "@/navigation/types";
+import { useInboxStore } from "@/store/inboxStore";
+import { colors, withOpacity } from "@/theme/colors";
+import { Avatar } from "@/components/Chat/Avatar";
+import { InboxItemSkeleton } from "@/components/Chat/SkeletonLoader";
 import type {
   InboxItem,
   MentionPayload,
   ReplyPayload,
   ContactRequestPayload,
   MissedCallPayload,
-} from "../../types/inbox";
+} from "@/types/inbox";
 
 type NavProp = StackNavigationProp<AuthStackParamList>;
 

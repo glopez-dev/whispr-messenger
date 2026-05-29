@@ -22,7 +22,7 @@ const mockSendMessage = jest.fn();
 const mockEditMessage = jest.fn();
 const mockGetConversationMembers = jest.fn(async () => [{ id: "other" }]);
 const mockAddAttachment = jest.fn(async () => ({}));
-jest.mock("../../../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     sendMessage: (...a: unknown[]) => mockSendMessage(...a),
     editMessage: (...a: unknown[]) => mockEditMessage(...a),
@@ -36,7 +36,7 @@ jest.mock("../../../../services/messaging/api", () => ({
 const mockEncryptForConversation = jest.fn();
 const mockEncryptDirectText = jest.fn();
 const mockEncryptMediaFile = jest.fn();
-jest.mock("../../../../services/E2EEService", () => ({
+jest.mock("@/services/E2EEService", () => ({
   E2EEService: {
     encryptMessageForConversation: (...a: unknown[]) =>
       mockEncryptForConversation(...a),
@@ -47,7 +47,7 @@ jest.mock("../../../../services/E2EEService", () => ({
 
 // ---- offlineQueue ----
 const mockEnqueue = jest.fn(async () => {});
-jest.mock("../../../../services/offlineQueue", () => ({
+jest.mock("@/services/offlineQueue", () => ({
   offlineQueue: { enqueue: (...a: unknown[]) => mockEnqueue(...a) },
 }));
 
@@ -55,7 +55,7 @@ jest.mock("../../../../services/offlineQueue", () => ({
 const mockApplyNewMessage = jest.fn(() => Promise.resolve());
 const mockApplyMessageUpdated = jest.fn();
 const mockResetUnreadCount = jest.fn();
-jest.mock("../../../../store/conversationsStore", () => ({
+jest.mock("@/store/conversationsStore", () => ({
   useConversationsStore: {
     getState: () => ({
       applyNewMessage: mockApplyNewMessage,
@@ -66,12 +66,12 @@ jest.mock("../../../../store/conversationsStore", () => ({
 }));
 
 // ---- crypto (deterministic client_random) ----
-jest.mock("../../../../utils/crypto", () => ({
+jest.mock("@/utils/crypto", () => ({
   generateClientRandom: () => 12345,
 }));
 
 // ---- logger ----
-jest.mock("../../../../utils/logger", () => ({
+jest.mock("@/utils/logger", () => ({
   logger: { error: jest.fn(), warn: jest.fn(), info: jest.fn() },
 }));
 
@@ -79,7 +79,7 @@ jest.mock("../../../../utils/logger", () => ({
 const mockUploadMedia = jest.fn();
 const mockShareMediaWithRetry = jest.fn(async () => {});
 const mockGetMediaMetadata = jest.fn(async () => ({}));
-jest.mock("../../../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: {
     uploadMedia: (...a: unknown[]) => mockUploadMedia(...a),
     shareMediaWithRetry: (...a: unknown[]) => mockShareMediaWithRetry(...a),
@@ -89,42 +89,39 @@ jest.mock("../../../../services/MediaService", () => ({
 
 const mockGateImage = jest.fn(async () => ({ ok: true }));
 const mockGateVideo = jest.fn(async () => ({ ok: true }));
-jest.mock("../../../../services/moderation", () => ({
+jest.mock("@/services/moderation", () => ({
   gateChatImageBeforeSend: (...a: unknown[]) => mockGateImage(...a),
   gateChatVideoBeforeSend: (...a: unknown[]) => mockGateVideo(...a),
 }));
 
-jest.mock("../../../../utils/imageCompression", () => ({
+jest.mock("@/utils/imageCompression", () => ({
   convertHeicToJpeg: jest.fn(async () => null),
 }));
-jest.mock("../../../../utils/videoPoster", () => ({
+jest.mock("@/utils/videoPoster", () => ({
   extractVideoPoster: jest.fn(async () => null),
 }));
-jest.mock("../../../../utils/mapMediaUploadError", () => ({
+jest.mock("@/utils/mapMediaUploadError", () => ({
   mapMediaUploadError: () => ({ userMessage: "Échec de l'envoi" }),
 }));
 const mockResolveMembers = jest.fn(async () => ({ memberIds: ["other"] }));
-jest.mock("../../../../utils/resolveMembers", () => ({
+jest.mock("@/utils/resolveMembers", () => ({
   resolveConversationMemberIds: (...a: unknown[]) => mockResolveMembers(...a),
 }));
-jest.mock("../../../../utils/mime", () => ({
+jest.mock("@/utils/mime", () => ({
   canonicalizeMimeType: (m: string) => m,
   resolveMimeType: () => "image/jpeg",
 }));
-jest.mock("../../../../utils/audioUpload", () => ({
+jest.mock("@/utils/audioUpload", () => ({
   forceAudioUploadIdentity: (f: string, m: string) => ({
     filename: f,
     mimeType: m,
   }),
   remapAudioUploadUri: async (u: string) => u,
 }));
-jest.mock("../../../../utils/alert", () => ({ showAlert: jest.fn() }));
+jest.mock("@/utils/alert", () => ({ showAlert: jest.fn() }));
 
-import { useChatComposer } from "../useChatComposer";
-import type {
-  Conversation,
-  MessageWithRelations,
-} from "../../../../types/messaging";
+import { useChatComposer } from "@/screens/Chat/hooks/useChatComposer";
+import type { Conversation, MessageWithRelations } from "@/types/messaging";
 
 type Overrides = Partial<Parameters<typeof useChatComposer>[0]>;
 

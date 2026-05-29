@@ -1,5 +1,8 @@
-import type { MessageWithRelations } from "../../../types/messaging";
-import { ChatListItem, isDateSeparator } from "./dateSeparators";
+import type { MessageWithRelations } from "@/types/messaging";
+import {
+  ChatListItem,
+  isDateSeparator,
+} from "@/screens/Chat/helpers/dateSeparators";
 
 export interface BubbleRowMeta {
   isConsecutive: boolean;

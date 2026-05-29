@@ -36,11 +36,11 @@ jest.mock("expo-image-picker", () => ({
 const imagePicker = require("expo-image-picker") as Record<string, jest.Mock>;
 
 jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
-jest.mock("../../../components/Chat/Avatar", () => ({ Avatar: () => null }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ userId: "user-123" }),
 }));
-jest.mock("../../../components", () => ({
+jest.mock("@/components", () => ({
   Logo: () => null,
   Button: ({ title, onPress, disabled }: any) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -53,7 +53,7 @@ jest.mock("../../../components", () => ({
   },
 }));
 
-jest.mock("../../../services", () => {
+jest.mock("@/services", () => {
   const singleton = {
     getProfile: jest.fn(),
     getUserProfile: jest.fn(),
@@ -62,23 +62,24 @@ jest.mock("../../../services", () => {
   return { UserService: { getInstance: () => singleton } };
 });
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const userInstance =
-  require("../../../services").UserService.getInstance() as Record<
-    string,
-    jest.Mock
-  >;
+const userInstance = require("@/services").UserService.getInstance() as Record<
+  string,
+  jest.Mock
+>;
 
-jest.mock("../../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: {
     uploadMedia: jest.fn(),
     getMediaMetadata: jest.fn(),
   },
 }));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const mediaService = require("../../../services/MediaService")
-  .MediaService as Record<string, jest.Mock>;
+const mediaService = require("@/services/MediaService").MediaService as Record<
+  string,
+  jest.Mock
+>;
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: {
       gradient: { app: ["#000", "#111"] },
@@ -99,7 +100,7 @@ jest.mock("../../../theme/colors", () => ({
   withOpacity: (c: string) => c,
 }));
 
-import { MyProfileScreen } from "../MyProfileScreen";
+import { MyProfileScreen } from "@/screens/Profile/MyProfileScreen";
 
 const profileBase = {
   id: "user-123",

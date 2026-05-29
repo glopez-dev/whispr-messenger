@@ -45,10 +45,10 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from "react-native-reanimated";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, withOpacity } from "../../theme/colors";
-import { typography } from "../../theme/typography";
-import { spacing, borderRadius, shadows } from "../../theme/spacing";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
+import { typography } from "@/theme/typography";
+import { spacing, borderRadius, shadows } from "@/theme/spacing";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 

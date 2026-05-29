@@ -19,7 +19,7 @@ jest.mock("expo-linear-gradient", () => ({
 jest.mock("react-native-safe-area-context", () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
 }));
-jest.mock("../../Chat/Avatar", () => ({ Avatar: () => null }));
+jest.mock("@/components/Chat/Avatar", () => ({ Avatar: () => null }));
 
 const mockGetPermissions = jest.fn();
 const mockRequestPermissions = jest.fn();
@@ -31,7 +31,7 @@ jest.mock("expo-contacts", () => ({
   Fields: { PhoneNumbers: "phoneNumbers", Name: "name" },
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { secondary: "#222" },
@@ -42,14 +42,14 @@ jest.mock("../../../context/ThemeContext", () => ({
 
 const mockImportPhoneContacts = jest.fn();
 const mockAddContact = jest.fn();
-jest.mock("../../../services/contacts/api", () => ({
+jest.mock("@/services/contacts/api", () => ({
   contactsAPI: {
     importPhoneContacts: (...a: unknown[]) => mockImportPhoneContacts(...a),
     addContact: (...a: unknown[]) => mockAddContact(...a),
   },
 }));
 
-import { SyncContactsModal } from "../SyncContactsModal";
+import { SyncContactsModal } from "@/components/Contacts/SyncContactsModal";
 
 const baseProps = {
   visible: true,

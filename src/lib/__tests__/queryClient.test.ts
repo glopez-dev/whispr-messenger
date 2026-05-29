@@ -2,7 +2,7 @@ import {
   __resetAppQueryClientForTests,
   createAppQueryClient,
   getAppQueryClient,
-} from "../queryClient";
+} from "@/lib/queryClient";
 
 describe("createAppQueryClient", () => {
   it("returns a fresh QueryClient with chat-tuned defaults", () => {

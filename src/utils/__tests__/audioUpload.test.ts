@@ -1,4 +1,4 @@
-import { forceAudioUploadIdentity } from "../audioUpload";
+import { forceAudioUploadIdentity } from "@/utils/audioUpload";
 
 describe("forceAudioUploadIdentity", () => {
   it("rewrites filename + MIME to audio/mp4 for any audio/* input", () => {

@@ -1,5 +1,5 @@
-import type { JwtPayload, TokenPair } from "../types/auth";
-import { storage } from "./storage";
+import type { JwtPayload, TokenPair } from "@/types/auth";
+import { storage } from "@/services/storage";
 
 const KEYS = {
   ACCESS_TOKEN: "whispr.auth.accessToken",

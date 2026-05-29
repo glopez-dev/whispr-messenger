@@ -25,7 +25,7 @@ let mockIncoming: any = {
   type: "audio",
 };
 
-jest.mock("../../../store/callsStore", () => ({
+jest.mock("@/store/callsStore", () => ({
   useCallsStore: (selector: any) =>
     selector({
       incoming: mockIncoming,
@@ -35,14 +35,14 @@ jest.mock("../../../store/callsStore", () => ({
     }),
 }));
 
-jest.mock("../../../services/calls/systemCallProvider", () => ({
+jest.mock("@/services/calls/systemCallProvider", () => ({
   systemCallProvider: {
     markCallConnected: jest.fn().mockResolvedValue(undefined),
     endCall: jest.fn().mockResolvedValue(undefined),
   },
 }));
 
-import { IncomingCallScreen } from "../IncomingCallScreen";
+import { IncomingCallScreen } from "@/screens/Calls/IncomingCallScreen";
 
 describe("IncomingCallScreen", () => {
   beforeEach(() => {

@@ -1,8 +1,8 @@
 import React from "react";
 import { render, waitFor, fireEvent } from "@testing-library/react-native";
-import { DevicePairingScannerScreen } from "../DevicePairingScannerScreen";
-import { DeviceManagerService } from "../../../services/SecurityService";
-import { TokenService } from "../../../services/TokenService";
+import { DevicePairingScannerScreen } from "@/screens/Auth/DevicePairingScannerScreen";
+import { DeviceManagerService } from "@/services/SecurityService";
+import { TokenService } from "@/services/TokenService";
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
@@ -40,7 +40,7 @@ jest.mock("expo-camera", () => ({
   },
   useCameraPermissions: () => [{ granted: true }, jest.fn()],
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       text: { primary: "#fff", secondary: "#aaa" },
@@ -48,23 +48,23 @@ jest.mock("../../../context/ThemeContext", () => ({
     }),
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ signIn: mockSignIn }),
 }));
-jest.mock("../../../services/SecurityService", () => ({
+jest.mock("@/services/SecurityService", () => ({
   DeviceManagerService: { scanQRChallenge: jest.fn() },
   SignalKeysService: {
     uploadSignedPrekey: jest.fn().mockResolvedValue(undefined),
     uploadPrekeys: jest.fn().mockResolvedValue(undefined),
   },
 }));
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     saveTokens: jest.fn().mockResolvedValue(undefined),
     decodeAccessToken: jest.fn(),
   },
 }));
-jest.mock("../../../services/SignalKeyService", () => ({
+jest.mock("@/services/SignalKeyService", () => ({
   SignalKeyService: {
     generateKeyBundle: jest.fn().mockResolvedValue({
       signedPreKey: { keyId: 1, publicKey: "pk", signature: "sig" },
@@ -72,7 +72,7 @@ jest.mock("../../../services/SignalKeyService", () => ({
     }),
   },
 }));
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] } },
     text: { light: "#fff" },

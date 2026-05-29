@@ -24,7 +24,7 @@ jest.mock("expo-haptics", () => ({
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
   NotificationFeedbackType: { Success: "success", Error: "error" },
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     settings: { backgroundPreset: "whispr" },
     getThemeColors: () => ({
@@ -40,7 +40,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../context/AuthContext", () => ({
+jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
     isAuthenticated: true,
     isLoading: false,
@@ -50,7 +50,7 @@ jest.mock("../../../context/AuthContext", () => ({
     signOut: jest.fn(),
   }),
 }));
-jest.mock("../../../hooks/useWebSocket", () => ({
+jest.mock("@/hooks/useWebSocket", () => ({
   useWebSocket: () => ({
     joinConversationChannel: jest
       .fn()
@@ -60,10 +60,10 @@ jest.mock("../../../hooks/useWebSocket", () => ({
     sendTyping: jest.fn(),
   }),
 }));
-jest.mock("../../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: { getAccessToken: jest.fn().mockResolvedValue("tok") },
 }));
-jest.mock("../../../services/messaging/api", () => ({
+jest.mock("@/services/messaging/api", () => ({
   messagingAPI: {
     searchMessagesGlobal: jest.fn().mockResolvedValue([
       {
@@ -78,7 +78,7 @@ jest.mock("../../../services/messaging/api", () => ({
   },
 }));
 
-jest.mock("../../../store/conversationsStore", () => {
+jest.mock("@/store/conversationsStore", () => {
   const state = {
     conversations: [
       {
@@ -132,7 +132,7 @@ jest.mock("../../../store/conversationsStore", () => {
     useConversationsStore: (selector: any) => selector(state),
   };
 });
-jest.mock("../../../components/Chat/SwipeableConversationItem", () => ({
+jest.mock("@/components/Chat/SwipeableConversationItem", () => ({
   SwipeableConversationItem: ({ conversation, onPress }: any) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { TouchableOpacity, Text } = require("react-native");
@@ -143,7 +143,7 @@ jest.mock("../../../components/Chat/SwipeableConversationItem", () => ({
     );
   },
 }));
-jest.mock("../../../components/Chat/EmptyState", () => ({
+jest.mock("@/components/Chat/EmptyState", () => ({
   EmptyState: ({ onNewConversation }: any) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { TouchableOpacity, Text } = require("react-native");
@@ -154,17 +154,17 @@ jest.mock("../../../components/Chat/EmptyState", () => ({
     );
   },
 }));
-jest.mock("../../../components/Chat/SkeletonLoader", () => ({
+jest.mock("@/components/Chat/SkeletonLoader", () => ({
   ConversationSkeleton: () => null,
 }));
-jest.mock("../../../components/Navigation/BottomTabBar", () => ({
+jest.mock("@/components/Navigation/BottomTabBar", () => ({
   BottomTabBar: () => null,
 }));
-jest.mock("../../../components/Chat/NewConversationModal", () => ({
+jest.mock("@/components/Chat/NewConversationModal", () => ({
   NewConversationModal: () => null,
 }));
-jest.mock("../../../components/Toast/Toast", () => () => null);
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/components/Toast/Toast", () => () => null);
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] } },
     primary: { main: "#6200ee" },
@@ -174,7 +174,7 @@ jest.mock("../../../theme/colors", () => ({
   },
   withOpacity: (c: string) => c,
 }));
-jest.mock("../../../store/inboxStore", () => ({
+jest.mock("@/store/inboxStore", () => ({
   useInboxStore: (selector: any) =>
     selector({
       items: [],
@@ -189,17 +189,17 @@ jest.mock("../../../store/inboxStore", () => ({
       addNew: jest.fn(),
     }),
 }));
-jest.mock("../../../components/Common/BellIcon", () => ({
+jest.mock("@/components/Common/BellIcon", () => ({
   BellIcon: () => null,
 }));
-jest.mock("../../../components/Common/InboxPanel", () => ({
+jest.mock("@/components/Common/InboxPanel", () => ({
   InboxPanel: () => null,
 }));
-jest.mock("../../../components/Common/SafariPWABanner", () => ({
+jest.mock("@/components/Common/SafariPWABanner", () => ({
   SafariPWABanner: () => null,
 }));
 
-import { ConversationsListScreen } from "../ConversationsListScreen";
+import { ConversationsListScreen } from "@/screens/Chat/ConversationsListScreen";
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -229,7 +229,7 @@ describe("ConversationsListScreen — actions", () => {
     fireEvent.changeText(input, "hello");
     await waitFor(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { messagingAPI } = require("../../../services/messaging/api");
+      const { messagingAPI } = require("@/services/messaging/api");
       expect(messagingAPI.searchMessagesGlobal).toHaveBeenCalled();
     });
   });

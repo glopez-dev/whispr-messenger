@@ -14,28 +14,23 @@
  * - authenticatedFetch refresh fail → propage le 401
  */
 
-jest.mock("../../TokenService", () =>
-  require("../../../__test-utils__/mockFactories").makeTokenServiceMock(),
+jest.mock("@/services/TokenService", () =>
+  require("@/__test-utils__/mockFactories").makeTokenServiceMock(),
 );
-jest.mock("../../AuthService", () =>
-  require("../../../__test-utils__/mockFactories").makeAuthServiceMock(),
+jest.mock("@/services/AuthService", () =>
+  require("@/__test-utils__/mockFactories").makeAuthServiceMock(),
 );
-jest.mock("../../apiBase", () =>
-  require("../../../__test-utils__/mockFactories").makeApiBaseMock(
-    "https://api.test",
-  ),
+jest.mock("@/services/apiBase", () =>
+  require("@/__test-utils__/mockFactories").makeApiBaseMock("https://api.test"),
 );
-jest.mock("../../../utils/logger", () =>
-  require("../../../__test-utils__/mockFactories").makeLoggerMock(),
+jest.mock("@/utils/logger", () =>
+  require("@/__test-utils__/mockFactories").makeLoggerMock(),
 );
 
-import { messagingAPI } from "../api";
-import { TokenService } from "../../TokenService";
-import { AuthService } from "../../AuthService";
-import {
-  installFetchMock,
-  mockResponse,
-} from "../../../__test-utils__/mockFactories";
+import { messagingAPI } from "@/services/messaging/api";
+import { TokenService } from "@/services/TokenService";
+import { AuthService } from "@/services/AuthService";
+import { installFetchMock, mockResponse } from "@/__test-utils__/mockFactories";
 
 const mockedToken = TokenService as any;
 const mockedAuth = AuthService as any;

@@ -5,8 +5,8 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
 
 interface EmptyChatStateProps {
   conversationName?: string;

@@ -3,11 +3,11 @@ import { StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../theme/colors";
+import { colors } from "@/theme/colors";
 import {
   getCallsAvailability,
   getCallsUnavailableMessage,
-} from "../../hooks/useCallsAvailable";
+} from "@/hooks/useCallsAvailable";
 
 export const CallsUnavailableScreen: React.FC = () => {
   const { reason } = getCallsAvailability();

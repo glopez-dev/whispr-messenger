@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { MessageWithRelations } from "../../../types/messaging";
-import { useModerationStore } from "../../../store/moderationStore";
-import { appealsAPI } from "../../../services/moderation/moderationApi";
-import { getSharedSocket } from "../../../services/messaging/websocket";
-import { logger } from "../../../utils/logger";
+import { MessageWithRelations } from "@/types/messaging";
+import { useModerationStore } from "@/store/moderationStore";
+import { appealsAPI } from "@/services/moderation/moderationApi";
+import { getSharedSocket } from "@/services/messaging/websocket";
+import { logger } from "@/utils/logger";
 
 const APPEAL_POLL_INTERVAL_MS = 10_000;
 

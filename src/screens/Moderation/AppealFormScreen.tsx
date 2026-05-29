@@ -22,10 +22,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { useModerationStore } from "../../store/moderationStore";
-import type { UserSanction, SanctionType } from "../../types/moderation";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { useModerationStore } from "@/store/moderationStore";
+import type { UserSanction, SanctionType } from "@/types/moderation";
 
 type RouteParams = {
   AppealForm: { sanction: UserSanction };

@@ -10,7 +10,7 @@ import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { useSpotlightTour } from "react-native-spotlight-tour";
 import type { RenderProps } from "react-native-spotlight-tour";
-import { colors } from "../../theme/colors";
+import { colors } from "@/theme/colors";
 
 const CORAL = colors.primary.main;
 const NAVY = "#0B1124";

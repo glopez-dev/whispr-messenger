@@ -1,6 +1,6 @@
 import React from "react";
 import { render, fireEvent, waitFor } from "@testing-library/react-native";
-import { BiometricLockScreen } from "../BiometricLockScreen";
+import { BiometricLockScreen } from "@/screens/Auth/BiometricLockScreen";
 
 const mockAuthenticate = jest.fn();
 jest.mock("expo-local-authentication", () => ({
@@ -9,7 +9,7 @@ jest.mock("expo-local-authentication", () => ({
 jest.mock("expo-linear-gradient", () => ({
   LinearGradient: ({ children }: any) => children,
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { gradient: ["#000", "#111"] },
@@ -19,8 +19,8 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../components", () => ({ Logo: () => null }));
-jest.mock("../../../theme", () => ({
+jest.mock("@/components", () => ({ Logo: () => null }));
+jest.mock("@/theme", () => ({
   colors: { text: { light: "#fff" }, primary: { main: "#6200ee" } },
   spacing: { xl: 24, md: 16, xxl: 32 },
   typography: { fontSize: { xxxl: 32, md: 16 } },

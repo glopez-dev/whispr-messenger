@@ -18,16 +18,16 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "../../context/ThemeContext";
-import { colors, withOpacity } from "../../theme/colors";
+import { useTheme } from "@/context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useResolvedMediaUrl,
   uriNeedsAuthResolution,
-} from "../../hooks/useResolvedMediaUrl";
-import { useE2EEMedia } from "../../hooks/useE2EEMedia";
-import { isHttpUrl } from "../../utils/urlFilters";
-import { logger } from "../../utils/logger";
+} from "@/hooks/useResolvedMediaUrl";
+import { useE2EEMedia } from "@/hooks/useE2EEMedia";
+import { isHttpUrl } from "@/utils/urlFilters";
+import { logger } from "@/utils/logger";
 
 let Video: any = null;
 let ResizeMode: any = null;

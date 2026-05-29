@@ -26,7 +26,7 @@ jest.mock("@react-navigation/native", () => ({
   useRoute: () => ({ params: { report: mockReport } }),
 }));
 
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { primary: "#000", secondary: "#111", tertiary: "#222" },
@@ -41,7 +41,7 @@ jest.mock("../../../context/ThemeContext", () => ({
   }),
 }));
 
-jest.mock("../../../theme/colors", () => ({
+jest.mock("@/theme/colors", () => ({
   colors: {
     background: { gradient: { app: ["#000", "#111"] }, dark: "#000" },
     text: { light: "#fff", secondary: "#aaa" },
@@ -52,7 +52,7 @@ jest.mock("../../../theme/colors", () => ({
   withOpacity: (c: string) => c,
 }));
 
-import { ReportDetailScreen } from "../ReportDetailScreen";
+import { ReportDetailScreen } from "@/screens/Moderation/ReportDetailScreen";
 
 beforeEach(() => {
   jest.clearAllMocks();

@@ -1,4 +1,4 @@
-import { localizeText, localizedTexts } from "../strings";
+import { localizeText, localizedTexts } from "@/i18n/strings";
 
 describe("localizeText", () => {
   it("returns the French translation when the language is fr", () => {

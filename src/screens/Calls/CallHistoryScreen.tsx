@@ -33,17 +33,17 @@ import {
   type TourStep,
 } from "react-native-spotlight-tour";
 import { Ionicons } from "@expo/vector-icons";
-import { TourAutoStart } from "../../components/Tour/TourAutoStart";
-import { TourTooltip } from "../../components/Tour/TourTooltip";
-import { Avatar } from "../../components/Chat/Avatar";
-import { FLOATING_TAB_BAR_RESERVED_SPACE } from "../../components/Navigation/floatingTabBarLayout";
-import { callsApi } from "../../services/calls/callsApi";
-import { messagingAPI } from "../../services/messaging/api";
-import { TokenService } from "../../services/TokenService";
-import { colors, withOpacity } from "../../theme/colors";
-import type { Call, CallStatus } from "../../types/calls";
-import type { Conversation } from "../../types/messaging";
-import { formatUsername, getConversationDisplayName } from "../../utils";
+import { TourAutoStart } from "@/components/Tour/TourAutoStart";
+import { TourTooltip } from "@/components/Tour/TourTooltip";
+import { Avatar } from "@/components/Chat/Avatar";
+import { FLOATING_TAB_BAR_RESERVED_SPACE } from "@/components/Navigation/floatingTabBarLayout";
+import { callsApi } from "@/services/calls/callsApi";
+import { messagingAPI } from "@/services/messaging/api";
+import { TokenService } from "@/services/TokenService";
+import { colors, withOpacity } from "@/theme/colors";
+import type { Call, CallStatus } from "@/types/calls";
+import type { Conversation } from "@/types/messaging";
+import { formatUsername, getConversationDisplayName } from "@/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -131,7 +131,9 @@ function getSectionLabel(date: string): string {
     // ex: "Mardi 21 mai"
     const weekday = target.toLocaleDateString("fr-FR", { weekday: "long" });
     const day = target.getDate();
-    const month = target.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "");
+    const month = target
+      .toLocaleDateString("fr-FR", { month: "short" })
+      .replace(".", "");
     return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${day} ${month}`;
   }
   // ex: "Avril 2026"

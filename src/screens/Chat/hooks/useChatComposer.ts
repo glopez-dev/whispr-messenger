@@ -1,33 +1,29 @@
 import { useCallback, useRef } from "react";
 import { Alert } from "react-native";
-import {
-  Conversation,
-  Message,
-  MessageWithRelations,
-} from "../../../types/messaging";
-import type { MediaUploadPhase } from "../../../types/mediaUpload";
-import { messagingAPI } from "../../../services/messaging/api";
-import { E2EEService } from "../../../services/E2EEService";
-import { MediaService } from "../../../services/MediaService";
+import { Conversation, Message, MessageWithRelations } from "@/types/messaging";
+import type { MediaUploadPhase } from "@/types/mediaUpload";
+import { messagingAPI } from "@/services/messaging/api";
+import { E2EEService } from "@/services/E2EEService";
+import { MediaService } from "@/services/MediaService";
 import {
   gateChatImageBeforeSend,
   gateChatVideoBeforeSend,
-} from "../../../services/moderation";
-import { offlineQueue, QueuedMessage } from "../../../services/offlineQueue";
-import { useConversationsStore } from "../../../store/conversationsStore";
-import { generateClientRandom } from "../../../utils/crypto";
-import { logger } from "../../../utils/logger";
-import { showAlert } from "../../../utils/alert";
-import { canonicalizeMimeType, resolveMimeType } from "../../../utils/mime";
+} from "@/services/moderation";
+import { offlineQueue, QueuedMessage } from "@/services/offlineQueue";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { generateClientRandom } from "@/utils/crypto";
+import { logger } from "@/utils/logger";
+import { showAlert } from "@/utils/alert";
+import { canonicalizeMimeType, resolveMimeType } from "@/utils/mime";
 import {
   forceAudioUploadIdentity,
   remapAudioUploadUri,
-} from "../../../utils/audioUpload";
-import { convertHeicToJpeg } from "../../../utils/imageCompression";
-import { extractVideoPoster } from "../../../utils/videoPoster";
-import { mapMediaUploadError } from "../../../utils/mapMediaUploadError";
-import { resolveConversationMemberIds } from "../../../utils/resolveMembers";
-import type { AppealModalState } from "./useChatModeration";
+} from "@/utils/audioUpload";
+import { convertHeicToJpeg } from "@/utils/imageCompression";
+import { extractVideoPoster } from "@/utils/videoPoster";
+import { mapMediaUploadError } from "@/utils/mapMediaUploadError";
+import { resolveConversationMemberIds } from "@/utils/resolveMembers";
+import type { AppealModalState } from "@/screens/Chat/hooks/useChatModeration";
 
 const DEFAULT_MEDIA_CAPTION: Record<
   "image" | "video" | "audio" | "file",

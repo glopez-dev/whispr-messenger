@@ -1,6 +1,6 @@
 import React from "react";
 import { render, fireEvent } from "@testing-library/react-native";
-import { AccountRecoveredScreen } from "../AccountRecoveredScreen";
+import { AccountRecoveredScreen } from "@/screens/Auth/AccountRecoveredScreen";
 
 const mockReset = jest.fn();
 
@@ -13,7 +13,7 @@ jest.mock("expo-linear-gradient", () => ({
 jest.mock("react-native-safe-area-context", () => ({
   useSafeAreaInsets: () => ({ top: 44, bottom: 34, left: 0, right: 0 }),
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: { gradient: ["#1a1a2e", "#16213e"] },
@@ -23,7 +23,7 @@ jest.mock("../../../context/ThemeContext", () => ({
     getLocalizedText: (key: string) => key,
   }),
 }));
-jest.mock("../../../components", () => ({
+jest.mock("@/components", () => ({
   Button: ({ title, onPress }: any) => {
     const { TouchableOpacity, Text } = require("react-native");
     return (
@@ -39,7 +39,7 @@ jest.mock("@expo/vector-icons", () => ({
     return <Text testID={`icon-${name}`}>{name}</Text>;
   },
 }));
-jest.mock("../../../theme", () => ({
+jest.mock("@/theme", () => ({
   colors: {
     text: { light: "#ffffff" },
     primary: { main: "#7c3aed" },

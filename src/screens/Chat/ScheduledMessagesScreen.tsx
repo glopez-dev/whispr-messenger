@@ -19,14 +19,14 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { StackScreenProps } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { colors, withOpacity } from "../../theme/colors";
-import { useTheme } from "../../context/ThemeContext";
+import { colors, withOpacity } from "@/theme/colors";
+import { useTheme } from "@/context/ThemeContext";
 import {
   SchedulingService,
   ScheduledMessage,
-} from "../../services/SchedulingService";
-import { AuthStackParamList } from "../../navigation/types";
-import { logger } from "../../utils/logger";
+} from "@/services/SchedulingService";
+import { AuthStackParamList } from "@/navigation/types";
+import { logger } from "@/utils/logger";
 
 type ScheduledMessagesRouteProp = StackScreenProps<
   AuthStackParamList,

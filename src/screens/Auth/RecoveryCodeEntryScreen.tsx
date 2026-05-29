@@ -14,13 +14,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { Button } from "../../components";
-import { useAuth } from "../../context/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
-import { AuthService } from "../../services/AuthService";
-import { TokenService } from "../../services/TokenService";
-import { colors, spacing, typography } from "../../theme";
-import type { AuthStackParamList } from "../../navigation/types";
+import { Button } from "@/components";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { colors, spacing, typography } from "@/theme";
+import type { AuthStackParamList } from "@/navigation/types";
 
 type NavigationProp = StackNavigationProp<
   AuthStackParamList,

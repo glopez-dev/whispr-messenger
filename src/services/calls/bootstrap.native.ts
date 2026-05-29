@@ -1,5 +1,5 @@
-import { getCallsAvailability } from "../../hooks/useCallsAvailable";
-import { logger } from "../../utils/logger";
+import { getCallsAvailability } from "@/hooks/useCallsAvailable";
+import { logger } from "@/utils/logger";
 
 declare const require: (path: string) => any;
 

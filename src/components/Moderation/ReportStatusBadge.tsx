@@ -5,7 +5,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import type { ReportStatus } from "../../types/moderation";
+import type { ReportStatus } from "@/types/moderation";
 
 const STATUS_CONFIG: Record<
   ReportStatus,

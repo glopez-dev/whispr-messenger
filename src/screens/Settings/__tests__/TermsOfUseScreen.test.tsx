@@ -1,6 +1,6 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
-import { TermsOfUseScreen } from "../TermsOfUseScreen";
+import { TermsOfUseScreen } from "@/screens/Settings/TermsOfUseScreen";
 
 const mockGoBack = jest.fn();
 
@@ -14,10 +14,10 @@ jest.mock("@expo/vector-icons", () => ({ Ionicons: () => null }));
 jest.mock("react-native-webview", () => ({
   WebView: () => null,
 }));
-jest.mock("../../../utils/legalDocumentUrl", () => ({
+jest.mock("@/utils/legalDocumentUrl", () => ({
   getLegalDocumentUrl: () => "https://example.test/legal/terms.html",
 }));
-jest.mock("../../../context/ThemeContext", () => ({
+jest.mock("@/context/ThemeContext", () => ({
   useTheme: () => ({
     getThemeColors: () => ({
       background: {

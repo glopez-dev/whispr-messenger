@@ -1,9 +1,9 @@
-import { getApiBaseUrl } from "../apiBase";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 const MEDIA_API_URL = `${getApiBaseUrl()}/media`;
-import { AuthService } from "../AuthService";
-import { TokenService } from "../TokenService";
-import { emitSessionExpired } from "../sessionEvents";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { emitSessionExpired } from "@/services/sessionEvents";
 
 export interface UploadMediaResponse {
   mediaId: string;

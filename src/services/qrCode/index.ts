@@ -1,1 +1,5 @@
-export { QRCodeService, qrCodeService, type QRCodeData } from "./qrCodeService";
+export {
+  QRCodeService,
+  qrCodeService,
+  type QRCodeData,
+} from "@/services/qrCode/qrCodeService";

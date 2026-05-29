@@ -20,15 +20,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { useModerationStore } from "../../store/moderationStore";
-import {
-  sanctionsAPI,
-  appealsAPI,
-} from "../../services/moderation/moderationApi";
-import { AdminGate, SanctionBadge } from "../../components/Moderation";
-import type { Appeal, UserSanction } from "../../types/moderation";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { useModerationStore } from "@/store/moderationStore";
+import { sanctionsAPI, appealsAPI } from "@/services/moderation/moderationApi";
+import { AdminGate, SanctionBadge } from "@/components/Moderation";
+import type { Appeal, UserSanction } from "@/types/moderation";
 
 // Route accepts either a full appeal object (legacy) or an appealId (preferred).
 // Passing the full object triggers "[object Object]" in the web URL — always

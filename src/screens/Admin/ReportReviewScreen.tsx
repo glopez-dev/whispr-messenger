@@ -18,12 +18,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { useModerationStore } from "../../store/moderationStore";
-import { sanctionsAPI } from "../../services/moderation/moderationApi";
-import { AdminGate, ReportStatusBadge } from "../../components/Moderation";
-import type { Report, ReportCategory } from "../../types/moderation";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { useModerationStore } from "@/store/moderationStore";
+import { sanctionsAPI } from "@/services/moderation/moderationApi";
+import { AdminGate, ReportStatusBadge } from "@/components/Moderation";
+import type { Report, ReportCategory } from "@/types/moderation";
 
 type RouteParams = { ReportReview: { report: Report } };
 

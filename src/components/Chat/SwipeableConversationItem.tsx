@@ -7,10 +7,10 @@ import { View, StyleSheet, TouchableOpacity, Animated } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Conversation } from "../../types/messaging";
-import { colors } from "../../theme/colors";
-import { useConversationsStore } from "../../store/conversationsStore";
-import ConversationItem from "./ConversationItem";
+import { Conversation } from "@/types/messaging";
+import { colors } from "@/theme/colors";
+import { useConversationsStore } from "@/store/conversationsStore";
+import ConversationItem from "@/components/Chat/ConversationItem";
 
 const BUTTON_SIZE = 52;
 const BUTTON_GAP = 12;

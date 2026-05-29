@@ -12,7 +12,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useIsStaff } from "../../store/moderationStore";
+import { useIsStaff } from "@/store/moderationStore";
 
 interface Props {
   children: React.ReactNode;

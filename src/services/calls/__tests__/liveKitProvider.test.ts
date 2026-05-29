@@ -12,7 +12,7 @@ jest.mock("livekit-client", () => ({
   })),
 }));
 
-import { CallsLiveKit } from "../liveKitProvider";
+import { CallsLiveKit } from "@/services/calls/liveKitProvider";
 
 describe("CallsLiveKit.flipCamera", () => {
   it("native path: calls _switchCamera() and does NOT call setCameraEnabled", async () => {

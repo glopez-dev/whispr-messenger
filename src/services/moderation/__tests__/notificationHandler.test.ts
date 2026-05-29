@@ -3,7 +3,7 @@ import {
   handleModerationNotification,
   resolveNotificationRoute,
   type ModerationNotificationType,
-} from "../notificationHandler";
+} from "@/services/moderation/notificationHandler";
 
 describe("resolveNotificationRoute", () => {
   it.each([

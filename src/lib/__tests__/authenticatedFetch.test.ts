@@ -1,19 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock("../../services/TokenService", () =>
-  require("../../__test-utils__/mockFactories").makeTokenServiceMock(),
+jest.mock("@/services/TokenService", () =>
+  require("@/__test-utils__/mockFactories").makeTokenServiceMock(),
 );
 
 const mockEmitSessionExpired = jest.fn();
-jest.mock("../../services/sessionEvents", () => ({
+jest.mock("@/services/sessionEvents", () => ({
   emitSessionExpired: (...args: unknown[]) => mockEmitSessionExpired(...args),
 }));
 
-import { authenticatedFetch, HttpError } from "../authenticatedFetch";
-import { TokenService } from "../../services/TokenService";
-import {
-  installFetchMock,
-  mockResponse,
-} from "../../__test-utils__/mockFactories";
+import { authenticatedFetch, HttpError } from "@/lib/authenticatedFetch";
+import { TokenService } from "@/services/TokenService";
+import { installFetchMock, mockResponse } from "@/__test-utils__/mockFactories";
 
 const mockedToken = TokenService as any;
 

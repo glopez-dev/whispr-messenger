@@ -36,10 +36,10 @@ jest.mock("expo-image-manipulator", () => ({
   manipulateAsync: jest.fn().mockResolvedValue({ uri: "/tmp/x.jpg" }),
   SaveFormat: { JPEG: "jpeg", PNG: "png" },
 }));
-jest.mock("../../utils/imageCompression", () => ({
+jest.mock("@/utils/imageCompression", () => ({
   detectImageFormatFromUri: jest.fn(() => "jpg"),
 }));
-jest.mock("../../services/UserService", () => ({
+jest.mock("@/services/UserService", () => ({
   UserService: {
     getInstance: () => ({
       getProfile: jest.fn(),
@@ -47,23 +47,23 @@ jest.mock("../../services/UserService", () => ({
     }),
   },
 }));
-jest.mock("../../services/MediaService", () => ({
+jest.mock("@/services/MediaService", () => ({
   MediaService: { uploadMedia: jest.fn() },
 }));
-jest.mock("../../services/TokenService", () => ({
+jest.mock("@/services/TokenService", () => ({
   TokenService: {
     getAccessToken: jest.fn().mockResolvedValue("at"),
   },
 }));
-jest.mock("../../services/apiBase", () => ({
+jest.mock("@/services/apiBase", () => ({
   getApiBaseUrl: () => "https://api.test",
 }));
 
 import React from "react";
 import { Text } from "react-native";
 import { render, waitFor, act } from "@testing-library/react-native";
-import { ThemeProvider, useTheme } from "../../context/ThemeContext";
-import { useI18n } from "../useI18n";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
+import { useI18n } from "@/i18n/useI18n";
 
 const Probe: React.FC = () => {
   const { language, t } = useI18n();

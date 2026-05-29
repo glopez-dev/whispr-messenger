@@ -30,9 +30,9 @@
 import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors } from "../../theme/colors";
-import { getApiBaseUrl } from "../../services/apiBase";
-import { useResolvedMediaUrl } from "../../hooks/useResolvedMediaUrl";
+import { colors } from "@/theme/colors";
+import { getApiBaseUrl } from "@/services/apiBase";
+import { useResolvedMediaUrl } from "@/hooks/useResolvedMediaUrl";
 
 // extraire les couleurs en const : StyleSheet.create() les resoud au mount,
 // pas a chaque render.

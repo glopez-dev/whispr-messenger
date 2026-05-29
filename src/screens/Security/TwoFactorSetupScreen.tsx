@@ -37,14 +37,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "@/context/ThemeContext";
 import * as Haptics from "expo-haptics";
-import Toast from "../../components/Toast/Toast";
+import Toast from "@/components/Toast/Toast";
 import QRCodeStyled from "react-native-qrcode-styled";
 import { Circle, Path } from "react-native-svg";
-import { TwoFactorService } from "../../services/TwoFactorService";
-import { copyToClipboard } from "../../utils/clipboard";
-import type { AuthStackParamList } from "../../navigation/types";
+import { TwoFactorService } from "@/services/TwoFactorService";
+import { copyToClipboard } from "@/utils/clipboard";
+import type { AuthStackParamList } from "@/navigation/types";
 
 const buildStarPath = (cx: number, cy: number, r: number) =>
   `

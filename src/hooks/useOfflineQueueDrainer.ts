@@ -15,10 +15,10 @@
  */
 
 import { useEffect, useRef } from "react";
-import { getSharedSocket } from "../services/messaging/websocket";
-import { messagingAPI } from "../services/messaging/api";
-import { offlineQueue } from "../services/offlineQueue";
-import { logger } from "../utils/logger";
+import { getSharedSocket } from "@/services/messaging/websocket";
+import { messagingAPI } from "@/services/messaging/api";
+import { offlineQueue } from "@/services/offlineQueue";
+import { logger } from "@/utils/logger";
 
 export function useOfflineQueueDrainer(): void {
   // Guard against concurrent drain passes: if a reconnect fires while a

@@ -16,7 +16,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { colors, withOpacity } from "../../theme/colors";
+import { colors, withOpacity } from "@/theme/colors";
 
 interface ScheduleDateTimePickerProps {
   visible: boolean;

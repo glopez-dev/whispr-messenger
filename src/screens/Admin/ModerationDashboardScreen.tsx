@@ -17,11 +17,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { useModerationStore } from "../../store/moderationStore";
-import { AdminGate, ModerationStatCard } from "../../components/Moderation";
-import { sanctionsAPI } from "../../services/moderation/moderationApi";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { useModerationStore } from "@/store/moderationStore";
+import { AdminGate, ModerationStatCard } from "@/components/Moderation";
+import { sanctionsAPI } from "@/services/moderation/moderationApi";
 
 export const ModerationDashboardScreen: React.FC = () => {
   const navigation = useNavigation<any>();

@@ -12,9 +12,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "../../context/ThemeContext";
-import { colors } from "../../theme/colors";
-import { PinnedMessage } from "../../types/messaging";
+import { useTheme } from "@/context/ThemeContext";
+import { colors } from "@/theme/colors";
+import { PinnedMessage } from "@/types/messaging";
 
 interface PinnedMessagesBarProps {
   pinnedMessages: PinnedMessage[];

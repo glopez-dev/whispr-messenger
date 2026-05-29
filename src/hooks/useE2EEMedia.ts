@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { E2EEService } from "../services/E2EEService";
-import { logger } from "../utils/logger";
+import { E2EEService } from "@/services/E2EEService";
+import { logger } from "@/utils/logger";
 
 /**
  * useE2EEMedia - Hook to decrypt media content on the fly

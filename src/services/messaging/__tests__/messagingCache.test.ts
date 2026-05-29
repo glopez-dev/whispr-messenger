@@ -16,11 +16,8 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   getAllKeys: jest.fn(async () => Object.keys(storage)),
 }));
 
-import { cacheService } from "../cache";
-import type {
-  Conversation,
-  MessageWithRelations,
-} from "../../../types/messaging";
+import { cacheService } from "@/services/messaging/cache";
+import type { Conversation, MessageWithRelations } from "@/types/messaging";
 
 const makeMessage = (id: string): MessageWithRelations =>
   ({

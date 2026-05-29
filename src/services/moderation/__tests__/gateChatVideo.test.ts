@@ -13,11 +13,11 @@ const mockGate = jest.fn();
 const mockGetVersion = jest.fn();
 const mockGetThumbnail = jest.fn();
 
-jest.mock("../tfjs.service", () => ({
+jest.mock("@/services/moderation/tfjs.service", () => ({
   tfjsService: { gate: (...args: unknown[]) => mockGate(...args) },
 }));
 
-jest.mock("../model-version", () => ({
+jest.mock("@/services/moderation/model-version", () => ({
   getModerationModelVersion: (...args: unknown[]) => mockGetVersion(...args),
 }));
 
@@ -25,7 +25,7 @@ jest.mock("expo-video-thumbnails", () => ({
   getThumbnailAsync: (...args: unknown[]) => mockGetThumbnail(...args),
 }));
 
-jest.mock("../../../utils/logger", () => ({
+jest.mock("@/utils/logger", () => ({
   logger: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
@@ -34,7 +34,7 @@ jest.mock("react-native", () => ({
 }));
 
 import { Platform } from "react-native";
-import { gateChatVideoBeforeSend } from "../gate-chat-video";
+import { gateChatVideoBeforeSend } from "@/services/moderation/gate-chat-video";
 
 beforeEach(() => {
   jest.clearAllMocks();

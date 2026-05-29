@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { TokenService } from "./TokenService";
+import { TokenService } from "@/services/TokenService";
 
 // Keys that survive a sign-out. The list must stay tight: anything not in
 // here that lives under one of the OWNED_PREFIXES will be wiped on logout.

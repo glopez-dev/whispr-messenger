@@ -27,8 +27,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { StackScreenProps, StackNavigationProp } from "@react-navigation/stack";
 import * as Haptics from "expo-haptics";
-import { useTheme } from "../../context/ThemeContext";
-import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 import {
   Message,
   MessageAttachment,
@@ -36,15 +36,15 @@ import {
   MessageWithRelations,
   MessageReaction,
   Conversation,
-} from "../../types/messaging";
-import { messagingAPI } from "../../services/messaging/api";
-import { cacheService } from "../../services/messaging/cache";
-import { contactsAPI } from "../../services/contacts/api";
-import { TokenService } from "../../services/TokenService";
-import { E2EEService } from "../../services/E2EEService";
-import { useWebSocket } from "../../hooks/useWebSocket";
-import { MessageBubble } from "../../components/Chat/MessageBubble";
-import { MessageSwipeProvider } from "../../context/MessageSwipeContext";
+} from "@/types/messaging";
+import { messagingAPI } from "@/services/messaging/api";
+import { cacheService } from "@/services/messaging/cache";
+import { contactsAPI } from "@/services/contacts/api";
+import { TokenService } from "@/services/TokenService";
+import { E2EEService } from "@/services/E2EEService";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { MessageBubble } from "@/components/Chat/MessageBubble";
+import { MessageSwipeProvider } from "@/context/MessageSwipeContext";
 import { Gesture } from "react-native-gesture-handler";
 import { useSharedValue, withSpring } from "react-native-reanimated";
 
@@ -52,34 +52,34 @@ const MESSAGE_SWIPE_DISTANCE = 40;
 const MESSAGE_SWIPE_SPRING = { damping: 18, stiffness: 180 };
 const MESSAGES_PAGE_SIZE = 50;
 const NEAR_BOTTOM_OFFSET_PX = 120;
-import { MessageInput } from "../../components/Chat/MessageInput";
-import { TypingIndicator } from "../../components/Chat/TypingIndicator";
-import { Avatar } from "../../components/Chat/Avatar";
-import { MessageActionsMenu } from "../../components/Chat/MessageActionsMenu";
-import { ReportMessageSheet } from "../../components/Chat/ReportMessageSheet";
-import { ForwardMessageModal } from "../../components/Chat/ForwardMessageModal";
-import { useConversationsStore } from "../../store/conversationsStore";
-import { useCallsStore } from "../../store/callsStore";
-import { systemCallProvider } from "../../services/calls/systemCallProvider";
+import { MessageInput } from "@/components/Chat/MessageInput";
+import { TypingIndicator } from "@/components/Chat/TypingIndicator";
+import { Avatar } from "@/components/Chat/Avatar";
+import { MessageActionsMenu } from "@/components/Chat/MessageActionsMenu";
+import { ReportMessageSheet } from "@/components/Chat/ReportMessageSheet";
+import { ForwardMessageModal } from "@/components/Chat/ForwardMessageModal";
+import { useConversationsStore } from "@/store/conversationsStore";
+import { useCallsStore } from "@/store/callsStore";
+import { systemCallProvider } from "@/services/calls/systemCallProvider";
 import {
   useCallsAvailable,
   getCallsUnavailableMessage,
-} from "../../hooks/useCallsAvailable";
-import Toast, { ToastType } from "../../components/Toast/Toast";
-import { ReactionPicker } from "../../components/Chat/ReactionPicker";
-import { ReactionReactorsModal } from "../../components/Chat/ReactionReactorsModal";
-import { DateSeparator } from "../../components/Chat/DateSeparator";
-import { SystemMessage } from "../../components/Chat/SystemMessage";
-import { MessageSearch } from "../../components/Chat/MessageSearch";
-import { PinnedMessagesBar } from "../../components/Chat/PinnedMessagesBar";
-import { ChatHeader } from "./ChatHeader";
+} from "@/hooks/useCallsAvailable";
+import Toast, { ToastType } from "@/components/Toast/Toast";
+import { ReactionPicker } from "@/components/Chat/ReactionPicker";
+import { ReactionReactorsModal } from "@/components/Chat/ReactionReactorsModal";
+import { DateSeparator } from "@/components/Chat/DateSeparator";
+import { SystemMessage } from "@/components/Chat/SystemMessage";
+import { MessageSearch } from "@/components/Chat/MessageSearch";
+import { PinnedMessagesBar } from "@/components/Chat/PinnedMessagesBar";
+import { ChatHeader } from "@/screens/Chat/ChatHeader";
 import {
   AttachStep as RNAttachStep,
   SpotlightTourProvider as RNSpotlightTourProvider,
   type TourStep,
 } from "react-native-spotlight-tour";
-import { TourTooltip } from "../../components/Tour/TourTooltip";
-import { TourAutoStart } from "../../components/Tour/TourAutoStart";
+import { TourTooltip } from "@/components/Tour/TourTooltip";
+import { TourAutoStart } from "@/components/Tour/TourAutoStart";
 
 // Sur web, le SpotlightTour casse le layout du ChatScreen (le flex root
 // est squeeze a la largeur mobile). On garde le tour seulement en natif.
@@ -122,35 +122,35 @@ const CHAT_TOUR_STEPS: TourStep[] = [
     ),
   },
 ];
-import { getConversationDisplayName } from "../../utils";
-import { usePresenceStore } from "../../store/presenceStore";
-import { AuthStackParamList } from "../../navigation/types";
-import { colors, withOpacity } from "../../theme/colors";
+import { getConversationDisplayName } from "@/utils";
+import { usePresenceStore } from "@/store/presenceStore";
+import { AuthStackParamList } from "@/navigation/types";
+import { colors, withOpacity } from "@/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
-import { logger } from "../../utils/logger";
-import { SchedulingService } from "../../services/SchedulingService";
-import { ScheduleDateTimePicker } from "../../components/Chat/ScheduleDateTimePicker";
-import { OfflineBanner } from "../../components/Chat/OfflineBanner";
-import { BlockedImageAppealModal } from "../../components/Chat/BlockedImageAppealModal";
-import { useModerationStore } from "../../store/moderationStore";
-import { offlineQueue, QueuedMessage } from "../../services/offlineQueue";
-import { showAlert } from "../../utils/alert";
+import { logger } from "@/utils/logger";
+import { SchedulingService } from "@/services/SchedulingService";
+import { ScheduleDateTimePicker } from "@/components/Chat/ScheduleDateTimePicker";
+import { OfflineBanner } from "@/components/Chat/OfflineBanner";
+import { BlockedImageAppealModal } from "@/components/Chat/BlockedImageAppealModal";
+import { useModerationStore } from "@/store/moderationStore";
+import { offlineQueue, QueuedMessage } from "@/services/offlineQueue";
+import { showAlert } from "@/utils/alert";
 import {
   isDateSeparator,
   type ChatListItem,
   type DateSeparatorItem,
-} from "./helpers/dateSeparators";
-import { deriveBubbleRowMeta } from "./helpers/bubbleRowMeta";
-import { useChatMessages } from "./hooks/useChatMessages";
-import { useChatModals } from "./hooks/useChatModals";
-import { usePinnedMessages } from "./hooks/usePinnedMessages";
-import { useChatReactions } from "./hooks/useChatReactions";
-import { useChatSearch } from "./hooks/useChatSearch";
-import { useChatModeration } from "./hooks/useChatModeration";
-import { useChatComposer } from "./hooks/useChatComposer";
-import { ChatBackgroundLayer } from "./components/ChatBackgroundLayer";
-import { ChatMessageList } from "./components/ChatMessageList";
-import { NotContactBanner } from "./components/NotContactBanner";
+} from "@/screens/Chat/helpers/dateSeparators";
+import { deriveBubbleRowMeta } from "@/screens/Chat/helpers/bubbleRowMeta";
+import { useChatMessages } from "@/screens/Chat/hooks/useChatMessages";
+import { useChatModals } from "@/screens/Chat/hooks/useChatModals";
+import { usePinnedMessages } from "@/screens/Chat/hooks/usePinnedMessages";
+import { useChatReactions } from "@/screens/Chat/hooks/useChatReactions";
+import { useChatSearch } from "@/screens/Chat/hooks/useChatSearch";
+import { useChatModeration } from "@/screens/Chat/hooks/useChatModeration";
+import { useChatComposer } from "@/screens/Chat/hooks/useChatComposer";
+import { ChatBackgroundLayer } from "@/screens/Chat/components/ChatBackgroundLayer";
+import { ChatMessageList } from "@/screens/Chat/components/ChatMessageList";
+import { NotContactBanner } from "@/screens/Chat/components/NotContactBanner";
 
 type ChatScreenRouteProp = StackScreenProps<
   AuthStackParamList,

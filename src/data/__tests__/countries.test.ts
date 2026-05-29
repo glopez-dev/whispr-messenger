@@ -4,7 +4,7 @@ import {
   getRegions,
   searchCountries,
   type Country,
-} from "../countries";
+} from "@/data/countries";
 
 describe("countries dataset", () => {
   it("ships a non-empty list of countries", () => {

@@ -17,7 +17,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { colors } from "../../../theme/colors";
+import { colors } from "@/theme/colors";
 
 const CANCEL_THRESHOLD = -100;
 const LOCK_THRESHOLD = -60;

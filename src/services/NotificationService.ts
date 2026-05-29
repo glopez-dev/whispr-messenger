@@ -1,9 +1,9 @@
 import { Platform } from "react-native";
 import Constants from "expo-constants";
-import { AuthService } from "./AuthService";
-import { TokenService } from "./TokenService";
-import { DeviceService } from "./DeviceService";
-import { getApiBaseUrl } from "./apiBase";
+import { AuthService } from "@/services/AuthService";
+import { TokenService } from "@/services/TokenService";
+import { DeviceService } from "@/services/DeviceService";
+import { getApiBaseUrl } from "@/services/apiBase";
 
 type ApiError = Error & { status?: number; body?: unknown };
 

@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock("../../apiBase", () =>
-  require("../../../__test-utils__/mockFactories").makeApiBaseMock(
-    "https://api.test",
-  ),
+jest.mock("@/services/apiBase", () =>
+  require("@/__test-utils__/mockFactories").makeApiBaseMock("https://api.test"),
 );
 
-import { fetchProfilesBatch, BATCH_PROFILES_CHUNK_SIZE } from "../batchFetch";
-import { mockResponse } from "../../../__test-utils__/mockFactories";
+import {
+  fetchProfilesBatch,
+  BATCH_PROFILES_CHUNK_SIZE,
+} from "@/services/profile/batchFetch";
+import { mockResponse } from "@/__test-utils__/mockFactories";
 
 describe("fetchProfilesBatch", () => {
   it("dedupes ids and posts a single batch", async () => {

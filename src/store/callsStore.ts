@@ -1,11 +1,11 @@
 import { create } from "zustand";
-import { callsApi } from "../services/calls/callsApi";
+import { callsApi } from "@/services/calls/callsApi";
 import {
   getCallsAvailability,
   getCallsUnavailableMessage,
-} from "../hooks/useCallsAvailable";
-import { requestWebMediaPermissions } from "../services/calls/webPermissions";
-import type { CallStatus, CallType } from "../types/calls";
+} from "@/hooks/useCallsAvailable";
+import { requestWebMediaPermissions } from "@/services/calls/webPermissions";
+import type { CallStatus, CallType } from "@/types/calls";
 import type { Room } from "livekit-client";
 
 declare const require: (path: string) => any;
@@ -16,7 +16,7 @@ function getCallsLiveKit() {
     throw new Error(getCallsUnavailableMessage(reason));
   }
   const mod =
-    require("../services/calls/liveKitProvider") as typeof import("../services/calls/liveKitProvider");
+    require("@/services/calls/liveKitProvider") as typeof import("@/services/calls/liveKitProvider");
   return mod.callsLiveKit;
 }
 

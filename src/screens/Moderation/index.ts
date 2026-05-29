@@ -1,6 +1,6 @@
-export { ReportHistoryScreen } from "./ReportHistoryScreen";
-export { ReportDetailScreen } from "./ReportDetailScreen";
-export { SanctionNoticeScreen } from "./SanctionNoticeScreen";
-export { MySanctionsScreen } from "./MySanctionsScreen";
-export { AppealFormScreen } from "./AppealFormScreen";
-export { AppealStatusScreen } from "./AppealStatusScreen";
+export { ReportHistoryScreen } from "@/screens/Moderation/ReportHistoryScreen";
+export { ReportDetailScreen } from "@/screens/Moderation/ReportDetailScreen";
+export { SanctionNoticeScreen } from "@/screens/Moderation/SanctionNoticeScreen";
+export { MySanctionsScreen } from "@/screens/Moderation/MySanctionsScreen";
+export { AppealFormScreen } from "@/screens/Moderation/AppealFormScreen";
+export { AppealStatusScreen } from "@/screens/Moderation/AppealStatusScreen";
