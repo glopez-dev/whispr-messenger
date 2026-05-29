@@ -92,6 +92,7 @@
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-boundaries": "^6.0.2",
     "eslint-plugin-react-hooks": "^4.6.2",
     "express": "^5.2.1",
     "fake-indexeddb": "^6.2.5",
